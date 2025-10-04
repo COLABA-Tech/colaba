@@ -1,0 +1,32 @@
+name: Docker Compose CI
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build and start Docker Compose services
+        run: |
+          docker compose build
+          docker compose up -d
+
+      - name: Run tests
+        run: echo "TODO add tests"
+
+      - name: Stop and remove Docker Compose services
+        if: always()
+        run: docker compose down
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker system prune -a -f
+          docker volume prune -a -f

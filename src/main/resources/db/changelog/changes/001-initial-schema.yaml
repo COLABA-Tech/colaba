@@ -1,0 +1,5 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1
+      author: colaba-team
+      changes: # empty
