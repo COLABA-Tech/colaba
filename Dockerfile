@@ -1,6 +1,8 @@
 FROM eclipse-temurin:25-jdk AS builder
 WORKDIR /colaba
-COPY mvnw .mvn pom.xml ./
+COPY mvnw .
+COPY .mvn .mvn
+COPY pom.xml .
 RUN chmod +x mvnw
 RUN ./mvnw dependency:go-offline -B
 
