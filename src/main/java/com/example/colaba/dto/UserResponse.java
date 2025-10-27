@@ -1,6 +1,5 @@
 package com.example.colaba.dto;
 
-import com.example.colaba.entity.UserRole;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -10,6 +9,4 @@ public class UserResponse {
     private Long id;
     private String username;
     private String email;
-    private UserRole role;
 }
-
