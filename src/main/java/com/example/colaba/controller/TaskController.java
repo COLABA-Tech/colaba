@@ -1,0 +1,81 @@
+package com.example.colaba.controller;
+
+import com.example.colaba.dto.task.CreateTaskRequest;
+import com.example.colaba.dto.task.TaskResponse;
+import com.example.colaba.dto.task.UpdateTaskRequest;
+import com.example.colaba.service.TaskService;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/tasks")
+public class TaskController {
+
+    @Autowired
+    private TaskService taskService;
+
+    @GetMapping
+    public ResponseEntity<Page<TaskResponse>> getAllTasks(Pageable pageable) {
+        pageable = validatePageable(pageable);
+        Page<TaskResponse> tasks = taskService.getAllTasks(pageable);
+        return ResponseEntity.ok(tasks);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<TaskResponse> getTaskById(@PathVariable Long id) {
+        TaskResponse task = taskService.getTaskById(id);
+        return ResponseEntity.ok(task);
+    }
+
+    @GetMapping("/project/{projectId}")
+    public ResponseEntity<Page<TaskResponse>> getTasksByProject(
+            @PathVariable Long projectId, Pageable pageable) {
+        pageable = validatePageable(pageable);
+        Page<TaskResponse> tasks = taskService.getTasksByProject(projectId, pageable);
+        return ResponseEntity.ok(tasks);
+    }
+
+    @GetMapping("/assignee/{userId}")
+    public ResponseEntity<Page<TaskResponse>> getTasksByAssignee(@PathVariable Long userId, Pageable pageable) {
+        pageable = validatePageable(pageable);
+        Page<TaskResponse> tasks = taskService.getTasksByAssignee(userId, pageable);
+        return ResponseEntity.ok(tasks);
+    }
+
+    @PostMapping
+    public ResponseEntity<TaskResponse> createTask(@Valid @RequestBody CreateTaskRequest request) {
+        TaskResponse task = taskService.createTask(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(task);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<TaskResponse> updateTask(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateTaskRequest request) {
+        TaskResponse task = taskService.updateTask(id, request);
+        return ResponseEntity.ok(task);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
+        taskService.deleteTask(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    private Pageable validatePageable(Pageable pageable) {
+        if (pageable == null) {
+            return PageRequest.of(0, 20, Sort.unsorted());
+        }
+        if (pageable.getPageSize() > 50) {
+            return PageRequest.of(pageable.getPageNumber(), 50, pageable.getSort());
+        }
+        return pageable;
+    }
+}

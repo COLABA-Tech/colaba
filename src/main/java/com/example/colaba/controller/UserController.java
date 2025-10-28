@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -33,10 +34,9 @@ public class UserController {
         return ResponseEntity.ok(user);
     }
 
-    // Paginated findAll
-    // Auto-handles ?page=0&size=20
     @GetMapping
     public ResponseEntity<Page<UserResponse>> getAllUsers(Pageable pageable) {
+        pageable = validatePageable(pageable);
         Page<UserResponse> users = userService.getAllUsers(pageable);
         return ResponseEntity.ok(users);
     }
@@ -45,7 +45,7 @@ public class UserController {
     @GetMapping("/scroll")
     public ResponseEntity<UserScrollResponse> getUsersScroll(@RequestParam(defaultValue = "0") String cursor,
                                                              @RequestParam(defaultValue = "20") int limit) {
-        if (limit > 50) limit = 50;  // Enforce max
+        if (limit > 50) limit = 50;
         UserScrollResponse response = userService.getUsersScroll(cursor, limit);
         return ResponseEntity.ok(response);
     }
@@ -53,9 +53,7 @@ public class UserController {
     // New: Paginated with total header
     @GetMapping("/paginated")
     public ResponseEntity<Page<UserResponse>> getUsersPaginated(Pageable pageable) {
-        if (pageable.getPageSize() > 50) {
-            pageable = PageRequest.of(pageable.getPageNumber(), 50, pageable.getSort());
-        }
+        pageable = validatePageable(pageable);
         Page<UserResponse> users = userService.getAllUsers(pageable);
         return ResponseEntity.ok()
                 .header("X-Total-Count", String.valueOf(users.getTotalElements()))
@@ -72,5 +70,15 @@ public class UserController {
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
+    }
+
+    private Pageable validatePageable(Pageable pageable) {
+        if (pageable == null) {
+            return PageRequest.of(0, 20, Sort.unsorted());
+        }
+        if (pageable.getPageSize() > 50) {
+            return PageRequest.of(pageable.getPageNumber(), 50, pageable.getSort());
+        }
+        return pageable;
     }
 }

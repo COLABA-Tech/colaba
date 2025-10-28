@@ -3,7 +3,6 @@ package com.example.colaba.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -30,14 +29,8 @@ public class User {
     @Size(max = 100)
     private String email;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    @NotNull
-    private UserRole role;
-
-    public User(String username, String email, UserRole role) {
+    public User(String username, String email) {
         this.username = username;
         this.email = email;
-        this.role = role;
     }
 }
