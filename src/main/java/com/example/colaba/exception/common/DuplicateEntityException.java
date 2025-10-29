@@ -1,4 +1,4 @@
-package com.example.colaba.exception;
+package com.example.colaba.exception.common;
 
 public class DuplicateEntityException extends RuntimeException {
     public DuplicateEntityException(String message) {
