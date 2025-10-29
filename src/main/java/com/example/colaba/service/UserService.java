@@ -31,10 +31,10 @@ public class UserService {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new DuplicateUserEntityException("Email " + request.getEmail() + " already exists");
         }
-        User user = new User(
-                request.getUsername(),
-                request.getEmail()
-        );
+        User user = User.builder()
+                .username(request.getUsername())
+                .email(request.getEmail())
+                .build();
         User savedUser = userRepository.save(user);
         return UserMapper.INSTANCE.toUserResponse(savedUser);
     }
