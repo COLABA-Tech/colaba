@@ -5,9 +5,9 @@ import com.example.colaba.dto.user.UpdateUserRequest;
 import com.example.colaba.dto.user.UserResponse;
 import com.example.colaba.dto.user.UserScrollResponse;
 import com.example.colaba.entity.User;
-import com.example.colaba.exception.common.DuplicateEntityException;
 import com.example.colaba.exception.user.DuplicateUserEntityException;
 import com.example.colaba.exception.user.UserNotFoundException;
+import com.example.colaba.mapper.user.UserMapper;
 import com.example.colaba.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -17,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -37,21 +36,20 @@ public class UserService {
                 request.getEmail()
         );
         User savedUser = userRepository.save(user);
-        return convertToResponse(savedUser);
+        return UserMapper.INSTANCE.toUserResponse(savedUser);
     }
 
     @Transactional(readOnly = true)
     public List<UserResponse> getAllUsers() {
-        return userRepository.findAll().stream()
-                .map(this::convertToResponse)
-                .collect(Collectors.toList());
+        List<User> users = userRepository.findAll();
+        return UserMapper.INSTANCE.toUserResponseList(users);
     }
 
     @Transactional(readOnly = true)
     public UserResponse getUserById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException("User not found: " + id));
-        return convertToResponse(user);
+        return UserMapper.INSTANCE.toUserResponse(user);
     }
 
     @Transactional(readOnly = true)
@@ -64,19 +62,20 @@ public class UserService {
     public UserResponse getUserByUsername(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
-        return convertToResponse(user);
+        return UserMapper.INSTANCE.toUserResponse(user);
     }
 
     public Page<UserResponse> getAllUsers(Pageable pageable) {
         Page<User> users = userRepository.findAll(pageable);
-        return users.map(this::convertToResponse);
+        return UserMapper.INSTANCE.toUserResponsePage(users);
     }
 
     public UserScrollResponse getUsersScroll(String cursor, int limit) {
         long offset = cursor.isEmpty() ? 0 : Long.parseLong(cursor);
-        Slice<User> users = userRepository.findAllByOffset(offset, limit);  // Custom repo method for Slice (no total)
+        Slice<User> users = userRepository.findAllByOffset(offset, limit);
         UserScrollResponse resp = new UserScrollResponse();
-        resp.setUsers(users.getContent().stream().map(this::convertToResponse).collect(Collectors.toList()));
+        List<UserResponse> userResponseList = UserMapper.INSTANCE.toUserResponseList(users.getContent());
+        resp.setUsers(userResponseList);
         resp.setNextCursor(String.valueOf(offset + users.getNumberOfElements()));
         resp.setHasMore(!users.isLast());
         return resp;
@@ -92,7 +91,7 @@ public class UserService {
             user.setEmail(request.getEmail());
         }
         User saved = userRepository.save(user);
-        return convertToResponse(saved);
+        return UserMapper.INSTANCE.toUserResponse(saved);
     }
 
     public void deleteUser(Long id) {
@@ -100,13 +99,5 @@ public class UserService {
             throw new UserNotFoundException("User not found");
         }
         userRepository.deleteById(id);
-    }
-
-    private UserResponse convertToResponse(User user) {
-        return new UserResponse(
-                user.getId(),
-                user.getUsername(),
-                user.getEmail()
-        );
     }
 }
