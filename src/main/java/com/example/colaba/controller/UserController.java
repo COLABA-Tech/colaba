@@ -1,26 +1,23 @@
 package com.example.colaba.controller;
 
-import com.example.colaba.dto.CreateUserRequest;
-import com.example.colaba.dto.UpdateUserRequest;
-import com.example.colaba.dto.UserResponse;
-import com.example.colaba.dto.UserScrollResponse;
+import com.example.colaba.dto.user.CreateUserRequest;
+import com.example.colaba.dto.user.UpdateUserRequest;
+import com.example.colaba.dto.user.UserResponse;
+import com.example.colaba.dto.user.UserScrollResponse;
 import com.example.colaba.service.UserService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/users")
-public class UserController {
-
-    @Autowired
-    private UserService userService;
+@RequiredArgsConstructor
+public class UserController extends BaseController {
+    private final UserService userService;
 
     @PostMapping
     public ResponseEntity<UserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
@@ -70,15 +67,5 @@ public class UserController {
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
-    }
-
-    private Pageable validatePageable(Pageable pageable) {
-        if (pageable == null) {
-            return PageRequest.of(0, 20, Sort.unsorted());
-        }
-        if (pageable.getPageSize() > 50) {
-            return PageRequest.of(pageable.getPageNumber(), 50, pageable.getSort());
-        }
-        return pageable;
     }
 }

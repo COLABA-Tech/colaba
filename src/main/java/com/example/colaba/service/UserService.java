@@ -1,14 +1,16 @@
 package com.example.colaba.service;
 
-import com.example.colaba.dto.CreateUserRequest;
-import com.example.colaba.dto.UpdateUserRequest;
-import com.example.colaba.dto.UserResponse;
-import com.example.colaba.dto.UserScrollResponse;
+import com.example.colaba.dto.user.CreateUserRequest;
+import com.example.colaba.dto.user.UpdateUserRequest;
+import com.example.colaba.dto.user.UserResponse;
+import com.example.colaba.dto.user.UserScrollResponse;
 import com.example.colaba.entity.User;
-import com.example.colaba.exception.DuplicateEntityException;
-import com.example.colaba.exception.UserNotFoundException;
+import com.example.colaba.exception.user.DuplicateUserEntityEmailException;
+import com.example.colaba.exception.user.DuplicateUserEntityUsernameException;
+import com.example.colaba.exception.user.UserNotFoundException;
+import com.example.colaba.mapper.user.UserMapper;
 import com.example.colaba.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -16,97 +18,89 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
-@Transactional
+@RequiredArgsConstructor
 public class UserService {
+    private final UserRepository userRepository;
+    private final UserMapper userMapper;
 
-    @Autowired
-    private UserRepository userRepository;
-
+    @Transactional
     public UserResponse createUser(CreateUserRequest request) {
-        if (userRepository.existsByUsername(request.getUsername())) {
-            throw new DuplicateEntityException("Username already exists");
+        if (userRepository.existsByUsername(request.username())) {
+            throw new DuplicateUserEntityUsernameException(request.username());
         }
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new DuplicateEntityException("Email already exists");
+        if (userRepository.existsByEmail(request.email())) {
+            throw new DuplicateUserEntityEmailException(request.email());
         }
-        User user = new User(
-                request.getUsername(),
-                request.getEmail()
-        );
+        User user = User.builder()
+                .username(request.username())
+                .email(request.email())
+                .build();
         User savedUser = userRepository.save(user);
-        return convertToResponse(savedUser);
+        return userMapper.toUserResponse(savedUser);
     }
 
     @Transactional(readOnly = true)
     public List<UserResponse> getAllUsers() {
-        return userRepository.findAll().stream()
-                .map(this::convertToResponse)
-                .collect(Collectors.toList());
+        List<User> users = userRepository.findAll();
+        return userMapper.toUserResponseList(users);
     }
 
     @Transactional(readOnly = true)
     public UserResponse getUserById(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException("User not found: " + id));
-        return convertToResponse(user);
+                .orElseThrow(() -> new UserNotFoundException(id));
+        return userMapper.toUserResponse(user);
     }
 
     @Transactional(readOnly = true)
     public User getUserEntityById(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException("User not found: " + id));
+                .orElseThrow(() -> new UserNotFoundException(id));
     }
 
     @Transactional(readOnly = true)
     public UserResponse getUserByUsername(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
-        return convertToResponse(user);
+                .orElseThrow(() -> new UserNotFoundException(username));
+        return userMapper.toUserResponse(user);
     }
 
+    @Transactional(readOnly = true)
     public Page<UserResponse> getAllUsers(Pageable pageable) {
         Page<User> users = userRepository.findAll(pageable);
-        return users.map(this::convertToResponse);
+        return userMapper.toUserResponsePage(users);
     }
 
+    @Transactional(readOnly = true)
     public UserScrollResponse getUsersScroll(String cursor, int limit) {
         long offset = cursor.isEmpty() ? 0 : Long.parseLong(cursor);
-        Slice<User> users = userRepository.findAllByOffset(offset, limit);  // Custom repo method for Slice (no total)
-        UserScrollResponse resp = new UserScrollResponse();
-        resp.setUsers(users.getContent().stream().map(this::convertToResponse).collect(Collectors.toList()));
-        resp.setNextCursor(String.valueOf(offset + users.getNumberOfElements()));
-        resp.setHasMore(!users.isLast());
-        return resp;
+        Slice<User> users = userRepository.findAllByOffset(offset, limit);
+        List<UserResponse> userResponseList = userMapper.toUserResponseList(users.getContent());
+        String nextCursor = String.valueOf(offset + users.getNumberOfElements());
+        boolean hasMore = !users.isLast();
+        return new UserScrollResponse(userResponseList, nextCursor, hasMore);
     }
 
     @Transactional
     public UserResponse updateUser(Long id, UpdateUserRequest request) {
-        User user = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException("User not found: " + id));
-        if (request.getUsername() != null && !request.getUsername().isBlank()) {
-            user.setUsername(request.getUsername());
+        User user = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException(id));
+        if (request.username() != null && !request.username().isBlank()) {
+            user.setUsername(request.username());
         }
-        if (request.getEmail() != null && !request.getEmail().isBlank()) {
-            user.setEmail(request.getEmail());
+        if (request.email() != null && !request.email().isBlank()) {
+            user.setEmail(request.email());
         }
         User saved = userRepository.save(user);
-        return convertToResponse(saved);
+        return userMapper.toUserResponse(saved);
     }
 
+    @Transactional
     public void deleteUser(Long id) {
         if (!userRepository.existsById(id)) {
-            throw new UserNotFoundException("User not found");
+            throw new UserNotFoundException(id);
         }
         userRepository.deleteById(id);
-    }
-
-    private UserResponse convertToResponse(User user) {
-        return new UserResponse(
-                user.getId(),
-                user.getUsername(),
-                user.getEmail()
-        );
     }
 }

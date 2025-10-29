@@ -7,16 +7,14 @@ import com.example.colaba.service.TaskService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/tasks")
-public class TaskController {
+public class TaskController extends BaseController {
 
     @Autowired
     private TaskService taskService;
@@ -67,15 +65,5 @@ public class TaskController {
     public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
         taskService.deleteTask(id);
         return ResponseEntity.noContent().build();
-    }
-
-    private Pageable validatePageable(Pageable pageable) {
-        if (pageable == null) {
-            return PageRequest.of(0, 20, Sort.unsorted());
-        }
-        if (pageable.getPageSize() > 50) {
-            return PageRequest.of(pageable.getPageNumber(), 50, pageable.getSort());
-        }
-        return pageable;
     }
 }
