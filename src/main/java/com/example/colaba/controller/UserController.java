@@ -1,9 +1,9 @@
 package com.example.colaba.controller;
 
-import com.example.colaba.dto.CreateUserRequest;
-import com.example.colaba.dto.UpdateUserRequest;
-import com.example.colaba.dto.UserResponse;
-import com.example.colaba.dto.UserScrollResponse;
+import com.example.colaba.dto.user.CreateUserRequest;
+import com.example.colaba.dto.user.UpdateUserRequest;
+import com.example.colaba.dto.user.UserResponse;
+import com.example.colaba.dto.user.UserScrollResponse;
 import com.example.colaba.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;

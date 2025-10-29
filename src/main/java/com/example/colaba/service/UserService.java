@@ -1,12 +1,13 @@
 package com.example.colaba.service;
 
-import com.example.colaba.dto.CreateUserRequest;
-import com.example.colaba.dto.UpdateUserRequest;
-import com.example.colaba.dto.UserResponse;
-import com.example.colaba.dto.UserScrollResponse;
+import com.example.colaba.dto.user.CreateUserRequest;
+import com.example.colaba.dto.user.UpdateUserRequest;
+import com.example.colaba.dto.user.UserResponse;
+import com.example.colaba.dto.user.UserScrollResponse;
 import com.example.colaba.entity.User;
-import com.example.colaba.exception.DuplicateEntityException;
-import com.example.colaba.exception.UserNotFoundException;
+import com.example.colaba.exception.common.DuplicateEntityException;
+import com.example.colaba.exception.user.DuplicateUserEntityException;
+import com.example.colaba.exception.user.UserNotFoundException;
 import com.example.colaba.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -27,10 +28,10 @@ public class UserService {
 
     public UserResponse createUser(CreateUserRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new DuplicateEntityException("Username already exists");
+            throw new DuplicateUserEntityException("Username " + request.getUsername() + " already exists");
         }
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new DuplicateEntityException("Email already exists");
+            throw new DuplicateUserEntityException("Email " + request.getEmail() + " already exists");
         }
         User user = new User(
                 request.getUsername(),
