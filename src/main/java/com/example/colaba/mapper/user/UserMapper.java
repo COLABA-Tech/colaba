@@ -17,5 +17,7 @@ public interface UserMapper {
 
     List<UserResponse> toUserResponseList(List<User> users);
 
-    Page<UserResponse> toUserResponsePage(Page<User> users);
+    default Page<UserResponse> toUserResponsePage(Page<User> users) {
+        return users.map(this::toUserResponse);
+    }
 }

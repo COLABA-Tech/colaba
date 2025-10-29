@@ -25,15 +25,15 @@ public class UserService {
 
     @Transactional
     public UserResponse createUser(CreateUserRequest request) {
-        if (userRepository.existsByUsername(request.getUsername())) {
-            throw new DuplicateUserEntityException("Username " + request.getUsername() + " already exists");
+        if (userRepository.existsByUsername(request.username())) {
+            throw new DuplicateUserEntityException("Username " + request.username() + " already exists");
         }
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new DuplicateUserEntityException("Email " + request.getEmail() + " already exists");
+        if (userRepository.existsByEmail(request.email())) {
+            throw new DuplicateUserEntityException("Email " + request.email() + " already exists");
         }
         User user = User.builder()
-                .username(request.getUsername())
-                .email(request.getEmail())
+                .username(request.username())
+                .email(request.email())
                 .build();
         User savedUser = userRepository.save(user);
         return UserMapper.INSTANCE.toUserResponse(savedUser);
@@ -75,22 +75,20 @@ public class UserService {
     public UserScrollResponse getUsersScroll(String cursor, int limit) {
         long offset = cursor.isEmpty() ? 0 : Long.parseLong(cursor);
         Slice<User> users = userRepository.findAllByOffset(offset, limit);
-        UserScrollResponse resp = new UserScrollResponse();
         List<UserResponse> userResponseList = UserMapper.INSTANCE.toUserResponseList(users.getContent());
-        resp.setUsers(userResponseList);
-        resp.setNextCursor(String.valueOf(offset + users.getNumberOfElements()));
-        resp.setHasMore(!users.isLast());
-        return resp;
+        String nextCursor = String.valueOf(offset + users.getNumberOfElements());
+        boolean hasMore = !users.isLast();
+        return new UserScrollResponse(userResponseList, nextCursor, hasMore);
     }
 
     @Transactional
     public UserResponse updateUser(Long id, UpdateUserRequest request) {
         User user = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException("User not found: " + id));
-        if (request.getUsername() != null && !request.getUsername().isBlank()) {
-            user.setUsername(request.getUsername());
+        if (request.username() != null && !request.username().isBlank()) {
+            user.setUsername(request.username());
         }
-        if (request.getEmail() != null && !request.getEmail().isBlank()) {
-            user.setEmail(request.getEmail());
+        if (request.email() != null && !request.email().isBlank()) {
+            user.setEmail(request.email());
         }
         User saved = userRepository.save(user);
         return UserMapper.INSTANCE.toUserResponse(saved);
