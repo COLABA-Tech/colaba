@@ -19,11 +19,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
-@Transactional
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
 
+    @Transactional
     public UserResponse createUser(CreateUserRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new DuplicateUserEntityException("Username " + request.getUsername() + " already exists");
@@ -65,11 +65,13 @@ public class UserService {
         return UserMapper.INSTANCE.toUserResponse(user);
     }
 
+    @Transactional(readOnly = true)
     public Page<UserResponse> getAllUsers(Pageable pageable) {
         Page<User> users = userRepository.findAll(pageable);
         return UserMapper.INSTANCE.toUserResponsePage(users);
     }
 
+    @Transactional(readOnly = true)
     public UserScrollResponse getUsersScroll(String cursor, int limit) {
         long offset = cursor.isEmpty() ? 0 : Long.parseLong(cursor);
         Slice<User> users = userRepository.findAllByOffset(offset, limit);
@@ -94,6 +96,7 @@ public class UserService {
         return UserMapper.INSTANCE.toUserResponse(saved);
     }
 
+    @Transactional
     public void deleteUser(Long id) {
         if (!userRepository.existsById(id)) {
             throw new UserNotFoundException("User not found");
