@@ -8,9 +8,7 @@ import com.example.colaba.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
-public class UserController {
+public class UserController extends BaseController {
     private final UserService userService;
 
     @PostMapping
@@ -69,15 +67,5 @@ public class UserController {
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
-    }
-
-    private Pageable validatePageable(Pageable pageable) {
-        if (pageable == null) {
-            return PageRequest.of(0, 20, Sort.unsorted());
-        }
-        if (pageable.getPageSize() > 50) {
-            return PageRequest.of(pageable.getPageNumber(), 50, pageable.getSort());
-        }
-        return pageable;
     }
 }
