@@ -5,7 +5,8 @@ import com.example.colaba.dto.user.UpdateUserRequest;
 import com.example.colaba.dto.user.UserResponse;
 import com.example.colaba.dto.user.UserScrollResponse;
 import com.example.colaba.entity.User;
-import com.example.colaba.exception.user.DuplicateUserEntityException;
+import com.example.colaba.exception.user.DuplicateUserEntityEmailException;
+import com.example.colaba.exception.user.DuplicateUserEntityUsernameException;
 import com.example.colaba.exception.user.UserNotFoundException;
 import com.example.colaba.mapper.user.UserMapper;
 import com.example.colaba.repository.UserRepository;
@@ -26,10 +27,10 @@ public class UserService {
     @Transactional
     public UserResponse createUser(CreateUserRequest request) {
         if (userRepository.existsByUsername(request.username())) {
-            throw new DuplicateUserEntityException("Username " + request.username() + " already exists");
+            throw new DuplicateUserEntityUsernameException(request.username());
         }
         if (userRepository.existsByEmail(request.email())) {
-            throw new DuplicateUserEntityException("Email " + request.email() + " already exists");
+            throw new DuplicateUserEntityEmailException(request.email());
         }
         User user = User.builder()
                 .username(request.username())
@@ -48,20 +49,20 @@ public class UserService {
     @Transactional(readOnly = true)
     public UserResponse getUserById(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException("User not found: " + id));
+                .orElseThrow(() -> new UserNotFoundException(id));
         return UserMapper.INSTANCE.toUserResponse(user);
     }
 
     @Transactional(readOnly = true)
     public User getUserEntityById(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException("User not found: " + id));
+                .orElseThrow(() -> new UserNotFoundException(id));
     }
 
     @Transactional(readOnly = true)
     public UserResponse getUserByUsername(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
+                .orElseThrow(() -> new UserNotFoundException(username));
         return UserMapper.INSTANCE.toUserResponse(user);
     }
 
@@ -83,7 +84,7 @@ public class UserService {
 
     @Transactional
     public UserResponse updateUser(Long id, UpdateUserRequest request) {
-        User user = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException("User not found: " + id));
+        User user = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException(id));
         if (request.username() != null && !request.username().isBlank()) {
             user.setUsername(request.username());
         }
@@ -97,7 +98,7 @@ public class UserService {
     @Transactional
     public void deleteUser(Long id) {
         if (!userRepository.existsById(id)) {
-            throw new UserNotFoundException("User not found");
+            throw new UserNotFoundException(id);
         }
         userRepository.deleteById(id);
     }
