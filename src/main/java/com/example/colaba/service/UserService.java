@@ -23,6 +23,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
+    private final UserMapper userMapper;
 
     @Transactional
     public UserResponse createUser(CreateUserRequest request) {
@@ -37,20 +38,20 @@ public class UserService {
                 .email(request.email())
                 .build();
         User savedUser = userRepository.save(user);
-        return UserMapper.INSTANCE.toUserResponse(savedUser);
+        return userMapper.toUserResponse(savedUser);
     }
 
     @Transactional(readOnly = true)
     public List<UserResponse> getAllUsers() {
         List<User> users = userRepository.findAll();
-        return UserMapper.INSTANCE.toUserResponseList(users);
+        return userMapper.toUserResponseList(users);
     }
 
     @Transactional(readOnly = true)
     public UserResponse getUserById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException(id));
-        return UserMapper.INSTANCE.toUserResponse(user);
+        return userMapper.toUserResponse(user);
     }
 
     @Transactional(readOnly = true)
@@ -63,20 +64,20 @@ public class UserService {
     public UserResponse getUserByUsername(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException(username));
-        return UserMapper.INSTANCE.toUserResponse(user);
+        return userMapper.toUserResponse(user);
     }
 
     @Transactional(readOnly = true)
     public Page<UserResponse> getAllUsers(Pageable pageable) {
         Page<User> users = userRepository.findAll(pageable);
-        return UserMapper.INSTANCE.toUserResponsePage(users);
+        return userMapper.toUserResponsePage(users);
     }
 
     @Transactional(readOnly = true)
     public UserScrollResponse getUsersScroll(String cursor, int limit) {
         long offset = cursor.isEmpty() ? 0 : Long.parseLong(cursor);
         Slice<User> users = userRepository.findAllByOffset(offset, limit);
-        List<UserResponse> userResponseList = UserMapper.INSTANCE.toUserResponseList(users.getContent());
+        List<UserResponse> userResponseList = userMapper.toUserResponseList(users.getContent());
         String nextCursor = String.valueOf(offset + users.getNumberOfElements());
         boolean hasMore = !users.isLast();
         return new UserScrollResponse(userResponseList, nextCursor, hasMore);
@@ -92,7 +93,7 @@ public class UserService {
             user.setEmail(request.email());
         }
         User saved = userRepository.save(user);
-        return UserMapper.INSTANCE.toUserResponse(saved);
+        return userMapper.toUserResponse(saved);
     }
 
     @Transactional
