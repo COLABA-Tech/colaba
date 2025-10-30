@@ -1,8 +1,6 @@
 package com.example.colaba.exception.user;
 
-import com.example.colaba.exception.common.DuplicateEntityException;
-
-public class DuplicateUserEntityEmailException extends DuplicateEntityException {
+public class DuplicateUserEntityEmailException extends DuplicateUserEntityException {
     public DuplicateUserEntityEmailException(String username) {
         super(String.format("EMAIL " + username));
     }
