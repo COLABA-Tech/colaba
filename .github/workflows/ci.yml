@@ -18,8 +18,59 @@ jobs:
           docker compose build
           docker compose up -d
 
+      - name: Wait for services to be ready
+        run: |
+          # Wait for database to be ready
+          timeout 60s bash -c 'until docker compose logs db | grep -q "database system is ready to accept connections"; do sleep 2; done'
+          sleep 10
+
       - name: Run tests
-        run: echo "TODO add tests"
+        run: |
+          docker compose exec -T app ./mvnw clean verify
+
+      - name: Copy test reports from container
+        if: always()
+        run: |
+          mkdir -p target
+          docker compose cp app:/app/target/surefire-reports/ target/ || echo "Surefire reports not found"
+          docker compose cp app:/app/target/site/jacoco/ target/site/ || echo "JaCoCo reports not found"
+
+      - name: Publish Test Results
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Test Results
+          path: target/surefire-reports/*.xml
+          reporter: java-junit
+
+      - name: Generate JaCoCo Badge
+        if: always()
+        run: |
+          if [ -f "target/site/jacoco/index.html" ]; then
+            COVERAGE=$(grep -oP 'percentage.*>\K\d+' target/site/jacoco/index.html | head -1)
+            echo "Coverage: $COVERAGE%"
+            echo "COVERAGE=$COVERAGE%" >> $GITHUB_ENV
+          else
+            echo "JaCoCo report not found"
+          fi
+
+      - name: Upload JaCoCo coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: target/site/jacoco/
+          retention-days: 30
+
+      - name: Publish Coverage to PR
+        if: always()
+        uses: madrapps/jacoco-report@v1.6.1
+        with:
+          paths: target/site/jacoco/jacoco.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          min-coverage-overall: 60
+          min-coverage-changed-files: 60
+          title: 'Code Coverage Report'
 
       - name: Stop and remove Docker Compose services
         if: always()
