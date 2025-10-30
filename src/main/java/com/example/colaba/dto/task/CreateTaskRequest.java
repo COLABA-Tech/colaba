@@ -26,4 +26,9 @@ public record CreateTaskRequest(
         Long reporterId,
         LocalDate dueDate
 ) {
+    public CreateTaskRequest {
+        if (status == null) {
+            status = TaskStatus.getDefault();
+        }
+    }
 }

@@ -43,19 +43,14 @@ public class TaskService {
     @Transactional
     public TaskResponse createTask(CreateTaskRequest request) {
         Project project = projectService.getProjectEntityById(request.projectId());
-        TaskStatus status = (request.status() != null) ? request.status() : TaskStatus.getDefault();
         TaskPriority priority = (request.priority() != null) ? request.priority() : null;
+        User assignee = (request.assigneeId() != null) ? userService.getUserEntityById(request.assigneeId()) : null;
         User reporter = userService.getUserEntityById(request.reporterId());
-
-        User assignee = null;
-        if (request.assigneeId() != null) {
-            assignee = userService.getUserEntityById(request.assigneeId());
-        }
 
         Task task = Task.builder()
                 .title(request.title())
                 .description(request.description())
-                .status(status)
+                .status(request.status())
                 .priority(priority)
                 .project(project)
                 .assignee(assignee)
