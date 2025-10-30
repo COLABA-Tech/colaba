@@ -1,31 +1,51 @@
 package com.example.colaba.service;
 
-import com.example.colaba.entity.Project;
-import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import com.example.colaba.dto.CreateProjectRequest;
+import com.example.colaba.dto.UpdateProjectRequest;
+import com.example.colaba.dto.ProjectResponse;
+import com.example.colaba.dto.ProjectScrollResponse;
 
-import java.time.LocalDateTime;
+import java.util.List;
 
-@Service
-@Transactional
-public class ProjectService {
-    @Autowired
-    private UserService userService;
+/**
+ * Сервис для управления проектами.
+ * Использует DTO: CreateProjectRequest / UpdateProjectRequest / ProjectResponse.
+ */
+public interface ProjectService {
 
-    // always returns stub project with id = 1
-    private Project getStubProject() {
-        Project project = new Project();
-        project.setId(1L);
-        project.setName("Default Project");
-        project.setDescription("Default project description");
-        project.setOwner(userService.getUserEntityById(1L));
-        project.setCreatedAt(LocalDateTime.now().minusDays(1));
-        project.setUpdatedAt(LocalDateTime.now());
-        return project;
-    }
+    /**
+     * Создать новый проект.
+     */
+    ProjectResponse create(CreateProjectRequest request);
 
-    public Project getProjectEntityById(Long id) {
-        return getStubProject();
-    }
+    /**
+     * Обновить проект по id.
+     */
+    ProjectResponse update(Long id, UpdateProjectRequest request);
+
+    /**
+     * Получить проект по id.
+     */
+    ProjectResponse getById(Long id);
+
+    /**
+     * Получить список всех проектов.
+     */
+    List<ProjectResponse> getAll();
+
+    /**
+     * Получить проекты по владельцу.
+     */
+    List<ProjectResponse> getByOwnerId(Long ownerId);
+
+    /**
+     * Пагинация/прокрутка — если нужна поддержка скролла.
+     */
+    ProjectScrollResponse scroll(int page, int size);
+
+    /**
+     * Удалить проект.
+     */
+    void delete(Long id);
 }
+

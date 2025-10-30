@@ -10,7 +10,6 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
-// Stub entity, replace with proper realization
 @Entity
 @Table(name = "projects")
 @Getter
@@ -34,24 +33,11 @@ public class Project {
     @JoinColumn(name = "owner_id", nullable = false)
     private User owner;
 
-    @Column(name = "created_at", updatable = false)
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-    public Project(String name, String description, User owner) {
-        this.name = name;
-        this.description = description;
-        this.owner = owner;
-    }
-
-    public Project(Long id, String name, String description, User owner) {
-        this.id = id;
-        this.name = name;
-        this.description = description;
-        this.owner = owner;
-    }
 
     @PrePersist
     protected void onCreate() {
