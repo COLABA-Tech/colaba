@@ -10,7 +10,6 @@ import com.example.colaba.entity.task.TaskPriority;
 import com.example.colaba.entity.task.TaskStatus;
 import com.example.colaba.exception.task.TaskNotFoundException;
 import com.example.colaba.mapper.TaskMapper;
-import com.example.colaba.mapper.UserMapper;
 import com.example.colaba.repository.TaskRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -47,25 +46,25 @@ public class TaskService {
 
     @Transactional
     public TaskResponse createTask(CreateTaskRequest request) {
-        Project project = projectService.getProjectEntityById(request.getProjectId());
-        TaskStatus status = (request.getStatus() != null) ? request.getStatus() : TaskStatus.getDefault();
-        TaskPriority priority = (request.getPriority() != null) ? request.getPriority() : null;
-        User reporter = userService.getUserEntityById(request.getReporterId());
+        Project project = projectService.getProjectEntityById(request.projectId());
+        TaskStatus status = (request.status() != null) ? request.status() : TaskStatus.getDefault();
+        TaskPriority priority = (request.priority() != null) ? request.priority() : null;
+        User reporter = userService.getUserEntityById(request.reporterId());
 
         User assignee = null;
-        if (request.getAssigneeId() != null) {
-            assignee = userService.getUserEntityById(request.getAssigneeId());
+        if (request.assigneeId() != null) {
+            assignee = userService.getUserEntityById(request.assigneeId());
         }
 
         Task task = new Task(
-                request.getTitle(),
-                request.getDescription(),
+                request.title(),
+                request.description(),
                 status,
                 priority,
                 project,
                 assignee,
                 reporter,
-                request.getDueDate()
+                request.dueDate()
         );
 
         Task savedTask = taskRepository.save(task);
@@ -77,26 +76,26 @@ public class TaskService {
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new TaskNotFoundException(id));
 
-        if (request.getTitle() != null) {
-            task.setTitle(request.getTitle());
+        if (request.title() != null) {
+            task.setTitle(request.title());
         }
-        if (request.getDescription() != null) {
-            task.setDescription(request.getDescription());
+        if (request.description() != null) {
+            task.setDescription(request.description());
         }
-        if (request.getStatus() != null) {
-            TaskStatus status = request.getStatus();
+        if (request.status() != null) {
+            TaskStatus status = request.status();
             task.setStatus(status);
         }
-        if (request.getPriority() != null) {
-            TaskPriority priority = request.getPriority();
+        if (request.priority() != null) {
+            TaskPriority priority = request.priority();
             task.setPriority(priority);
         }
-        if (request.getAssigneeId() != null) {
-            User assignee = userService.getUserEntityById(request.getAssigneeId());
+        if (request.assigneeId() != null) {
+            User assignee = userService.getUserEntityById(request.assigneeId());
             task.setAssignee(assignee);
         }
-        if (request.getDueDate() != null) {
-            task.setDueDate(request.getDueDate());
+        if (request.dueDate() != null) {
+            task.setDueDate(request.dueDate());
         }
 
         Task updatedTask = taskRepository.save(task);
