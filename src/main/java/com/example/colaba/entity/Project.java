@@ -7,7 +7,6 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import java.time.Instant;
 
 import java.time.LocalDateTime;
 
@@ -35,23 +34,10 @@ public class Project {
     private User owner;
 
     @Column(name = "created_at", nullable = false)
-    private Instant createdAt;
+    private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-    public Project(String name, String description, User owner) {
-        this.name = name;
-        this.description = description;
-        this.owner = owner;
-    }
-
-    public Project(Long id, String name, String description, User owner) {
-        this.id = id;
-        this.name = name;
-        this.description = description;
-        this.owner = owner;
-    }
 
     @PrePersist
     protected void onCreate() {
