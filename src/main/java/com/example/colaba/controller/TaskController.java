@@ -5,7 +5,7 @@ import com.example.colaba.dto.task.TaskResponse;
 import com.example.colaba.dto.task.UpdateTaskRequest;
 import com.example.colaba.service.TaskService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -14,10 +14,9 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/tasks")
+@RequiredArgsConstructor
 public class TaskController extends BaseController {
-
-    @Autowired
-    private TaskService taskService;
+    private final TaskService taskService;
 
     @GetMapping
     public ResponseEntity<Page<TaskResponse>> getAllTasks(Pageable pageable) {
