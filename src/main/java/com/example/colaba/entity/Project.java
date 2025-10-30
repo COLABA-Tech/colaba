@@ -1,47 +1,66 @@
 package com.example.colaba.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import java.time.Instant;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "projects")
+@Getter
+@Setter
+@NoArgsConstructor
 public class Project {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank
+    @Size(max = 200)
     @Column(nullable = false, length = 200)
     private String name;
 
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    // владелец проекта — связь с User
+    @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)
     private User owner;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    public Project() {
-        this.createdAt = Instant.now();
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    public Project(String name, String description, User owner) {
+        this.name = name;
+        this.description = description;
+        this.owner = owner;
     }
 
-    // --- getters / setters ---
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Project(Long id, String name, String description, User owner) {
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.owner = owner;
+    }
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-
-    public User getOwner() { return owner; }
-    public void setOwner(User owner) { this.owner = owner; }
-
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }
