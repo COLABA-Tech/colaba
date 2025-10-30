@@ -10,7 +10,7 @@ import com.example.colaba.entity.task.TaskPriority;
 import com.example.colaba.entity.task.TaskStatus;
 import com.example.colaba.exception.task.TaskNotFoundException;
 import com.example.colaba.repository.TaskRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -18,16 +18,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class TaskService {
-
-    @Autowired
-    private TaskRepository taskRepository;
-
-    @Autowired
-    private ProjectService projectService;
-
-    @Autowired
-    private UserService userService;
+    private final TaskRepository taskRepository;
+    private final ProjectService projectService;
+    private final UserService userService;
 
     @Transactional(readOnly = true)
     public Page<TaskResponse> getAllTasks(Pageable pageable) {
