@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@Transactional
 @RequiredArgsConstructor
 public class TaskService {
     private final TaskRepository taskRepository;
@@ -26,19 +25,16 @@ public class TaskService {
     private final UserService userService;
     private final TaskMapper taskMapper;
 
-    @Transactional(readOnly = true)
     public Page<TaskResponse> getAllTasks(Pageable pageable) {
         return taskMapper.toTaskResponsePage(taskRepository.findAll(pageable));
     }
 
-    @Transactional(readOnly = true)
     public TaskResponse getTaskById(Long id) {
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new TaskNotFoundException(id));
         return taskMapper.toTaskResponse(task);
     }
 
-    @Transactional(readOnly = true)
     public Page<TaskResponse> getTasksByProject(Long projectId, Pageable pageable) {
         Project project = projectService.getProjectEntityById(projectId);
         return taskMapper.toTaskResponsePage(taskRepository.findByProject(project, pageable));

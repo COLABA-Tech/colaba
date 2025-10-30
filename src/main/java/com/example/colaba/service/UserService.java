@@ -41,20 +41,17 @@ public class UserService {
         return userMapper.toUserResponse(savedUser);
     }
 
-    @Transactional(readOnly = true)
     public UserResponse getUserById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException(id));
         return userMapper.toUserResponse(user);
     }
 
-    @Transactional(readOnly = true)
     public User getUserEntityById(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException(id));
     }
 
-    @Transactional(readOnly = true)
     public UserResponse getUserByUsername(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException(username));
@@ -85,13 +82,11 @@ public class UserService {
         userRepository.deleteById(id);
     }
 
-    @Transactional(readOnly = true)
     public Page<UserResponse> getAllUsers(Pageable pageable) {
         Page<User> users = userRepository.findAll(pageable);
         return userMapper.toUserResponsePage(users);
     }
 
-    @Transactional(readOnly = true)
     public UserScrollResponse getUsersScroll(String cursor, int limit) {
         long offset = cursor.isEmpty() ? 0 : Long.parseLong(cursor);
         Slice<User> users = userRepository.findAllByOffset(offset, limit);
