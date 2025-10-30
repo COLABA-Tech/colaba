@@ -52,16 +52,16 @@ public class TaskService {
             assignee = userService.getUserEntityById(request.assigneeId());
         }
 
-        Task task = new Task(
-                request.title(),
-                request.description(),
-                status,
-                priority,
-                project,
-                assignee,
-                reporter,
-                request.dueDate()
-        );
+        Task task = Task.builder()
+                .title(request.title())
+                .description(request.description())
+                .status(status)
+                .priority(priority)
+                .project(project)
+                .assignee(assignee)
+                .reporter(reporter)
+                .dueDate(request.dueDate())
+                .build();
 
         Task savedTask = taskRepository.save(task);
         return taskMapper.toTaskResponse(savedTask);

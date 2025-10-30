@@ -6,9 +6,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -18,6 +16,8 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Task {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -60,18 +60,6 @@ public class Task {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-    public Task(String title, String description, TaskStatus status, TaskPriority priority,
-                Project project, User assignee, User reporter, LocalDate dueDate) {
-        this.title = title;
-        this.description = description;
-        this.status = (status != null) ? status : TaskStatus.getDefault();
-        this.priority = priority;
-        this.project = project;
-        this.assignee = assignee;
-        this.reporter = reporter;
-        this.dueDate = dueDate;
-    }
 
     @PrePersist
     protected void onCreate() {
