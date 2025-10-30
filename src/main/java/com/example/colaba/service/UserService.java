@@ -42,12 +42,6 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public List<UserResponse> getAllUsers() {
-        List<User> users = userRepository.findAll();
-        return userMapper.toUserResponseList(users);
-    }
-
-    @Transactional(readOnly = true)
     public UserResponse getUserById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException(id));
@@ -67,6 +61,30 @@ public class UserService {
         return userMapper.toUserResponse(user);
     }
 
+    @Transactional
+    public UserResponse updateUser(Long id, UpdateUserRequest request) {
+        User user = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException(id));
+        boolean hasChanges = false;
+        if (request.username() != null && !request.username().isBlank() && !request.username().equals(user.getUsername())) {
+            user.setUsername(request.username());
+            hasChanges = true;
+        }
+        if (request.email() != null && !request.email().isBlank() && !request.email().equals(user.getEmail())) {
+            user.setEmail(request.email());
+            hasChanges = true;
+        }
+        User saved = hasChanges ? userRepository.save(user) : user;
+        return userMapper.toUserResponse(saved);
+    }
+
+    @Transactional
+    public void deleteUser(Long id) {
+        if (!userRepository.existsById(id)) {
+            throw new UserNotFoundException(id);
+        }
+        userRepository.deleteById(id);
+    }
+
     @Transactional(readOnly = true)
     public Page<UserResponse> getAllUsers(Pageable pageable) {
         Page<User> users = userRepository.findAll(pageable);
@@ -81,26 +99,5 @@ public class UserService {
         String nextCursor = String.valueOf(offset + users.getNumberOfElements());
         boolean hasMore = !users.isLast();
         return new UserScrollResponse(userResponseList, nextCursor, hasMore);
-    }
-
-    @Transactional
-    public UserResponse updateUser(Long id, UpdateUserRequest request) {
-        User user = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException(id));
-        if (request.username() != null && !request.username().isBlank()) {
-            user.setUsername(request.username());
-        }
-        if (request.email() != null && !request.email().isBlank()) {
-            user.setEmail(request.email());
-        }
-        User saved = userRepository.save(user);
-        return userMapper.toUserResponse(saved);
-    }
-
-    @Transactional
-    public void deleteUser(Long id) {
-        if (!userRepository.existsById(id)) {
-            throw new UserNotFoundException(id);
-        }
-        userRepository.deleteById(id);
     }
 }
