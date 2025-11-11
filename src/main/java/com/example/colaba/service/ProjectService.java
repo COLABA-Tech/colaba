@@ -2,21 +2,21 @@ package com.example.colaba.service;
 
 import com.example.colaba.entity.Project;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class ProjectService {
-    @Autowired
-    private UserService userService;
+    private final UserService userService;
 
     // always returns stub project with id = 1
-    private Project getStubProject() {
+    private Project getStubProject(Long id) {
         Project project = new Project();
-        project.setId(1L);
+        project.setId(id);
         project.setName("Default Project");
         project.setDescription("Default project description");
         project.setOwner(userService.getUserEntityById(1L));
@@ -26,6 +26,6 @@ public class ProjectService {
     }
 
     public Project getProjectEntityById(Long id) {
-        return getStubProject();
+        return getStubProject(id);
     }
 }
