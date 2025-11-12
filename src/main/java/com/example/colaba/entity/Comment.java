@@ -1,5 +1,6 @@
 package com.example.colaba.entity;
 
+import com.example.colaba.entity.task.Task;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -8,9 +9,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
-
-import com.example.colaba.entity.task.Task;
-import com.example.colaba.entity.User;
 
 import java.time.OffsetDateTime;
 
