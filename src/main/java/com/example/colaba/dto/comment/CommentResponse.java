@@ -1,10 +1,12 @@
 package com.example.colaba.dto.comment;
-import java.time.ZonedDateTime;
+
+import java.time.OffsetDateTime;
+
 public record CommentResponse(
         Long id,
         Long taskId,
         Long userId,
         String content,
-        ZonedDateTime createdAt
+        OffsetDateTime createdAt  // Сменила на OffsetDateTime для consistency
 ) {
 }
