@@ -30,8 +30,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class CommentServiceTest {
@@ -57,20 +56,34 @@ class CommentServiceTest {
 
     @BeforeEach
     void setUp() {
-        mockUser = new User();
-        mockUser.setId(1L);
-        mockTask = new Task();
-        mockTask.setId(1L);
-        fixedCreatedAt = OffsetDateTime.now();  // Set once per test
-        mockComment = new Comment();
-        mockComment.setId(1L);
-        mockComment.setContent("Test content");
-        mockComment.setCreatedAt(fixedCreatedAt);
-        mockComment2 = new Comment();
-        mockComment2.setId(2L);
-        mockComment2.setContent("Test2");
-        mockComment2.setCreatedAt(fixedCreatedAt.minusSeconds(1));  // Different for sort
-        mockResponse = new CommentResponse(1L, 1L, 1L, "Test content", fixedCreatedAt);
+        fixedCreatedAt = OffsetDateTime.now();
+
+        mockUser = User.builder()
+                .id(1L)
+                .build();
+
+        mockTask = Task.builder()
+                .id(1L)
+                .build();
+
+        mockComment = Comment.builder()
+                .id(1L)
+                .task(mockTask)
+                .user(mockUser)
+                .content("Test content")
+                .createdAt(fixedCreatedAt)
+                .updatedAt(fixedCreatedAt)
+                .build();
+
+        mockComment2 = Comment.builder()
+                .id(2L)
+                .task(mockTask)
+                .user(mockUser)
+                .content("Test2")
+                .createdAt(fixedCreatedAt.minusSeconds(1))  // Different for sort
+                .build();
+
+        mockResponse = new CommentResponse(1L, 1L, 1L, "Test content", fixedCreatedAt, fixedCreatedAt);
     }
 
     @Test
@@ -225,16 +238,43 @@ class CommentServiceTest {
     }
 
     @Test
+    void updateComment_ShouldUpdateUpdatedAt_WhenContentChanged() {
+        UpdateCommentRequest request = new UpdateCommentRequest("Updated");
+        OffsetDateTime oldUpdatedAt = mockComment.getUpdatedAt();
+        when(commentRepository.findById(1L)).thenReturn(Optional.of(mockComment));
+        when(commentRepository.save(mockComment)).thenAnswer(inv -> {
+            mockComment.setUpdatedAt(OffsetDateTime.now().plusSeconds(1));  // Simulate auto-update
+            return mockComment;
+        });
+        when(commentMapper.toResponse(mockComment)).thenReturn(mockResponse);
+
+        CommentResponse result = commentService.updateComment(1L, request);
+
+        assertNotEquals(oldUpdatedAt, mockComment.getUpdatedAt());  // Changed
+    }
+
+    @Test
     void updateComment_ShouldNotChangeContent_WhenContentNull() {
         UpdateCommentRequest request = new UpdateCommentRequest(null);
         when(commentRepository.findById(1L)).thenReturn(Optional.of(mockComment));
-        when(commentRepository.save(mockComment)).thenReturn(mockComment);
+
+        CommentResponse result = commentService.updateComment(1L, request);
+
+        assertEquals("Test content", mockComment.getContent());
+        verify(commentRepository, never()).save(any(Comment.class));
+    }
+
+    @Test
+    void updateComment_ShouldNotSave_WhenContentUnchanged() {
+        UpdateCommentRequest request = new UpdateCommentRequest("Test content");  // То же, что в mock
+        when(commentRepository.findById(1L)).thenReturn(Optional.of(mockComment));
         when(commentMapper.toResponse(mockComment)).thenReturn(mockResponse);
 
         CommentResponse result = commentService.updateComment(1L, request);
 
         assertEquals("Test content", mockComment.getContent());  // Unchanged
-        verify(commentMapper).toResponse(mockComment);  // Called
+        verify(commentRepository, never()).save(any(Comment.class));  // No save
+        assertEquals(mockResponse, result);
     }
 
     @Test
@@ -249,15 +289,13 @@ class CommentServiceTest {
 
     @Test
     void updateComment_ShouldNotUpdate_WhenContentBlank() {
-        UpdateCommentRequest request = new UpdateCommentRequest("   ");  // Blank
+        UpdateCommentRequest request = new UpdateCommentRequest("   ");
         when(commentRepository.findById(1L)).thenReturn(Optional.of(mockComment));
-        when(commentRepository.save(mockComment)).thenReturn(mockComment);
-        when(commentMapper.toResponse(mockComment)).thenReturn(mockResponse);
 
         CommentResponse result = commentService.updateComment(1L, request);
 
-        assertEquals("Test content", mockComment.getContent());  // Unchanged
-        verify(commentMapper).toResponse(mockComment);
+        assertEquals("Test content", mockComment.getContent());
+        verify(commentRepository, never()).save(any(Comment.class));
     }
 
     @Test
@@ -292,11 +330,22 @@ class CommentServiceTest {
 
     @Test
     void countCommentsByTask_ShouldReturnCorrectCount() {
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(mockTask));
         when(commentRepository.countByTaskId(1L)).thenReturn(5L);
-
         long count = commentService.countCommentsByTask(1L);
 
         assertEquals(5L, count);
+        verify(commentRepository).countByTaskId(1L);  // Called after check
+    }
+
+    @Test
+    void countCommentsByTask_ShouldThrowTaskNotFound_WhenTaskNotExists() {
+        when(taskRepository.findById(999L)).thenReturn(Optional.empty());
+
+        TaskNotFoundException exception = assertThrows(TaskNotFoundException.class,
+                () -> commentService.countCommentsByTask(999L));
+        assertEquals("Task not found: 999", exception.getMessage());
+        verify(commentRepository, never()).countByTaskId(anyLong());  // No count if throw early
     }
 
 }

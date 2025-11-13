@@ -24,7 +24,6 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor  // Lombok: constructor injection
-@Transactional(readOnly = true)  // Default readOnly, override для writes
 public class CommentService {
 
     private final CommentRepository commentRepository;
@@ -34,17 +33,18 @@ public class CommentService {
 
     @Transactional  // Write: override readOnly
     public CommentResponse createComment(CreateCommentRequest request) {
-        User user = userRepository.findById(request.userId())  // Фикс: userId(), не taskId()
-                .orElseThrow(() -> new UserNotFoundException("User not found: " + request.userId()));
+        User user = userRepository.findById(request.userId())
+                .orElseThrow(() -> new UserNotFoundException(request.userId()));
 
         Task task = taskRepository.findById(request.taskId())
-                .orElseThrow(() -> new TaskNotFoundException("Task not found: " + request.taskId()));
+                .orElseThrow(() -> new TaskNotFoundException(request.taskId()));
 
-        Comment comment = new Comment();  // Или builder, если в Entity
-        comment.setUser(user);
-        comment.setTask(task);
-        comment.setContent(request.content());
-        // createdAt auto — не set!
+        // Builder: fluent, легко читать/расширять
+        Comment comment = Comment.builder()
+                .task(task)
+                .user(user)
+                .content(request.content())
+                .build();  // createdAt auto от @CreationTimestamp — не нужно set
 
         Comment saved = commentRepository.save(comment);
         return commentMapper.toResponse(saved);
@@ -52,7 +52,7 @@ public class CommentService {
 
     public CommentResponse getCommentById(Long id) {
         Comment comment = commentRepository.findById(id)
-                .orElseThrow(() -> new CommentNotFoundException("Comment not found: " + id));
+                .orElseThrow(() -> new CommentNotFoundException(id));
         return commentMapper.toResponse(comment);
     }
 
@@ -62,7 +62,6 @@ public class CommentService {
         return commentMapper.toResponsePage(comments);
     }
 
-    @Transactional(readOnly = true)
     public CommentScrollResponse getCommentsByTaskScroll(Long taskId, String cursor, int limit) {
         OffsetDateTime cursorTime = (cursor == null || cursor.isBlank())
                 ? OffsetDateTime.now()  // Начало: самые новые
@@ -75,28 +74,25 @@ public class CommentService {
 
         List<CommentResponse> responses = commentMapper.toResponseList(slice.getContent());
 
-        CommentScrollResponse resp = new CommentScrollResponse(
-                responses,  // Если record — используй constructor; иначе setComments
-                slice.isEmpty() ? null : slice.getContent().get(slice.getContent().size() - 1).getCreatedAt().toString(),
-                slice.hasNext()  // Auto: true если есть больше (Spring checks internally)
-        );
+        String nextCursor = slice.isEmpty() ? null : slice.getContent().get(slice.getContent().size() - 1).getCreatedAt().toString();
+
+        CommentScrollResponse resp = new CommentScrollResponse(responses, nextCursor, slice.hasNext());
 
         return resp;
     }
 
-    @Transactional  // Write
+    @Transactional
     public CommentResponse updateComment(Long id, UpdateCommentRequest request) {
-        // Ownership check: assume taskId from request? Нет, для update — findById, check if content change
-        // Чтобы добавить: pass taskId в метод (из контроллера), then repo.findByIdAndTaskId(id, taskId)
-        // Пока: simple findById
         Comment comment = commentRepository.findById(id)
-                .orElseThrow(() -> new CommentNotFoundException("Comment not found: " + id));
+                .orElseThrow(() -> new CommentNotFoundException(id));
 
-        if (request.content() != null && !request.content().isBlank()) {
+        boolean hasChanges = false;
+        if (request.content() != null && !request.content().isBlank() && !request.content().equals(comment.getContent())) {
             comment.setContent(request.content());
+            hasChanges = true;
         }
 
-        Comment saved = commentRepository.save(comment);
+        Comment saved = hasChanges ? commentRepository.save(comment) : comment;
         return commentMapper.toResponse(saved);
     }
 
@@ -104,12 +100,17 @@ public class CommentService {
     public void deleteComment(Long id) {
         // Ownership: аналогично, pass taskId if needed
         if (!commentRepository.existsById(id)) {
-            throw new CommentNotFoundException("Comment not found: " + id);
+            throw new CommentNotFoundException(id);
         }
         commentRepository.deleteById(id);
     }
 
+    @Transactional
     public long countCommentsByTask(Long taskId) {
+        // Добавили проверку: throw если task не существует
+        taskRepository.findById(taskId)
+                .orElseThrow(() -> new TaskNotFoundException(taskId));
+
         return commentRepository.countByTaskId(taskId);
     }
 

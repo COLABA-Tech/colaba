@@ -15,15 +15,18 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
 
+import static com.example.colaba.controller.BaseController.validatePageable;
+
 @RestController
 @RequestMapping("/api/comments")
 @RequiredArgsConstructor
-@Tag(name = "Comments", description = "API for managing comments")  // OpenAPI tag
-public class CommentController {  // Убрал extends — если нужно, добавь BaseController
+@Tag(name = "Comments", description = "API for managing comments")
+public class CommentController extends BaseController{
 
     private final CommentService commentService;
 
@@ -33,9 +36,12 @@ public class CommentController {  // Убрал extends — если нужно,
     @ApiResponse(responseCode = "400", description = "Invalid request data")
     public ResponseEntity<CommentResponse> createComment(@Valid @RequestBody CreateCommentRequest request) {
         CommentResponse commentResponse = commentService.createComment(request);
-        URI location = UriComponentsBuilder.fromPath("/api/comments/{id}")
-                .buildAndExpand(commentResponse.id()).toUri();  // Location header для REST
-        return ResponseEntity.created(location).body(commentResponse);
+        return ResponseEntity.created(
+                ServletUriComponentsBuilder.fromCurrentRequestUri()
+                        .path("/{id}")
+                        .buildAndExpand(commentResponse.id())
+                        .toUri()
+        ).body(commentResponse);
     }
 
     @GetMapping("/{id}")
@@ -47,16 +53,14 @@ public class CommentController {  // Убрал extends — если нужно,
         return ResponseEntity.ok(comment);
     }
 
-    // Убрал общий GET / — вместо этого by task (требование пагинации по задаче)
+
     @GetMapping("/task/{taskId}")
     @Operation(summary = "Get paginated comments by task ID")
     @ApiResponse(responseCode = "200", description = "Paginated comments")
     public ResponseEntity<Page<CommentResponse>> getCommentsByTask(
             @PathVariable @Positive Long taskId,  // taskId required
             Pageable pageable) {
-        if (pageable.getPageSize() > 50) {  // Inline валидация (вместо validatePageable)
-            throw new IllegalArgumentException("Maximum page size is 50");
-        }
+        pageable = validatePageable(pageable);
         Page<CommentResponse> comments = commentService.getCommentsByTask(taskId, pageable);
         return ResponseEntity.ok()
                 .header("X-Total-Count", String.valueOf(comments.getTotalElements()))  // Требование: total в header
@@ -71,9 +75,7 @@ public class CommentController {  // Убрал extends — если нужно,
             @PathVariable @Positive Long taskId,
             @RequestParam(required = false) String cursor,
             @RequestParam(defaultValue = "20") int limit) {
-        if (limit > 50) {
-            throw new IllegalArgumentException("Maximum limit is 50");
-        }
+        if (limit > 50) limit = 50;
         CommentScrollResponse response = commentService.getCommentsByTaskScroll(taskId, cursor, limit);
         return ResponseEntity.ok(response);
     }

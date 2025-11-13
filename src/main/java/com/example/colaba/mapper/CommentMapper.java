@@ -12,21 +12,18 @@ import java.util.stream.Collectors;
 @Component
 public class CommentMapper {
 
-    public CommentResponse toResponse(Comment comment) {
+    public CommentResponse toResponse(Comment entity) {
         return new CommentResponse(
-                comment.getId(),
-                comment.getTask().getId(),
-                comment.getUser().getId(),
-                comment.getContent(),
-                comment.getCreatedAt()
+                entity.getId(),
+                entity.getTask().getId(),
+                entity.getUser().getId(),
+                entity.getContent(),
+                entity.getCreatedAt(),
+                entity.getUpdatedAt()
         );
     }
 
     public Page<CommentResponse> toResponsePage(Page<Comment> comments) {
-        return comments.map(this::toResponse);
-    }
-
-    public Slice<CommentResponse> toResponseSlice(Slice<Comment> comments) {
         return comments.map(this::toResponse);
     }
 

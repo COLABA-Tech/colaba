@@ -66,3 +66,20 @@ databaseChangeLog:
         - dropIndex:
             indexName: idx_comments_user_id
             tableName: comments
+  - changeSet:
+      id: 004.1-add-updated-at
+      author: bozhena
+      changes:
+        - addColumn:
+            tableName: comments
+            columns:
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+      rollback:
+        - dropColumn:
+            tableName: comments
+            columnName: updated_at

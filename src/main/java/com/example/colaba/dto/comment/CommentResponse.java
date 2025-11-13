@@ -7,6 +7,7 @@ public record CommentResponse(
         Long taskId,
         Long userId,
         String content,
-        OffsetDateTime createdAt  // Сменила на OffsetDateTime для consistency
+        OffsetDateTime createdAt,
+        OffsetDateTime updatedAt
 ) {
 }

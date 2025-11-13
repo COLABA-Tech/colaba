@@ -23,9 +23,6 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     // Total count для task (дублирует Page, но explicit ок)
     long countByTaskId(Long taskId);
 
-    // Добавка: Проверка comment по id и task (для update/delete ownership)
-    Optional<Comment> findByIdAndTaskId(Long id, Long taskId);
-
     // Добавка: Все комментарии по task для bulk-операций (в транзакции)
     List<Comment> findAllByTaskId(Long taskId);
 }

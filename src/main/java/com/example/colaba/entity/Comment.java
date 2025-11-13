@@ -1,14 +1,18 @@
 package com.example.colaba.entity;
 
-import com.example.colaba.entity.task.Task;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import com.example.colaba.entity.task.Task;
+import com.example.colaba.entity.User;
 
 import java.time.OffsetDateTime;
 
@@ -18,7 +22,8 @@ import java.time.OffsetDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Comment {  // Переименовал для конвенции
+@Builder
+public class Comment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,7 +31,7 @@ public class Comment {  // Переименовал для конвенции
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "task_id", nullable = false, foreignKey = @ForeignKey(name = "fk_comment_task"))
-    private Task task;  // Раскомментировал + импорт ниже
+    private Task task;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false, foreignKey = @ForeignKey(name = "fk_comment_user"))
@@ -34,10 +39,14 @@ public class Comment {  // Переименовал для конвенции
 
     @Column(nullable = false, columnDefinition = "TEXT")
     @NotBlank
-    @Size(max = 10000)  // Добавил лимит для валидации
+    @Size(max = 500)
     private String content;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
+
+    @UpdateTimestamp  // Добавь: auto-update при save/update
+    @Column(name = "updated_at", nullable = false, updatable = true)
+    private OffsetDateTime updatedAt;  // Новое поле
 }
