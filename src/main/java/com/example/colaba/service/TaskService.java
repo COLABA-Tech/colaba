@@ -35,6 +35,11 @@ public class TaskService {
         return taskMapper.toTaskResponse(task);
     }
 
+    public Task getTaskEntityById(Long id) {
+        return taskRepository.findById(id)
+                .orElseThrow(() -> new TaskNotFoundException(id));
+    }
+
     public Page<TaskResponse> getTasksByProject(Long projectId, Pageable pageable) {
         Project project = projectService.getProjectEntityById(projectId);
         return taskMapper.toTaskResponsePage(taskRepository.findByProject(project, pageable));
@@ -67,29 +72,37 @@ public class TaskService {
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new TaskNotFoundException(id));
 
-        if (request.title() != null) {
+        boolean hasChanges = false;
+
+        if (request.title() != null && !request.title().equals(task.getTitle())) {
             task.setTitle(request.title());
+            hasChanges = true;
         }
-        if (request.description() != null) {
+        if (request.description() != null && !request.description().equals(task.getDescription())) {
             task.setDescription(request.description());
+            hasChanges = true;
         }
-        if (request.status() != null) {
+        if (request.status() != null && !request.status().equals(task.getStatus())) {
             TaskStatus status = request.status();
             task.setStatus(status);
+            hasChanges = true;
         }
-        if (request.priority() != null) {
+        if (request.priority() != null && !request.priority().equals(task.getPriority())) {
             TaskPriority priority = request.priority();
             task.setPriority(priority);
+            hasChanges = true;
         }
-        if (request.assigneeId() != null) {
+        if (request.assigneeId() != null && !request.assigneeId().equals(task.getAssignee().getId())) {
             User assignee = userService.getUserEntityById(request.assigneeId());
             task.setAssignee(assignee);
+            hasChanges = true;
         }
-        if (request.dueDate() != null) {
+        if (request.dueDate() != null && !request.dueDate().equals(task.getDueDate())) {
             task.setDueDate(request.dueDate());
+            hasChanges = true;
         }
 
-        Task updatedTask = taskRepository.save(task);
+        Task updatedTask = hasChanges ? taskRepository.save(task) : task;
         return taskMapper.toTaskResponse(updatedTask);
     }
 
@@ -105,5 +118,10 @@ public class TaskService {
     public Page<TaskResponse> getTasksByAssignee(Long userId, Pageable pageable) {
         User assignee = userService.getUserEntityById(userId);
         return taskMapper.toTaskResponsePage(taskRepository.findByAssignee(assignee, pageable));
+    }
+
+    @Transactional
+    public void saveTask(Task task) {
+        taskRepository.save(task);
     }
 }

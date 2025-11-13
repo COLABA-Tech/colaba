@@ -18,6 +18,18 @@ spring:
     change-log: classpath:db/changelog/db.changelog-master.yaml
     enabled: true
 
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui
+    operations-sorter: method
+    tags-sorter: alpha
+    display-request-duration: true
+  packages-to-scan: com.example.colaba.controller
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
+
 server:
   port: 8080
 
