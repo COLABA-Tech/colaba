@@ -5,6 +5,7 @@ import com.example.colaba.dto.project.UpdateProjectRequest;
 import com.example.colaba.dto.project.ProjectResponse;
 import com.example.colaba.dto.project.ProjectScrollResponse;
 import com.example.colaba.service.ProjectService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,20 +15,17 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/projects")
+@RequiredArgsConstructor
 public class ProjectController {
 
     private final ProjectService projectService;
-
-    public ProjectController(ProjectService projectService) {
-        this.projectService = projectService;
-    }
 
     /**
      * Создать проект
      */
     @PostMapping
     public ResponseEntity<ProjectResponse> create(@Valid @RequestBody CreateProjectRequest request) {
-        ProjectResponse created = projectService.createProject(request, request.getOwnerId());
+        ProjectResponse created = projectService.createProject(request);
         return ResponseEntity.ok(created);
     }
 

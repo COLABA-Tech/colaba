@@ -32,9 +32,9 @@ public class ProjectService {
     private final ProjectMapper projectMapper;
 
     @Transactional
-    public ProjectResponse createProject(CreateProjectRequest request, Long ownerId) {
-        User owner = userRepository.findById(ownerId)
-                .orElseThrow(() -> new UserNotFoundException(ownerId));
+    public ProjectResponse createProject(CreateProjectRequest request) {
+        User owner = userRepository.findById(request.ownerId())
+                .orElseThrow(() -> new UserNotFoundException(request.ownerId()));
 
         if (projectRepository.existsByName(request.name())) {
             throw new DuplicateProjectNameException(request.name());
@@ -44,7 +44,6 @@ public class ProjectService {
                 .name(request.name())
                 .description(request.description())
                 .owner(owner)
-                .createdAt(LocalDateTime.now())
                 .build();
 
         Project saved = projectRepository.save(project);
@@ -67,29 +66,6 @@ public class ProjectService {
     public Page<ProjectResponse> getAllProjects(Pageable pageable) {
         Page<Project> projects = projectRepository.findAll(pageable);
         return projectMapper.toProjectResponsePage(projects);
-    }
-
-    @Transactional(readOnly = true)
-    public ProjectScrollResponse getProjectsScroll(String cursor, int limit) {
-        // Определяем смещение по курсору
-        long offset = cursor == null || cursor.isBlank() ? 0 : Long.parseLong(cursor);
-
-        // PageRequest требует pageNumber и pageSize
-        // Здесь pageNumber = offset / limit
-        int pageNumber = (int) (offset / limit);
-        Pageable pageable = PageRequest.of(pageNumber, limit);
-
-        Slice<Project> slice = projectRepository.findAllBy(pageable);
-
-        // Конвертация в DTO
-        List<ProjectResponse> content = projectMapper.toProjectResponseList(slice.getContent());
-
-        // Новый курсор = текущее смещение + количество элементов в Slice
-        String nextCursor = String.valueOf(offset + slice.getNumberOfElements());
-
-        boolean hasMore = slice.hasNext();
-
-        return new ProjectScrollResponse(content, nextCursor, hasMore);
     }
 
     @Transactional

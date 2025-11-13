@@ -1,16 +1,10 @@
 package com.example.colaba.exception.project;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import com.example.colaba.exception.common.NotFoundException;
 
-@ResponseStatus(HttpStatus.NOT_FOUND)
-public class ProjectNotFoundException extends RuntimeException {
+public class ProjectNotFoundException extends NotFoundException {
 
     public ProjectNotFoundException(Long id) {
-        super("Project not found with id: " + id);
-    }
-
-    public ProjectNotFoundException(String message) {
-        super(message);
+        super("Project not found: ID " + id);
     }
 }
