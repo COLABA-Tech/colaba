@@ -1,4 +1,4 @@
-package com.example.colaba.dto;
+package com.example.colaba.dto.project;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -15,22 +15,31 @@ public class CreateProjectRequest {
 
     public CreateProjectRequest() {}
 
-    public String getName() {
+    public CreateProjectRequest(String name, String description, Long ownerId) {
+        this.name = name;
+        this.description = description;
+        this.ownerId = ownerId;
+    }
+
+    public String name() {
         return name;
+    }
+
+    public String description() {
+        return description;
+    }
+
+    public Long ownerId() {
+        return ownerId;
     }
 
     public void setName(String name) {
         this.name = name;
     }
 
-    public String getDescription() {
-        return description;
-    }
-
     public void setDescription(String description) {
         this.description = description;
     }
-
     public Long getOwnerId() {
         return ownerId;
     }

@@ -34,7 +34,7 @@ public class GlobalExceptionHandler {
             errors.put(error.getField(), error.getDefaultMessage());
         }
         ErrorResponseDto dto = new ErrorResponseDto("ValidationError",
-                400, "Invalid input: " + errors.toString());
+                400, "Invalid input: " + errors);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(dto);
     }
 

@@ -1,4 +1,4 @@
-package com.example.colaba.dto;
+package com.example.colaba.dto.project;
 
 public class UpdateProjectRequest {
 

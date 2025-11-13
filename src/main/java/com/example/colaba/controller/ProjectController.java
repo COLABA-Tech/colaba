@@ -1,31 +1,17 @@
 package com.example.colaba.controller;
 
-import com.example.colaba.dto.CreateProjectRequest;
-import com.example.colaba.dto.UpdateProjectRequest;
-import com.example.colaba.dto.ProjectResponse;
-import com.example.colaba.dto.ProjectScrollResponse;
+import com.example.colaba.dto.project.CreateProjectRequest;
+import com.example.colaba.dto.project.UpdateProjectRequest;
+import com.example.colaba.dto.project.ProjectResponse;
+import com.example.colaba.dto.project.ProjectScrollResponse;
 import com.example.colaba.service.ProjectService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import java.util.List;
 
-/**
- * REST controller для Project, использующий Request/Response DTO.
- *
- * Предполагает, что ProjectService имеет методы примерно такие:
- * - ProjectResponse create(CreateProjectRequest request);
- * - ProjectResponse update(Long id, UpdateProjectRequest request);
- * - ProjectResponse getById(Long id);
- * - List<ProjectResponse> getAll();
- * - List<ProjectResponse> getByOwnerId(Long ownerId);
- * - ProjectScrollResponse scroll(int page, int size);
- *
- * Если сигнатуры сервиса другие — немного подправь вызовы ниже.
- */
-@Validated
+
 @RestController
 @RequestMapping("/api/projects")
 public class ProjectController {
@@ -41,9 +27,10 @@ public class ProjectController {
      */
     @PostMapping
     public ResponseEntity<ProjectResponse> create(@Valid @RequestBody CreateProjectRequest request) {
-        ProjectResponse created = projectService.create(request);
+        ProjectResponse created = projectService.createProject(request, request.getOwnerId());
         return ResponseEntity.ok(created);
     }
+
 
     /**
      * Обновить проект
@@ -100,7 +87,8 @@ public class ProjectController {
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable("id") Long id) {
-        projectService.delete(id);
+        projectService.deleteProject(id); // <-- использовать правильное имя метода
         return ResponseEntity.noContent().build();
     }
+
 }
