@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-users-table
+      author: whatever125
+      changes:
+        - createTable:
+            tableName: users
+            columns:
+              - column: { name: id, type: BIGSERIAL, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: username, type: VARCHAR(50), constraints: { unique: true, nullable: false } }
+              - column: { name: email, type: VARCHAR(100), constraints: { nullable: false } }
+
+        - insert:
+            tableName: users
+            columns:
+              - column: { name: username, value: "test" }
+              - column: { name: email, value: "test@colaba.com" }

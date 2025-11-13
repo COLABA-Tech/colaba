@@ -41,10 +41,12 @@ src/
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Docker and Docker Compose
 - Java 25 (for local development)
 
 ### Running with Docker
+
 ```bash
 # Clone repository
 git clone <repository-url>
@@ -57,6 +59,7 @@ docker-compose up --build
 Application will be available at: http://localhost:8080
 
 ### Local Development
+
 ```bash
 # Run with Maven Wrapper
 ./mvnw spring-boot:run
@@ -68,6 +71,7 @@ Application will be available at: http://localhost:8080
 ## 📚 API Documentation
 
 Once application is running:
+
 - **Swagger UI**: http://localhost:8080/swagger-ui.html
 - **OpenAPI JSON**: http://localhost:8080/api-docs
 
@@ -84,6 +88,7 @@ Once application is running:
 ## 🔧 Configuration
 
 Environment variables:
+
 - `SPRING_DATASOURCE_URL` - Database connection URL
 - `SPRING_DATASOURCE_USERNAME` - Database username
 - `SPRING_DATASOURCE_PASSWORD` - Database password
