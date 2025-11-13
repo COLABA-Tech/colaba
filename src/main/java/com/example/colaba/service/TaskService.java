@@ -35,6 +35,11 @@ public class TaskService {
         return taskMapper.toTaskResponse(task);
     }
 
+    public Task getTaskEntityById(Long id) {
+        return taskRepository.findById(id)
+                .orElseThrow(() -> new TaskNotFoundException(id));
+    }
+
     public Page<TaskResponse> getTasksByProject(Long projectId, Pageable pageable) {
         Project project = projectService.getProjectEntityById(projectId);
         return taskMapper.toTaskResponsePage(taskRepository.findByProject(project, pageable));
@@ -113,5 +118,10 @@ public class TaskService {
     public Page<TaskResponse> getTasksByAssignee(Long userId, Pageable pageable) {
         User assignee = userService.getUserEntityById(userId);
         return taskMapper.toTaskResponsePage(taskRepository.findByAssignee(assignee, pageable));
+    }
+
+    @Transactional
+    public void saveTask(Task task) {
+        taskRepository.save(task);
     }
 }
