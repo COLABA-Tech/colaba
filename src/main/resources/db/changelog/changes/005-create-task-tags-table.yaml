@@ -1,0 +1,31 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-task-tags-table
+      author: whatever125
+      changes:
+        - createTable:
+            tableName: task_tags
+            columns:
+              - column: { name: task_id, type: BIGINT, constraints: { nullable: false } }
+              - column: { name: tag_id, type: BIGINT, constraints: { nullable: false } }
+
+        - addPrimaryKey:
+            tableName: task_tags
+            columnNames: task_id,tag_id
+            constraintName: pk_task_tags
+
+        - addForeignKeyConstraint:
+            baseTableName: task_tags
+            baseColumnNames: task_id
+            referencedTableName: tasks
+            referencedColumnNames: id
+            constraintName: fk_task_tags_task_id
+            onDelete: CASCADE
+
+        - addForeignKeyConstraint:
+            baseTableName: task_tags
+            baseColumnNames: tag_id
+            referencedTableName: tags
+            referencedColumnNames: id
+            constraintName: fk_task_tags_tag_id
+            onDelete: CASCADE
