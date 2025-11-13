@@ -330,6 +330,32 @@ class TaskServiceTest {
     }
 
     @Test
+    void getTaskEntityById_success() {
+        // Given
+        when(taskRepository.findById(testId)).thenReturn(Optional.of(savedTask));
+
+        // When
+        Task result = taskService.getTaskEntityById(testId);
+
+        // Then
+        assertEquals(testId, result.getId());
+        assertEquals(testTitle, result.getTitle());
+        assertEquals(testProjectId, result.getProject().getId());
+        verify(taskRepository).findById(testId);
+    }
+
+    @Test
+    void getTaskEntityById_notFound_throwsException() {
+        // Given (arrange)
+        when(taskRepository.findById(testId)).thenReturn(Optional.empty());
+
+        // When & Then
+        TaskNotFoundException exception = assertThrows(TaskNotFoundException.class,
+                () -> taskService.getTaskEntityById(testId));
+        assertEquals("Task not found: ID " + testId, exception.getMessage());
+    }
+
+    @Test
     void getTasksByProject_success() {
         // Given
         Pageable pageable = PageRequest.of(0, 10);
@@ -703,5 +729,26 @@ class TaskServiceTest {
         assertEquals(1, result.getContent().size());
         verify(taskRepository).findAll(pageable);
         verify(taskMapper).toTaskResponsePage(mockPage);
+    }
+
+    @Test
+    void saveTask_success() {
+        // When
+        taskService.saveTask(savedTask);
+
+        // Then
+        verify(taskRepository).save(savedTask);
+    }
+
+    @Test
+    void saveTask_nullTask_doesNotSave() {
+        // Given
+        Task nullTask = null;
+
+        // When
+        taskService.saveTask(nullTask);
+
+        // Then
+        verify(taskRepository, never()).save(any(Task.class));
     }
 }
