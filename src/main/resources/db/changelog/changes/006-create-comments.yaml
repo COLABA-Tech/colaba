@@ -1,7 +1,7 @@
 databaseChangeLog:
   - changeSet:
-      id: 004-create-comments
-      author: yourname
+      id: create-comments
+      author: bozhena
       changes:
         - createTable:
             tableName: comments
@@ -44,8 +44,8 @@ databaseChangeLog:
         - dropTable:
             tableName: comments
   - changeSet:
-      id: 004-add-indexes-comments
-      author: yourname
+      id: add-indexes-comments
+      author: bozhena
       changes:
         - createIndex:
             indexName: idx_comments_task_id
