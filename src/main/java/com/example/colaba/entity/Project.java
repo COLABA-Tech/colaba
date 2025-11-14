@@ -1,5 +1,6 @@
 package com.example.colaba.entity;
 
+import com.example.colaba.entity.projectmember.ProjectMember;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -9,8 +10,9 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
-// Stub entity, replace with proper realization
 @Entity
 @Table(name = "projects")
 @Getter
@@ -36,6 +38,9 @@ public class Project {
     @JoinColumn(name = "owner_id", nullable = false)
     private User owner;
 
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Set<ProjectMember> members = new HashSet<>();
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false, nullable = false)
     private LocalDateTime createdAt;
@@ -43,17 +48,4 @@ public class Project {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-    public Project(String name, String description, User owner) {
-        this.name = name;
-        this.description = description;
-        this.owner = owner;
-    }
-
-    public Project(Long id, String name, String description, User owner) {
-        this.id = id;
-        this.name = name;
-        this.description = description;
-        this.owner = owner;
-    }
 }
