@@ -9,108 +9,107 @@ import com.example.colaba.entity.task.Task;
 import com.example.colaba.entity.task.TaskPriority;
 import com.example.colaba.entity.task.TaskStatus;
 import com.example.colaba.exception.task.TaskNotFoundException;
+import com.example.colaba.mapper.TaskMapper;
 import com.example.colaba.repository.TaskRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@Transactional
+@RequiredArgsConstructor
 public class TaskService {
+    private final TaskRepository taskRepository;
+    private final ProjectService projectService;
+    private final UserService userService;
+    private final TaskMapper taskMapper;
 
-    @Autowired
-    private TaskRepository taskRepository;
-
-    @Autowired
-    private ProjectService projectService;
-
-    @Autowired
-    private UserService userService;
-
-    @Transactional(readOnly = true)
     public Page<TaskResponse> getAllTasks(Pageable pageable) {
-        return taskRepository.findAll(pageable)
-                .map(this::convertToResponse);
+        return taskMapper.toTaskResponsePage(taskRepository.findAll(pageable));
     }
 
-    @Transactional(readOnly = true)
     public TaskResponse getTaskById(Long id) {
         Task task = taskRepository.findById(id)
-                .orElseThrow(() -> new TaskNotFoundException("Task not found with id: " + id));
-        return convertToResponse(task);
+                .orElseThrow(() -> new TaskNotFoundException(id));
+        return taskMapper.toTaskResponse(task);
     }
 
-    @Transactional(readOnly = true)
+    public Task getTaskEntityById(Long id) {
+        return taskRepository.findById(id)
+                .orElseThrow(() -> new TaskNotFoundException(id));
+    }
+
     public Page<TaskResponse> getTasksByProject(Long projectId, Pageable pageable) {
         Project project = projectService.getProjectEntityById(projectId);
-        return taskRepository.findByProject(project, pageable)
-                .map(this::convertToResponse);
+        return taskMapper.toTaskResponsePage(taskRepository.findByProject(project, pageable));
     }
 
     @Transactional
     public TaskResponse createTask(CreateTaskRequest request) {
-        Project project = projectService.getProjectEntityById(request.getProjectId());
-        TaskStatus status = (request.getStatus() != null) ? request.getStatus() : TaskStatus.getDefault();
-        TaskPriority priority = (request.getPriority() != null) ? request.getPriority() : null;
-        User reporter = userService.getUserEntityById(request.getReporterId());
+        Project project = projectService.getProjectEntityById(request.projectId());
+        TaskPriority priority = (request.priority() != null) ? request.priority() : null;
+        User assignee = (request.assigneeId() != null) ? userService.getUserEntityById(request.assigneeId()) : null;
+        User reporter = userService.getUserEntityById(request.reporterId());
 
-        User assignee = null;
-        if (request.getAssigneeId() != null) {
-            assignee = userService.getUserEntityById(request.getAssigneeId());
-        }
-
-        Task task = new Task(
-                request.getTitle(),
-                request.getDescription(),
-                status,
-                priority,
-                project,
-                assignee,
-                reporter,
-                request.getDueDate()
-        );
+        Task task = Task.builder()
+                .title(request.title())
+                .description(request.description())
+                .status(request.status())
+                .priority(priority)
+                .project(project)
+                .assignee(assignee)
+                .reporter(reporter)
+                .dueDate(request.dueDate())
+                .build();
 
         Task savedTask = taskRepository.save(task);
-        return convertToResponse(savedTask);
+        return taskMapper.toTaskResponse(savedTask);
     }
 
     @Transactional
     public TaskResponse updateTask(Long id, UpdateTaskRequest request) {
         Task task = taskRepository.findById(id)
-                .orElseThrow(() -> new TaskNotFoundException("Task not found with id: " + id));
+                .orElseThrow(() -> new TaskNotFoundException(id));
 
-        if (request.getTitle() != null) {
-            task.setTitle(request.getTitle());
+        boolean hasChanges = false;
+
+        if (request.title() != null && !request.title().equals(task.getTitle())) {
+            task.setTitle(request.title());
+            hasChanges = true;
         }
-        if (request.getDescription() != null) {
-            task.setDescription(request.getDescription());
+        if (request.description() != null && !request.description().equals(task.getDescription())) {
+            task.setDescription(request.description());
+            hasChanges = true;
         }
-        if (request.getStatus() != null) {
-            TaskStatus status = request.getStatus();
+        if (request.status() != null && !request.status().equals(task.getStatus())) {
+            TaskStatus status = request.status();
             task.setStatus(status);
+            hasChanges = true;
         }
-        if (request.getPriority() != null) {
-            TaskPriority priority = request.getPriority();
+        if (request.priority() != null && !request.priority().equals(task.getPriority())) {
+            TaskPriority priority = request.priority();
             task.setPriority(priority);
+            hasChanges = true;
         }
-        if (request.getAssigneeId() != null) {
-            User assignee = userService.getUserEntityById(request.getAssigneeId());
+        if (request.assigneeId() != null && !request.assigneeId().equals(task.getAssignee().getId())) {
+            User assignee = userService.getUserEntityById(request.assigneeId());
             task.setAssignee(assignee);
+            hasChanges = true;
         }
-        if (request.getDueDate() != null) {
-            task.setDueDate(request.getDueDate());
+        if (request.dueDate() != null && !request.dueDate().equals(task.getDueDate())) {
+            task.setDueDate(request.dueDate());
+            hasChanges = true;
         }
 
-        Task updatedTask = taskRepository.save(task);
-        return convertToResponse(updatedTask);
+        Task updatedTask = hasChanges ? taskRepository.save(task) : task;
+        return taskMapper.toTaskResponse(updatedTask);
     }
 
     @Transactional
     public void deleteTask(Long id) {
         if (!taskRepository.existsById(id)) {
-            throw new TaskNotFoundException("Task not found with id: " + id);
+            throw new TaskNotFoundException(id);
         }
         taskRepository.deleteById(id);
     }
@@ -118,25 +117,11 @@ public class TaskService {
     @Transactional(readOnly = true)
     public Page<TaskResponse> getTasksByAssignee(Long userId, Pageable pageable) {
         User assignee = userService.getUserEntityById(userId);
-        return taskRepository.findByAssignee(assignee, pageable).map(this::convertToResponse);
+        return taskMapper.toTaskResponsePage(taskRepository.findByAssignee(assignee, pageable));
     }
 
-    private TaskResponse convertToResponse(Task task) {
-        return new TaskResponse(
-                task.getId(),
-                task.getTitle(),
-                task.getDescription(),
-                task.getStatus().getName(),
-                task.getPriority().getName(),
-                task.getProject().getId(),
-                task.getProject().getName(),
-                task.getAssignee() != null ? task.getAssignee().getId() : null,
-                task.getAssignee() != null ? task.getAssignee().getUsername() : null,
-                task.getReporter() != null ? task.getReporter().getId() : null,
-                task.getReporter() != null ? task.getReporter().getUsername() : null,
-                task.getDueDate(),
-                task.getCreatedAt(),
-                task.getUpdatedAt()
-        );
+    @Transactional
+    public void saveTask(Task task) {
+        taskRepository.save(task);
     }
 }

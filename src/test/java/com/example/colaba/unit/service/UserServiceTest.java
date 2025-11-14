@@ -8,7 +8,7 @@ import com.example.colaba.entity.User;
 import com.example.colaba.exception.user.DuplicateUserEntityEmailException;
 import com.example.colaba.exception.user.DuplicateUserEntityUsernameException;
 import com.example.colaba.exception.user.UserNotFoundException;
-import com.example.colaba.mapper.user.UserMapper;
+import com.example.colaba.mapper.UserMapper;
 import com.example.colaba.repository.UserRepository;
 import com.example.colaba.service.UserService;
 import org.junit.jupiter.api.BeforeEach;

@@ -1,11 +1,13 @@
 package com.example.colaba.controller;
 
+import com.example.colaba.dto.tag.TagResponse;
 import com.example.colaba.dto.task.CreateTaskRequest;
 import com.example.colaba.dto.task.TaskResponse;
 import com.example.colaba.dto.task.UpdateTaskRequest;
+import com.example.colaba.service.TagService;
 import com.example.colaba.service.TaskService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -14,10 +16,10 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/tasks")
+@RequiredArgsConstructor
 public class TaskController extends BaseController {
-
-    @Autowired
-    private TaskService taskService;
+    private final TaskService taskService;
+    private final TagService tagService;
 
     @GetMapping
     public ResponseEntity<Page<TaskResponse>> getAllTasks(Pageable pageable) {
@@ -64,6 +66,26 @@ public class TaskController extends BaseController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
         taskService.deleteTask(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{taskId}/tags")
+    public ResponseEntity<Iterable<TagResponse>> getTagsByTask(@PathVariable Long taskId) {
+        Iterable<TagResponse> tags = tagService.getTagsByTask(taskId);
+        return ResponseEntity.ok(tags);
+    }
+
+    @PostMapping("/{taskId}/tags/{tagId}")
+    public ResponseEntity<Void> assignTagToTask(
+            @PathVariable Long taskId, @PathVariable Long tagId) {
+        tagService.assignTagToTask(taskId, tagId);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{taskId}/tags/{tagId}")
+    public ResponseEntity<Void> removeTagFromTask(
+            @PathVariable Long taskId, @PathVariable Long tagId) {
+        tagService.removeTagFromTask(taskId, tagId);
         return ResponseEntity.noContent().build();
     }
 }

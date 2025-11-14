@@ -23,7 +23,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DuplicateEntityException.class)
     public ResponseEntity<ErrorResponseDto> handleDuplicate(DuplicateEntityException e) {
-        ErrorResponseDto dto = new ErrorResponseDto("DuplicateEntity", 400, e.getMessage());
+        ErrorResponseDto dto = new ErrorResponseDto("DuplicateEntity", 409, e.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(dto);
     }
 
@@ -35,6 +35,12 @@ public class GlobalExceptionHandler {
         }
         ErrorResponseDto dto = new ErrorResponseDto("ValidationError",
                 400, "Invalid input: " + errors);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(dto);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponseDto> handleIllegalArgument(IllegalArgumentException ex) {
+        ErrorResponseDto dto = new ErrorResponseDto("InvalidRequest", 400, "Invalid request: " + ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(dto);
     }
 

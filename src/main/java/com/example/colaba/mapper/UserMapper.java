@@ -1,4 +1,4 @@
-package com.example.colaba.mapper.user;
+package com.example.colaba.mapper;
 
 import com.example.colaba.dto.user.UserResponse;
 import com.example.colaba.entity.User;

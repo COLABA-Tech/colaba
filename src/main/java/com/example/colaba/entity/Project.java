@@ -10,6 +10,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
+// Stub entity, replace with proper realization
 @Entity
 @Table(name = "projects")
 @Getter
@@ -20,7 +21,6 @@ import java.time.LocalDateTime;
 @ToString
 @EqualsAndHashCode
 public class Project {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -39,7 +39,7 @@ public class Project {
     private User owner;
 
     @CreationTimestamp
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
