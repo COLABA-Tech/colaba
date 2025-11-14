@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Service
 @Transactional
@@ -20,7 +21,7 @@ public class ProjectService {
         project.setName("Default Project");
         project.setDescription("Default project description");
         project.setOwner(userService.getUserEntityById(1L));
-        project.setCreatedAt(LocalDateTime.now().minusDays(1));
+        project.setCreatedAt(OffsetDateTime.now().minusDays(1));
         project.setUpdatedAt(LocalDateTime.now());
         return project;
     }

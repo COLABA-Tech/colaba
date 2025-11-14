@@ -1,5 +1,11 @@
 # COLABA Task Management System
 
+Выполнили:
+Колмаков Дмитрий,
+Андреева Божена,
+Юхно Таисия 
+
+
 Backend service for task management system (Jira/Trello analogue) built with Spring Boot.
 
 ## 🚀 Tech Stack
@@ -37,6 +43,9 @@ src/
 │   └── resources/
 │       └── db/changelog/  # Liquibase migrations
 ```
+
+![IMAGE 2025-11-14 10:42:36](https://github.com/user-attachments/assets/7ec71804-c05b-43a4-96cc-253a20b5c971)
+
 
 ## 🚀 Quick Start
 
