@@ -355,13 +355,15 @@ class UserServiceTest {
         // Given
         String cursor = "";
         int limit = 10;
-        long expectedOffset = 0L;
+        int expectedPage = 0;
         String expectedNextCursor = "1";
 
         List<User> users = List.of(savedUser);
-        Slice<User> mockSlice = new SliceImpl<>(users, PageRequest.of(0, limit), true);
+        Pageable pageable = PageRequest.of(expectedPage, limit, Sort.by("id"));
+        Page<User> mockPage = new PageImpl<>(users, pageable, 11);
 
-        when(userRepository.findAllByOffset(expectedOffset, limit)).thenReturn(mockSlice);
+        // Mock findAll to return Page<User>
+        when(userRepository.findAll(pageable)).thenReturn(mockPage);
         when(userMapper.toUserResponseList(users)).thenReturn(List.of(new UserResponse(test_id, test_username, test_email)));
 
         // When
@@ -371,7 +373,7 @@ class UserServiceTest {
         assertEquals(1, result.users().size());
         assertEquals(expectedNextCursor, result.nextCursor());
         assertTrue(result.hasMore());
-        verify(userRepository).findAllByOffset(expectedOffset, limit);
+        verify(userRepository).findAll(pageable);
         verify(userMapper).toUserResponseList(users);
     }
 
@@ -380,13 +382,15 @@ class UserServiceTest {
         // Given
         String cursor = "5";
         int limit = 10;
-        long expectedOffset = 5L;
+        int expectedPage = 0;
         String expectedNextCursor = "6";
 
         List<User> users = List.of(savedUser);
-        Slice<User> mockSlice = new SliceImpl<>(users, PageRequest.of(0, limit), false);
+        Pageable pageable = PageRequest.of(expectedPage, limit, Sort.by("id"));
+        Page<User> mockPage = new PageImpl<>(users, pageable, 1);
 
-        when(userRepository.findAllByOffset(expectedOffset, limit)).thenReturn(mockSlice);
+        // Mock findAll to return Page<User>
+        when(userRepository.findAll(pageable)).thenReturn(mockPage);
         when(userMapper.toUserResponseList(users)).thenReturn(List.of(new UserResponse(test_id, test_username, test_email)));
 
         // When
@@ -396,7 +400,7 @@ class UserServiceTest {
         assertEquals(1, result.users().size());
         assertEquals(expectedNextCursor, result.nextCursor());
         assertFalse(result.hasMore());
-        verify(userRepository).findAllByOffset(expectedOffset, limit);
+        verify(userRepository).findAll(pageable);
         verify(userMapper).toUserResponseList(users);
     }
 }
