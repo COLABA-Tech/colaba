@@ -1,11 +1,9 @@
 package com.example.colaba.entity.projectmember;
 
-import jakarta.persistence.Entity;
 import lombok.*;
 
 import java.io.Serializable;
 
-@Entity
 @Getter
 @Setter
 @NoArgsConstructor

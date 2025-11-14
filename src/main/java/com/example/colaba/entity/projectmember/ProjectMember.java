@@ -21,11 +21,19 @@ import java.time.LocalDateTime;
 @EqualsAndHashCode
 public class ProjectMember {
     @Id
+    @Column(name = "project_id", nullable = false)
+    private Long projectId;
+
+    @Id
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
+
+    @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id", insertable = false, updatable = false)
     private Project project;
 
-    @Id
+    @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", insertable = false, updatable = false)
     private User user;

@@ -43,6 +43,8 @@ public class ProjectMemberService {
         }
 
         ProjectMember member = ProjectMember.builder()
+                .projectId(project.getId())
+                .userId(user.getId())
                 .project(project)
                 .user(user)
                 .role(request.role() != null ? request.role() : ProjectRole.getDefault())
