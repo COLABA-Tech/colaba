@@ -1,34 +1,19 @@
 package com.example.colaba.dto.project;
 
-public class UpdateProjectRequest {
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
-    private String name;
-    private String description;
-    private Long ownerId; // можно менять владельца
+public record UpdateProjectRequest(
 
-    public UpdateProjectRequest() {}
+        @NotBlank(message = "Project name must not be blank")
+        @Size(max = 255, message = "Project name must be shorter than 255 characters")
+        String name,
 
-    public String getName() {
-        return name;
-    }
+        @Size(max = 1000, message = "Description must be shorter than 1000 characters")
+        String description,
 
-    public void setName(String name) {
-        this.name = name;
-    }
+        @NotNull(message = "ownerId must not be null")
+        Long ownerId
 
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public Long getOwnerId() {
-        return ownerId;
-    }
-
-    public void setOwnerId(Long ownerId) {
-        this.ownerId = ownerId;
-    }
-}
+) {}
