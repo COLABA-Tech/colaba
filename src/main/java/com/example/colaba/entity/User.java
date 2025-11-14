@@ -1,10 +1,14 @@
 package com.example.colaba.entity;
 
+import com.example.colaba.entity.projectmember.ProjectMember;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.*;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "users")
@@ -30,4 +34,7 @@ public class User {
     @Email
     @Size(max = 100)
     private String email;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Set<ProjectMember> memberships = new HashSet<>();
 }
