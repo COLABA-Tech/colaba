@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Map;
 
 
 @RestController
@@ -37,6 +38,17 @@ public class ProjectController extends BaseController{
     public ResponseEntity<ProjectResponse> update(@PathVariable("id") Long id,
                                                   @Valid @RequestBody UpdateProjectRequest request) {
         ProjectResponse updated = projectService.update(id, request);
+        return ResponseEntity.ok(updated);
+    }
+    @PatchMapping("/{id}/owner")
+    public ResponseEntity<ProjectResponse> changeOwner(
+            @PathVariable Long id,
+            @RequestBody Map<String, Long> request) {  // или отдельный DTO
+        Long newOwnerId = request.get("ownerId");
+        if (newOwnerId == null) {
+            throw new IllegalArgumentException("ownerId is required");
+        }
+        ProjectResponse updated = projectService.changeProjectOwner(id, newOwnerId);
         return ResponseEntity.ok(updated);
     }
 

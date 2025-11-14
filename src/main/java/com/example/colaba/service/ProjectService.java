@@ -73,21 +73,34 @@ public class ProjectService {
         Project project = getProjectEntityById(id);
         boolean hasChanges = false;
 
-        if (request.getName() != null && !request.getName().isBlank() && !request.getName().equals(project.getName())) {
-            if (projectRepository.existsByNameAndIdNot(request.getName(), id)) {
-                throw new DuplicateProjectNameException(request.getName());
+        // Используем record-геттеры
+        if (request.name() != null && !request.name().isBlank() && !request.name().equals(project.getName())) {
+            if (projectRepository.existsByNameAndIdNot(request.name(), id)) {
+                throw new DuplicateProjectNameException(request.name());
             }
-            project.setName(request.getName());
+            project.setName(request.name());
             hasChanges = true;
         }
 
-        if (request.getDescription() != null && !request.getDescription().equals(project.getDescription())) {
-            project.setDescription(request.getDescription());
+        if (request.description() != null && !request.description().equals(project.getDescription())) {
+            project.setDescription(request.description());
             hasChanges = true;
         }
 
+        // ownerId игнорируем — смена владельца в другом методе
+        // if (request.ownerId() != null && !request.ownerId().equals(project.getOwner().getId())) { ... }
 
         Project saved = hasChanges ? projectRepository.save(project) : project;
+        return projectMapper.toProjectResponse(saved);
+    }
+    @Transactional
+    public ProjectResponse changeProjectOwner(Long projectId, Long newOwnerId) {
+        Project project = getProjectEntityById(projectId);
+        User newOwner = userRepository.findById(newOwnerId)
+                .orElseThrow(() -> new UserNotFoundException(newOwnerId));
+
+        project.setOwner(newOwner);
+        Project saved = projectRepository.save(project);
         return projectMapper.toProjectResponse(saved);
     }
 
