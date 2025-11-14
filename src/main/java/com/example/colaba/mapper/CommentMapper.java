@@ -3,7 +3,6 @@ package com.example.colaba.mapper;
 import com.example.colaba.dto.comment.CommentResponse;
 import com.example.colaba.entity.Comment;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
