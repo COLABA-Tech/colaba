@@ -16,7 +16,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/projects")
 @RequiredArgsConstructor
-public class ProjectController {
+public class ProjectController extends BaseController{
 
     private final ProjectService projectService;
 
@@ -24,9 +24,9 @@ public class ProjectController {
      * Создать проект
      */
     @PostMapping
-    public ResponseEntity<ProjectResponse> create(@Valid @RequestBody CreateProjectRequest request) {
-        ProjectResponse created = projectService.createProject(request);
-        return ResponseEntity.ok(created);
+    public ResponseEntity<Void> create(@Valid @RequestBody CreateProjectRequest request) {
+        projectService.createProject(request);
+        return ResponseEntity.noContent().build();
     }
 
 
@@ -76,6 +76,12 @@ public class ProjectController {
             @RequestParam(value = "page", required = false, defaultValue = "0") int page,
             @RequestParam(value = "size", required = false, defaultValue = "20") int size
     ) {
+
+        if (size > 50) {
+            return ResponseEntity.badRequest()
+                    .body(null); // или можешь бросить кастомное исключение
+        }
+
         ProjectScrollResponse scroll = projectService.scroll(page, size);
         return ResponseEntity.ok(scroll);
     }
