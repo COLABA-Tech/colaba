@@ -9,7 +9,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 
 // Stub entity, replace with proper realization
 @Entity
@@ -19,6 +18,8 @@ import java.time.OffsetDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@ToString
+@EqualsAndHashCode
 public class Project {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -38,23 +39,10 @@ public class Project {
     private User owner;
 
     @CreationTimestamp
-    @Column(name = "created_at", updatable = false, nullable = false)
-    private OffsetDateTime createdAt;
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-    public Project(String name, String description, User owner) {
-        this.name = name;
-        this.description = description;
-        this.owner = owner;
-    }
-
-    public Project(Long id, String name, String description, User owner) {
-        this.id = id;
-        this.name = name;
-        this.description = description;
-        this.owner = owner;
-    }
 }
