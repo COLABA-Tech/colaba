@@ -50,9 +50,9 @@ class CommentServiceTest {
     private User mockUser;
     private Task mockTask;
     private Comment mockComment;
-    private Comment mockComment2;  // ƒл€ full batch
+    private Comment mockComment2;
     private CommentResponse mockResponse;
-    private OffsetDateTime fixedCreatedAt = OffsetDateTime.now();  // Fixed дл€ mocks
+    private OffsetDateTime fixedCreatedAt = OffsetDateTime.now();
 
     @BeforeEach
     void setUp() {
@@ -108,7 +108,6 @@ class CommentServiceTest {
         UserNotFoundException exception = assertThrows(UserNotFoundException.class,
                 () -> commentService.createComment(request));
         assertEquals("User not found: 999", exception.getMessage());
-        // No verify taskRepository Ч not called (early throw)
     }
 
     @Test
@@ -266,7 +265,7 @@ class CommentServiceTest {
 
     @Test
     void updateComment_ShouldNotSave_WhenContentUnchanged() {
-        UpdateCommentRequest request = new UpdateCommentRequest("Test content");  // “о же, что в mock
+        UpdateCommentRequest request = new UpdateCommentRequest("Test content");
         when(commentRepository.findById(1L)).thenReturn(Optional.of(mockComment));
         when(commentMapper.toResponse(mockComment)).thenReturn(mockResponse);
 

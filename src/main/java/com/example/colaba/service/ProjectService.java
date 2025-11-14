@@ -9,18 +9,16 @@ import com.example.colaba.entity.User;
 import com.example.colaba.exception.project.DuplicateProjectNameException;
 import com.example.colaba.exception.project.ProjectNotFoundException;
 import com.example.colaba.exception.user.UserNotFoundException;
-import com.example.colaba.mapper.project.ProjectMapper;
+import com.example.colaba.mapper.ProjectMapper;
 import com.example.colaba.repository.ProjectRepository;
 import com.example.colaba.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service

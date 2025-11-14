@@ -6,9 +6,6 @@ import lombok.*;
 import lombok.Getter;
 import org.springframework.web.bind.annotation.RestController;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public record CreateProjectRequest(
         @NotBlank String name,
         String description,
