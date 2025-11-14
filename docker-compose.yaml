@@ -3,14 +3,15 @@ services:
     build: .
     container_name: colaba-app
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/colabadb
-      SPRING_DATASOURCE_USERNAME: colaba_user
-      SPRING_DATASOURCE_PASSWORD: colaba_password
+      SPRING_DATASOURCE_URL: ${COLABA_DB_URL}
+      SPRING_DATASOURCE_USERNAME: ${COLABA_DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${COLABA_DB_PASSWORD}
       SPRING_JPA_HIBERNATE_DDL_AUTO: validate
     ports:
       - "8080:8080"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - colaba-network
 
@@ -18,15 +19,20 @@ services:
     image: postgres:18-alpine
     container_name: colaba-postgres
     environment:
-      POSTGRES_DB: colabadb
-      POSTGRES_USER: colaba_user
-      POSTGRES_PASSWORD: colaba_password
+      POSTGRES_DB: ${COLABA_DB_NAME}
+      POSTGRES_USER: ${COLABA_DB_USERNAME}
+      POSTGRES_PASSWORD: ${COLABA_DB_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - colaba-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${COLABA_DB_USERNAME}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 volumes:
   postgres_data:
