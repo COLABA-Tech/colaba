@@ -9,6 +9,7 @@ import com.example.colaba.exception.user.DuplicateUserEntityEmailException;
 import com.example.colaba.exception.user.DuplicateUserEntityUsernameException;
 import com.example.colaba.exception.user.UserNotFoundException;
 import com.example.colaba.mapper.UserMapper;
+import com.example.colaba.repository.ProjectRepository;
 import com.example.colaba.repository.UserRepository;
 import com.example.colaba.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,6 +32,9 @@ class UserServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private ProjectRepository projectRepository;
 
     @Mock
     private UserMapper userMapper;
@@ -310,22 +314,19 @@ class UserServiceTest {
     @Test
     void deleteUser_success() {
         // Given
-        when(userRepository.existsById(test_id)).thenReturn(true);
+        when(userRepository.findById(test_id)).thenReturn(Optional.of(savedUser));
+        when(projectRepository.findByOwner(savedUser)).thenReturn(List.of());
         doNothing().when(userRepository).deleteById(test_id);
 
         // When
         userService.deleteUser(test_id);
 
         // Then
-        verify(userRepository).existsById(test_id);
         verify(userRepository).deleteById(test_id);
     }
 
     @Test
     void deleteUser_notFound_throwsException() {
-        // Given
-        when(userRepository.existsById(test_id)).thenReturn(false);
-
         // When & Then
         UserNotFoundException exception = assertThrows(UserNotFoundException.class,
                 () -> userService.deleteUser(test_id));
