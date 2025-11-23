@@ -24,7 +24,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicateEntityException.class)
     public ResponseEntity<ErrorResponseDto> handleDuplicate(DuplicateEntityException e) {
         ErrorResponseDto dto = new ErrorResponseDto("DuplicateEntity", 409, e.getMessage());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(dto);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(dto);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -34,7 +34,7 @@ public class GlobalExceptionHandler {
             errors.put(error.getField(), error.getDefaultMessage());
         }
         ErrorResponseDto dto = new ErrorResponseDto("ValidationError",
-                400, "Invalid input: " + errors.toString());
+                400, "Invalid input: " + errors);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(dto);
     }
 

@@ -4,16 +4,16 @@ import com.example.colaba.dto.user.CreateUserRequest;
 import com.example.colaba.dto.user.UpdateUserRequest;
 import com.example.colaba.dto.user.UserResponse;
 import com.example.colaba.dto.user.UserScrollResponse;
+import com.example.colaba.entity.Project;
 import com.example.colaba.entity.User;
 import com.example.colaba.exception.user.DuplicateUserEntityEmailException;
 import com.example.colaba.exception.user.DuplicateUserEntityUsernameException;
 import com.example.colaba.exception.user.UserNotFoundException;
 import com.example.colaba.mapper.UserMapper;
+import com.example.colaba.repository.ProjectRepository;
 import com.example.colaba.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +22,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class UserService {
+    private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final UserMapper userMapper;
 
@@ -76,23 +77,31 @@ public class UserService {
 
     @Transactional
     public void deleteUser(Long id) {
-        if (!userRepository.existsById(id)) {
-            throw new UserNotFoundException(id);
-        }
+        User user = getUserEntityById(id);
+
+        List<Project> ownedProjects = projectRepository.findByOwner(user);
+        projectRepository.deleteAll(ownedProjects);
+
         userRepository.deleteById(id);
     }
 
     public Page<UserResponse> getAllUsers(Pageable pageable) {
-        Page<User> users = userRepository.findAll(pageable);
-        return userMapper.toUserResponsePage(users);
+        try {
+            Page<User> users = userRepository.findAll(pageable);
+            return userMapper.toUserResponsePage(users);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid pagination parameters: " + e.getMessage());
+        }
     }
 
     public UserScrollResponse getUsersScroll(String cursor, int limit) {
         long offset = cursor.isEmpty() ? 0 : Long.parseLong(cursor);
-        Slice<User> users = userRepository.findAllByOffset(offset, limit);
+        int page = (int) (offset / limit);  // Approximate page for offset
+        Pageable pageable = PageRequest.of(page, limit, Sort.by("id"));  // Ensures ORDER BY id
+        Slice<User> users = userRepository.findAll(pageable);  // Uses standard paginated query
         List<UserResponse> userResponseList = userMapper.toUserResponseList(users.getContent());
         String nextCursor = String.valueOf(offset + users.getNumberOfElements());
-        boolean hasMore = !users.isLast();
+        boolean hasMore = users.hasNext();  // Equivalent to !isLast(), works with Pageable
         return new UserScrollResponse(userResponseList, nextCursor, hasMore);
     }
 }

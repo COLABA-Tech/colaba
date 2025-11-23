@@ -9,6 +9,7 @@ import com.example.colaba.exception.user.DuplicateUserEntityEmailException;
 import com.example.colaba.exception.user.DuplicateUserEntityUsernameException;
 import com.example.colaba.exception.user.UserNotFoundException;
 import com.example.colaba.mapper.UserMapper;
+import com.example.colaba.repository.ProjectRepository;
 import com.example.colaba.repository.UserRepository;
 import com.example.colaba.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,6 +32,9 @@ class UserServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private ProjectRepository projectRepository;
 
     @Mock
     private UserMapper userMapper;
@@ -310,22 +314,19 @@ class UserServiceTest {
     @Test
     void deleteUser_success() {
         // Given
-        when(userRepository.existsById(test_id)).thenReturn(true);
+        when(userRepository.findById(test_id)).thenReturn(Optional.of(savedUser));
+        when(projectRepository.findByOwner(savedUser)).thenReturn(List.of());
         doNothing().when(userRepository).deleteById(test_id);
 
         // When
         userService.deleteUser(test_id);
 
         // Then
-        verify(userRepository).existsById(test_id);
         verify(userRepository).deleteById(test_id);
     }
 
     @Test
     void deleteUser_notFound_throwsException() {
-        // Given
-        when(userRepository.existsById(test_id)).thenReturn(false);
-
         // When & Then
         UserNotFoundException exception = assertThrows(UserNotFoundException.class,
                 () -> userService.deleteUser(test_id));
@@ -355,13 +356,15 @@ class UserServiceTest {
         // Given
         String cursor = "";
         int limit = 10;
-        long expectedOffset = 0L;
+        int expectedPage = 0;
         String expectedNextCursor = "1";
 
         List<User> users = List.of(savedUser);
-        Slice<User> mockSlice = new SliceImpl<>(users, PageRequest.of(0, limit), true);
+        Pageable pageable = PageRequest.of(expectedPage, limit, Sort.by("id"));
+        Page<User> mockPage = new PageImpl<>(users, pageable, 11);
 
-        when(userRepository.findAllByOffset(expectedOffset, limit)).thenReturn(mockSlice);
+        // Mock findAll to return Page<User>
+        when(userRepository.findAll(pageable)).thenReturn(mockPage);
         when(userMapper.toUserResponseList(users)).thenReturn(List.of(new UserResponse(test_id, test_username, test_email)));
 
         // When
@@ -371,7 +374,7 @@ class UserServiceTest {
         assertEquals(1, result.users().size());
         assertEquals(expectedNextCursor, result.nextCursor());
         assertTrue(result.hasMore());
-        verify(userRepository).findAllByOffset(expectedOffset, limit);
+        verify(userRepository).findAll(pageable);
         verify(userMapper).toUserResponseList(users);
     }
 
@@ -380,13 +383,15 @@ class UserServiceTest {
         // Given
         String cursor = "5";
         int limit = 10;
-        long expectedOffset = 5L;
+        int expectedPage = 0;
         String expectedNextCursor = "6";
 
         List<User> users = List.of(savedUser);
-        Slice<User> mockSlice = new SliceImpl<>(users, PageRequest.of(0, limit), false);
+        Pageable pageable = PageRequest.of(expectedPage, limit, Sort.by("id"));
+        Page<User> mockPage = new PageImpl<>(users, pageable, 1);
 
-        when(userRepository.findAllByOffset(expectedOffset, limit)).thenReturn(mockSlice);
+        // Mock findAll to return Page<User>
+        when(userRepository.findAll(pageable)).thenReturn(mockPage);
         when(userMapper.toUserResponseList(users)).thenReturn(List.of(new UserResponse(test_id, test_username, test_email)));
 
         // When
@@ -396,7 +401,7 @@ class UserServiceTest {
         assertEquals(1, result.users().size());
         assertEquals(expectedNextCursor, result.nextCursor());
         assertFalse(result.hasMore());
-        verify(userRepository).findAllByOffset(expectedOffset, limit);
+        verify(userRepository).findAll(pageable);
         verify(userMapper).toUserResponseList(users);
     }
 }

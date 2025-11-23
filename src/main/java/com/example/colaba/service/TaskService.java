@@ -114,7 +114,6 @@ public class TaskService {
         taskRepository.deleteById(id);
     }
 
-    @Transactional(readOnly = true)
     public Page<TaskResponse> getTasksByAssignee(Long userId, Pageable pageable) {
         User assignee = userService.getUserEntityById(userId);
         return taskMapper.toTaskResponsePage(taskRepository.findByAssignee(assignee, pageable));

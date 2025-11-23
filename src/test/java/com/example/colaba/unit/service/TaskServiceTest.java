@@ -78,9 +78,12 @@ class TaskServiceTest {
         testAssignee = User.builder().id(testAssigneeId).username("assignee").build();
         testReporter = User.builder().id(testReporterId).username("reporter").build();
 
-        UserService userServiceProject = mock(UserService.class);
-        when(userServiceProject.getUserEntityById(testReporterId)).thenReturn(testReporter);
-        testProject = (new ProjectService(userServiceProject)).getProjectEntityById(testProjectId);
+        testProject = Project.builder()
+                .id(testProjectId)
+                .name("Test Project")
+                .description("Test Project Description")
+                .owner(testReporter)
+                .build();
 
         savedTask = Task.builder()
                 .id(testId)

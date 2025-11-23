@@ -16,17 +16,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-import org.springframework.web.util.UriComponentsBuilder;
-
-import java.net.URI;
-
-import static com.example.colaba.controller.BaseController.validatePageable;
 
 @RestController
 @RequestMapping("/api/comments")
 @RequiredArgsConstructor
 @Tag(name = "Comments", description = "API for managing comments")
-public class CommentController extends BaseController{
+public class CommentController extends BaseController {
 
     private final CommentService commentService;
 
