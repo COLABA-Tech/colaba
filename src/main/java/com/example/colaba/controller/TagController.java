@@ -45,20 +45,6 @@ public class TagController extends BaseController {
         return ResponseEntity.ok(tag);
     }
 
-    // TODO: move to project controller
-    @GetMapping("/project/{projectId}")
-    @Operation(summary = "Get tags by project ID with pagination", description = "Retrieves a paginated list of tags for a specific project. Supports standard Spring Pageable parameters. TODO: Move to project controller.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Paginated list of tags for the project"),
-            @ApiResponse(responseCode = "404", description = "Project not found")
-    })
-    public ResponseEntity<Page<TagResponse>> getTagsByProject(
-            @PathVariable Long projectId, Pageable pageable) {
-        pageable = validatePageable(pageable);
-        Page<TagResponse> tags = tagService.getTagsByProject(projectId, pageable);
-        return ResponseEntity.ok(tags);
-    }
-
     @PostMapping
     @Operation(summary = "Create a new tag", description = "Creates a new tag with the provided details.")
     @ApiResponses({

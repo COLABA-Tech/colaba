@@ -24,7 +24,6 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "Tasks", description = "API for managing tasks, including CRUD operations and tag associations")
 public class TaskController extends BaseController {
     private final TaskService taskService;
-    private final TagService tagService;
 
     @GetMapping
     @Operation(summary = "Get all tasks with pagination", description = "Retrieves a paginated list of all tasks. Supports standard Spring Pageable parameters (page, size, sort).")
@@ -106,41 +105,6 @@ public class TaskController extends BaseController {
     })
     public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
         taskService.deleteTask(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/{taskId}/tags")
-    @Operation(summary = "Get tags for a task", description = "Retrieves all tags associated with a specific task.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "List of tags for the task"),
-            @ApiResponse(responseCode = "404", description = "Task not found")
-    })
-    public ResponseEntity<Iterable<TagResponse>> getTagsByTask(@PathVariable Long taskId) {
-        Iterable<TagResponse> tags = tagService.getTagsByTask(taskId);
-        return ResponseEntity.ok(tags);
-    }
-
-    @PostMapping("/{taskId}/tags/{tagId}")
-    @Operation(summary = "Assign tag to task", description = "Associates a tag with a specific task.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Tag assigned successfully"),
-            @ApiResponse(responseCode = "404", description = "Task or tag not found")
-    })
-    public ResponseEntity<Void> assignTagToTask(
-            @PathVariable Long taskId, @PathVariable Long tagId) {
-        tagService.assignTagToTask(taskId, tagId);
-        return ResponseEntity.ok().build();
-    }
-
-    @DeleteMapping("/{taskId}/tags/{tagId}")
-    @Operation(summary = "Remove tag from task", description = "Removes the association between a tag and a task.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Tag removed successfully"),
-            @ApiResponse(responseCode = "404", description = "Task or tag not found")
-    })
-    public ResponseEntity<Void> removeTagFromTask(
-            @PathVariable Long taskId, @PathVariable Long tagId) {
-        tagService.removeTagFromTask(taskId, tagId);
         return ResponseEntity.noContent().build();
     }
 }

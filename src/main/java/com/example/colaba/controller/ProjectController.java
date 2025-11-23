@@ -4,13 +4,17 @@ import com.example.colaba.dto.project.CreateProjectRequest;
 import com.example.colaba.dto.project.ProjectResponse;
 import com.example.colaba.dto.project.ProjectScrollResponse;
 import com.example.colaba.dto.project.UpdateProjectRequest;
+import com.example.colaba.dto.tag.TagResponse;
 import com.example.colaba.service.ProjectService;
+import com.example.colaba.service.TagService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,6 +29,7 @@ import java.util.Map;
 public class ProjectController extends BaseController {
 
     private final ProjectService projectService;
+    private final TagService tagService;
 
     /**
      * Создать проект
@@ -156,4 +161,16 @@ public class ProjectController extends BaseController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping("/{id}/tags")
+    @Operation(summary = "Get tags by project ID with pagination", description = "Retrieves a paginated list of tags for a specific project. Supports standard Spring Pageable parameters. TODO: Move to project controller.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Paginated list of tags for the project"),
+            @ApiResponse(responseCode = "404", description = "Project not found")
+    })
+    public ResponseEntity<Page<TagResponse>> getTagsByProject(
+            @PathVariable Long id, Pageable pageable) {
+        pageable = validatePageable(pageable);
+        Page<TagResponse> tags = tagService.getTagsByProject(id, pageable);
+        return ResponseEntity.ok(tags);
+    }
 }
