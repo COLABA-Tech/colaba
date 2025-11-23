@@ -1,19 +1,19 @@
 package com.example.colaba.controller;
 
 import com.example.colaba.dto.project.CreateProjectRequest;
-import com.example.colaba.dto.project.UpdateProjectRequest;
 import com.example.colaba.dto.project.ProjectResponse;
 import com.example.colaba.dto.project.ProjectScrollResponse;
+import com.example.colaba.dto.project.UpdateProjectRequest;
 import com.example.colaba.service.ProjectService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
 
@@ -22,7 +22,7 @@ import java.util.Map;
 @RequestMapping("/api/projects")
 @RequiredArgsConstructor
 @Tag(name = "Projects", description = "API for managing projects, including creation, updates, owner changes, and retrieval")
-public class ProjectController extends BaseController{
+public class ProjectController extends BaseController {
 
     private final ProjectService projectService;
 
@@ -58,6 +58,7 @@ public class ProjectController extends BaseController{
         ProjectResponse updated = projectService.update(id, request);
         return ResponseEntity.ok(updated);
     }
+
     @PatchMapping("/{id}/owner")
     @Operation(summary = "Change project owner", description = "Changes the owner of a project to a new user by ID.")
     @ApiResponses({

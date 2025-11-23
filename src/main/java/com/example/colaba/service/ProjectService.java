@@ -91,6 +91,7 @@ public class ProjectService {
         Project saved = hasChanges ? projectRepository.save(project) : project;
         return projectMapper.toProjectResponse(saved);
     }
+
     @Transactional
     public ProjectResponse changeProjectOwner(Long projectId, Long newOwnerId) {
         Project project = getProjectEntityById(projectId);
@@ -124,6 +125,7 @@ public class ProjectService {
         List<Project> projects = projectRepository.findAll();
         return projectMapper.toProjectResponseList(projects);
     }
+
     @Transactional(readOnly = true)
     public ProjectResponse getById(Long id) {
         return getProjectById(id); // твой существующий метод
@@ -133,6 +135,7 @@ public class ProjectService {
     public ProjectResponse update(Long id, UpdateProjectRequest request) {
         return updateProject(id, request); // твой существующий метод
     }
+
     @Transactional(readOnly = true)
     public List<ProjectResponse> getByOwnerId(Long ownerId) {
         if (!userRepository.existsById(ownerId)) {
@@ -142,6 +145,7 @@ public class ProjectService {
         List<Project> projects = projectRepository.findByOwnerId(ownerId);
         return projectMapper.toProjectResponseList(projects);
     }
+
     @Transactional(readOnly = true)
     public ProjectScrollResponse scroll(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
@@ -153,7 +157,6 @@ public class ProjectService {
 
         return new ProjectScrollResponse(projects, hasNext, total);
     }
-
 
 
 }

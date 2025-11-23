@@ -6,4 +6,5 @@ public record ProjectScrollResponse(
         List<ProjectResponse> projects,
         boolean hasMore,
         Long total
-) {}
+) {
+}

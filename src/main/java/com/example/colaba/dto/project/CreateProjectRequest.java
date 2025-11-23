@@ -7,4 +7,5 @@ public record CreateProjectRequest(
         @NotBlank(message = "Project name is required") String name,
         String description,  // Optional
         @NotNull(message = "Owner ID is required") Long ownerId
-) {}
+) {
+}

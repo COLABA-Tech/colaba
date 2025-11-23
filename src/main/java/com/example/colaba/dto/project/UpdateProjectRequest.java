@@ -16,4 +16,5 @@ public record UpdateProjectRequest(
         @NotNull(message = "ownerId must not be null")
         Long ownerId
 
-) {}
+) {
+}
