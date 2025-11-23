@@ -8,6 +8,7 @@ import com.example.colaba.entity.User;
 import com.example.colaba.entity.projectmember.ProjectMember;
 import com.example.colaba.entity.projectmember.ProjectMemberId;
 import com.example.colaba.entity.projectmember.ProjectRole;
+import com.example.colaba.exception.project.ProjectNotFoundException;
 import com.example.colaba.exception.projectmember.DuplicateProjectMemberException;
 import com.example.colaba.exception.projectmember.ProjectMemberNotFoundException;
 import com.example.colaba.exception.user.UserNotFoundException;
@@ -110,17 +111,16 @@ class ProjectMemberServiceTest {
 
     @Test
     void getMembersByProject_projectNotFound_throwsException() {
-        // TODO
-//        // Given
-//        Pageable pageable = PageRequest.of(0, 10);
-//        when(projectService.getProjectEntityById(testProjectId))
-//                .thenThrow(new ProjectNotFoundException(testProjectId));
-//
-//        // When & Then
-//        ProjectNotFoundException exception = assertThrows(ProjectNotFoundException.class,
-//                () -> projectMemberService.getMembersByProject(testProjectId, pageable));
-//        assertEquals("Project not found: ID " + testProjectId, exception.getMessage());
-//        verify(projectMemberRepository, never()).findByProjectId(anyLong(), any(Pageable.class));
+        // Given
+        Pageable pageable = PageRequest.of(0, 10);
+        when(projectService.getProjectEntityById(testProjectId))
+                .thenThrow(new ProjectNotFoundException(testProjectId));
+
+        // When & Then
+        ProjectNotFoundException exception = assertThrows(ProjectNotFoundException.class,
+                () -> projectMemberService.getMembersByProject(testProjectId, pageable));
+        assertEquals("Project not found: ID " + testProjectId, exception.getMessage());
+        verify(projectMemberRepository, never()).findByProjectId(anyLong(), any(Pageable.class));
     }
 
     @Test
@@ -196,17 +196,16 @@ class ProjectMemberServiceTest {
 
     @Test
     void createMembership_projectNotFound_throwsException() {
-        // TODO
-//        // Given
-//        when(projectService.getProjectEntityById(testProjectId))
-//                .thenThrow(new ProjectNotFoundException(testProjectId));
-//
-//        // When & Then
-//        ProjectNotFoundException exception = assertThrows(ProjectNotFoundException.class,
-//                () -> projectMemberService.createMembership(testProjectId, createRequest));
-//        assertEquals("Project not found: ID " + testProjectId, exception.getMessage());
-//        verify(userService, never()).getUserEntityById(anyLong());
-//        verify(projectMemberRepository, never()).existsById(any(ProjectMemberId.class));
+        // Given
+        when(projectService.getProjectEntityById(testProjectId))
+                .thenThrow(new ProjectNotFoundException(testProjectId));
+
+        // When & Then
+        ProjectNotFoundException exception = assertThrows(ProjectNotFoundException.class,
+                () -> projectMemberService.createMembership(testProjectId, createRequest));
+        assertEquals("Project not found: ID " + testProjectId, exception.getMessage());
+        verify(userService, never()).getUserEntityById(anyLong());
+        verify(projectMemberRepository, never()).existsById(any(ProjectMemberId.class));
     }
 
     @Test
