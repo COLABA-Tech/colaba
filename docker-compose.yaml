@@ -1,27 +1,11 @@
 services:
-  app:
-    build: .
-    container_name: colaba-app
-    environment:
-      SPRING_DATASOURCE_URL: ${COLABA_DB_URL}
-      SPRING_DATASOURCE_USERNAME: ${COLABA_DB_USERNAME}
-      SPRING_DATASOURCE_PASSWORD: ${COLABA_DB_PASSWORD}
-      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
-    ports:
-      - "8080:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - colaba-network
-
   postgres:
     image: postgres:18-alpine
     container_name: colaba-postgres
     environment:
-      POSTGRES_DB: ${COLABA_DB_NAME}
-      POSTGRES_USER: ${COLABA_DB_USERNAME}
-      POSTGRES_PASSWORD: ${COLABA_DB_PASSWORD}
+      POSTGRES_DB: ${COLABA_DB_NAME:-colaba}
+      POSTGRES_USER: ${COLABA_DB_USERNAME:-colaba_user}
+      POSTGRES_PASSWORD: ${COLABA_DB_PASSWORD:-colaba_pass}
     ports:
       - "5432:5432"
     volumes:
@@ -29,10 +13,127 @@ services:
     networks:
       - colaba-network
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -d ${COLABA_DB_NAME} -U ${COLABA_DB_USERNAME}" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${COLABA_DB_USERNAME:-colaba_user}" ]
       interval: 5s
       timeout: 5s
       retries: 10
+
+  discovery-server:
+    build:
+      context: .
+      dockerfile: discovery-server/Dockerfile
+    container_name: colaba-discovery
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka
+    ports:
+      - "8761:8761"
+    networks:
+      - colaba-network
+    depends_on:
+      - postgres
+
+  config-server:
+    build:
+      context: .
+      dockerfile: config-server/Dockerfile
+    container_name: colaba-config
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_CLOUD_CONFIG_SERVER_GIT_URI: https://github.com/your-username/colaba-config-repo.git
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka
+    ports:
+      - "8888:8888"
+    networks:
+      - colaba-network
+    depends_on:
+      - discovery-server
+      - postgres
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    container_name: colaba-gateway
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka
+    ports:
+      - "8080:8080"
+    networks:
+      - colaba-network
+    depends_on:
+      - config-server
+      - discovery-server
+
+  user-service:
+    build:
+      context: .
+      dockerfile: user-service/Dockerfile
+    container_name: colaba-user-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka
+      SPRING_R2DBC_URL: r2dbc:postgresql://postgres:5432/${COLABA_DB_NAME:-colaba}
+      SPRING_R2DBC_USERNAME: ${COLABA_DB_USERNAME:-colaba_user}
+      SPRING_R2DBC_PASSWORD: ${COLABA_DB_PASSWORD:-colaba_pass}
+    ports:
+      - "8081:8081"
+    networks:
+      - colaba-network
+    depends_on:
+      - config-server
+      - discovery-server
+      - postgres
+
+  project-service:
+    build:
+      context: .
+      dockerfile: project-service/Dockerfile
+    container_name: colaba-project-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${COLABA_DB_NAME:-colaba}
+      SPRING_DATASOURCE_USERNAME: ${COLABA_DB_USERNAME:-colaba_user}
+      SPRING_DATASOURCE_PASSWORD: ${COLABA_DB_PASSWORD:-colaba_pass}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+    ports:
+      - "8082:8082"
+    networks:
+      - colaba-network
+    depends_on:
+      - config-server
+      - discovery-server
+      - postgres
+      - user-service
+
+  task-service:
+    build:
+      context: .
+      dockerfile: task-service/Dockerfile
+    container_name: colaba-task-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${COLABA_DB_NAME:-colaba}
+      SPRING_DATASOURCE_USERNAME: ${COLABA_DB_USERNAME:-colaba_user}
+      SPRING_DATASOURCE_PASSWORD: ${COLABA_DB_PASSWORD:-colaba_pass}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+    ports:
+      - "8083:8083"
+    networks:
+      - colaba-network
+    depends_on:
+      - config-server
+      - discovery-server
+      - postgres
+      - user-service
+      - project-service
 
 volumes:
   postgres_data:
