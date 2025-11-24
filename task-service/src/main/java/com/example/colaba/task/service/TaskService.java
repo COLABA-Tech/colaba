@@ -1,17 +1,17 @@
 package com.example.colaba.task.service;
 
+import com.example.colaba.project.entity.Project;
 import com.example.colaba.project.service.ProjectService;
 import com.example.colaba.shared.dto.task.CreateTaskRequest;
 import com.example.colaba.shared.dto.task.TaskResponse;
 import com.example.colaba.shared.dto.task.UpdateTaskRequest;
-import com.example.colaba.project.entity.Project;
-import com.example.colaba.user.entity.User;
+import com.example.colaba.shared.exception.task.TaskNotFoundException;
 import com.example.colaba.task.entity.task.Task;
 import com.example.colaba.task.entity.task.TaskPriority;
 import com.example.colaba.task.entity.task.TaskStatus;
-import com.example.colaba.shared.exception.task.TaskNotFoundException;
 import com.example.colaba.task.mapper.TaskMapper;
 import com.example.colaba.task.repository.TaskRepository;
+import com.example.colaba.user.entity.User;
 import com.example.colaba.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

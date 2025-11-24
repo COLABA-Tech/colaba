@@ -1,8 +1,8 @@
 package com.example.colaba.project.controller;
 
-import com.example.colaba.shared.dto.tag.TagResponse;
 import com.example.colaba.project.service.TagService;
 import com.example.colaba.shared.controller.BaseController;
+import com.example.colaba.shared.dto.tag.TagResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;

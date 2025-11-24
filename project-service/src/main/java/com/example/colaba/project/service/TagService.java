@@ -1,15 +1,15 @@
 package com.example.colaba.project.service;
 
+import com.example.colaba.project.entity.Project;
+import com.example.colaba.project.entity.Tag;
+import com.example.colaba.project.mapper.TagMapper;
+import com.example.colaba.project.repository.TagRepository;
 import com.example.colaba.shared.dto.tag.CreateTagRequest;
 import com.example.colaba.shared.dto.tag.TagResponse;
 import com.example.colaba.shared.dto.tag.UpdateTagRequest;
-import com.example.colaba.project.entity.Project;
-import com.example.colaba.project.entity.Tag;
-import com.example.colaba.task.entity.task.Task;
 import com.example.colaba.shared.exception.tag.DuplicateTagException;
 import com.example.colaba.shared.exception.tag.TagNotFoundException;
-import com.example.colaba.project.mapper.TagMapper;
-import com.example.colaba.project.repository.TagRepository;
+import com.example.colaba.task.entity.task.Task;
 import com.example.colaba.task.service.TaskService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

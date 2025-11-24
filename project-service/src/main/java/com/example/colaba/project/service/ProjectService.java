@@ -1,16 +1,16 @@
 package com.example.colaba.project.service;
 
+import com.example.colaba.project.entity.Project;
+import com.example.colaba.project.mapper.ProjectMapper;
+import com.example.colaba.project.repository.ProjectRepository;
 import com.example.colaba.shared.dto.project.CreateProjectRequest;
 import com.example.colaba.shared.dto.project.ProjectResponse;
 import com.example.colaba.shared.dto.project.ProjectScrollResponse;
 import com.example.colaba.shared.dto.project.UpdateProjectRequest;
-import com.example.colaba.project.entity.Project;
-import com.example.colaba.user.entity.User;
 import com.example.colaba.shared.exception.project.DuplicateProjectNameException;
 import com.example.colaba.shared.exception.project.ProjectNotFoundException;
 import com.example.colaba.shared.exception.user.UserNotFoundException;
-import com.example.colaba.project.mapper.ProjectMapper;
-import com.example.colaba.project.repository.ProjectRepository;
+import com.example.colaba.user.entity.User;
 import com.example.colaba.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -133,14 +133,6 @@ public class ProjectService {
 
         List<Project> projects = projectRepository.findByOwnerId(ownerId);
         return projectMapper.toProjectResponseList(projects);
-    }
-
-    @Transactional
-    public void deleteByOwnerId(Long ownerId) {
-        if (!userRepository.existsById(ownerId)) {
-            throw new UserNotFoundException(ownerId);
-        }
-        projectRepository.deleteByOwnerId(ownerId);
     }
 
     public ProjectScrollResponse scroll(int page, int size) {
