@@ -1,6 +1,9 @@
 spring:
   application:
     name: task-service
+  cloud:
+    config:
+      enabled: false  # TODO
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/colabadb}
     username: ${SPRING_DATASOURCE_USERNAME:colaba_user}

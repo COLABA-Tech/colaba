@@ -33,22 +33,22 @@ services:
     depends_on:
       - postgres
 
-  config-server:
-    build:
-      context: .
-      target: config-server
-    container_name: colaba-config
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-      SPRING_CLOUD_CONFIG_SERVER_GIT_URI: https://github.com/your-username/colaba-config-repo.git
-      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka
-    ports:
-      - "8888:8888"
-    networks:
-      - colaba-network
-    depends_on:
-      - discovery-server
-      - postgres
+  #  config-server:
+  #    build:
+  #      context: .
+  #      target: config-server
+  #    container_name: colaba-config
+  #    environment:
+  #      SPRING_PROFILES_ACTIVE: docker
+  #      SPRING_CLOUD_CONFIG_SERVER_GIT_URI: https://github.com/your-username/colaba-config-repo.git
+  #      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka
+  #    ports:
+  #      - "8888:8888"
+  #    networks:
+  #      - colaba-network
+  #    depends_on:
+  #      - discovery-server
+  #      - postgres
 
   api-gateway:
     build:
@@ -64,7 +64,7 @@ services:
     networks:
       - colaba-network
     depends_on:
-      - config-server
+      #      - config-server
       - discovery-server
 
   user-service:
@@ -84,7 +84,7 @@ services:
     networks:
       - colaba-network
     depends_on:
-      - config-server
+      #      - config-server
       - discovery-server
       - postgres
 
@@ -106,7 +106,7 @@ services:
     networks:
       - colaba-network
     depends_on:
-      - config-server
+      #      - config-server
       - discovery-server
       - postgres
       - user-service
@@ -129,7 +129,7 @@ services:
     networks:
       - colaba-network
     depends_on:
-      - config-server
+      #      - config-server
       - discovery-server
       - postgres
       - user-service
