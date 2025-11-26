@@ -1,6 +1,6 @@
 package com.example.colaba.task.repository;
 
-import com.example.colaba.task.entity.Comment;
+import com.example.colaba.shared.entity.Comment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;

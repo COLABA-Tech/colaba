@@ -1,7 +1,7 @@
 package com.example.colaba.user.mapper;
 
 import com.example.colaba.shared.dto.user.UserResponse;
-import com.example.colaba.user.entity.User;
+import com.example.colaba.shared.entity.User;
 import org.mapstruct.Mapper;
 import org.springframework.data.domain.Page;
 

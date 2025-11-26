@@ -1,6 +1,6 @@
-package com.example.colaba.user.entity;
+package com.example.colaba.shared.entity;
 
-import com.example.colaba.project.entity.projectmember.ProjectMember;
+import com.example.colaba.shared.entity.projectmember.ProjectMember;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

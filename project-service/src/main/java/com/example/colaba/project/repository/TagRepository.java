@@ -1,7 +1,7 @@
 package com.example.colaba.project.repository;
 
-import com.example.colaba.project.entity.Project;
-import com.example.colaba.project.entity.Tag;
+import com.example.colaba.shared.entity.Project;
+import com.example.colaba.shared.entity.Tag;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

@@ -1,17 +1,15 @@
 package com.example.colaba.project.service;
 
-import com.example.colaba.project.entity.Project;
 import com.example.colaba.project.mapper.ProjectMapper;
 import com.example.colaba.project.repository.ProjectRepository;
 import com.example.colaba.shared.dto.project.CreateProjectRequest;
 import com.example.colaba.shared.dto.project.ProjectResponse;
 import com.example.colaba.shared.dto.project.ProjectScrollResponse;
 import com.example.colaba.shared.dto.project.UpdateProjectRequest;
+import com.example.colaba.shared.entity.Project;
+import com.example.colaba.shared.entity.User;
 import com.example.colaba.shared.exception.project.DuplicateProjectNameException;
 import com.example.colaba.shared.exception.project.ProjectNotFoundException;
-import com.example.colaba.shared.exception.user.UserNotFoundException;
-import com.example.colaba.user.entity.User;
-import com.example.colaba.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -26,13 +24,13 @@ import java.util.List;
 public class ProjectService {
 
     private final ProjectRepository projectRepository;
-    private final UserRepository userRepository;
+    //    private final UserRepository userRepository;  // TODO
     private final ProjectMapper projectMapper;
 
     @Transactional
     public ProjectResponse createProject(CreateProjectRequest request) {
-        User owner = userRepository.findById(request.ownerId())
-                .orElseThrow(() -> new UserNotFoundException(request.ownerId()));
+//        User owner = userRepository.findById(request.ownerId())
+//                .orElseThrow(() -> new UserNotFoundException(request.ownerId()));
 
         if (projectRepository.existsByName(request.name())) {
             throw new DuplicateProjectNameException(request.name());
@@ -41,7 +39,7 @@ public class ProjectService {
         Project project = Project.builder()
                 .name(request.name())
                 .description(request.description())
-                .owner(owner)
+//                .owner(owner)
                 .build();
 
         Project saved = projectRepository.save(project);
@@ -88,10 +86,10 @@ public class ProjectService {
     @Transactional
     public ProjectResponse changeProjectOwner(Long projectId, Long newOwnerId) {
         Project project = getProjectEntityById(projectId);
-        User newOwner = userRepository.findById(newOwnerId)
-                .orElseThrow(() -> new UserNotFoundException(newOwnerId));
+//        User newOwner = userRepository.findById(newOwnerId)
+//                .orElseThrow(() -> new UserNotFoundException(newOwnerId));
 
-        project.setOwner(newOwner);
+//        project.setOwner(newOwner);
         Project saved = projectRepository.save(project);
         return projectMapper.toProjectResponse(saved);
     }
@@ -105,8 +103,9 @@ public class ProjectService {
     }
 
     public List<ProjectResponse> getProjectsByOwnerId(Long ownerId) {
-        User owner = userRepository.findById(ownerId)
-                .orElseThrow(() -> new UserNotFoundException(ownerId));
+//        User owner = userRepository.findById(ownerId)
+//                .orElseThrow(() -> new UserNotFoundException(ownerId));
+        User owner = new User();
 
         List<Project> projects = projectRepository.findByOwner(owner);
         return projectMapper.toProjectResponseList(projects);
@@ -127,9 +126,9 @@ public class ProjectService {
     }
 
     public List<ProjectResponse> getByOwnerId(Long ownerId) {
-        if (!userRepository.existsById(ownerId)) {
-            throw new UserNotFoundException(ownerId);
-        }
+//        if (!userRepository.existsById(ownerId)) {
+//            throw new UserNotFoundException(ownerId);
+//        }
 
         List<Project> projects = projectRepository.findByOwnerId(ownerId);
         return projectMapper.toProjectResponseList(projects);

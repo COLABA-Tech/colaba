@@ -1,4 +1,4 @@
-package com.example.colaba.task.entity.task;
+package com.example.colaba.shared.entity.task;
 
 import lombok.Getter;
 

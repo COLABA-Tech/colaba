@@ -1,15 +1,13 @@
 package com.example.colaba.user.service;
 
-import com.example.colaba.project.entity.Project;
-import com.example.colaba.project.repository.ProjectRepository;
 import com.example.colaba.shared.dto.user.CreateUserRequest;
 import com.example.colaba.shared.dto.user.UpdateUserRequest;
 import com.example.colaba.shared.dto.user.UserResponse;
 import com.example.colaba.shared.dto.user.UserScrollResponse;
+import com.example.colaba.shared.entity.User;
 import com.example.colaba.shared.exception.user.DuplicateUserEntityEmailException;
 import com.example.colaba.shared.exception.user.DuplicateUserEntityUsernameException;
 import com.example.colaba.shared.exception.user.UserNotFoundException;
-import com.example.colaba.user.entity.User;
 import com.example.colaba.user.mapper.UserMapper;
 import com.example.colaba.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +20,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class UserService {
-    private final ProjectRepository projectRepository;
+    //    private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final UserMapper userMapper;
 
@@ -79,8 +77,9 @@ public class UserService {
     public void deleteUser(Long id) {
         User user = getUserEntityById(id);
 
-        List<Project> ownedProjects = projectRepository.findByOwner(user);
-        projectRepository.deleteAll(ownedProjects);
+        // TODO
+//        List<Project> ownedProjects = projectRepository.findByOwner(user);
+//        projectRepository.deleteAll(ownedProjects);
 
         userRepository.deleteById(id);
     }

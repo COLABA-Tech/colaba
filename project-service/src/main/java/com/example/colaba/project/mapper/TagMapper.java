@@ -1,7 +1,7 @@
 package com.example.colaba.project.mapper;
 
-import com.example.colaba.project.entity.Tag;
 import com.example.colaba.shared.dto.tag.TagResponse;
+import com.example.colaba.shared.entity.Tag;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.springframework.data.domain.Page;

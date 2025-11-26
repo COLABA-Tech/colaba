@@ -1,18 +1,16 @@
 package com.example.colaba.task.service;
 
-import com.example.colaba.project.entity.Project;
-import com.example.colaba.project.service.ProjectService;
 import com.example.colaba.shared.dto.task.CreateTaskRequest;
 import com.example.colaba.shared.dto.task.TaskResponse;
 import com.example.colaba.shared.dto.task.UpdateTaskRequest;
+import com.example.colaba.shared.entity.Project;
+import com.example.colaba.shared.entity.User;
+import com.example.colaba.shared.entity.task.Task;
+import com.example.colaba.shared.entity.task.TaskPriority;
+import com.example.colaba.shared.entity.task.TaskStatus;
 import com.example.colaba.shared.exception.task.TaskNotFoundException;
-import com.example.colaba.task.entity.task.Task;
-import com.example.colaba.task.entity.task.TaskPriority;
-import com.example.colaba.task.entity.task.TaskStatus;
 import com.example.colaba.task.mapper.TaskMapper;
 import com.example.colaba.task.repository.TaskRepository;
-import com.example.colaba.user.entity.User;
-import com.example.colaba.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,8 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class TaskService {
     private final TaskRepository taskRepository;
-    private final ProjectService projectService;
-    private final UserService userService;
+    //    private final ProjectService projectService;  // TODO
+//    private final UserService userService;  // TODO
     private final TaskMapper taskMapper;
 
     public Page<TaskResponse> getAllTasks(Pageable pageable) {
@@ -43,25 +41,26 @@ public class TaskService {
     }
 
     public Page<TaskResponse> getTasksByProject(Long projectId, Pageable pageable) {
-        Project project = projectService.getProjectEntityById(projectId);
+//        Project project = projectService.getProjectEntityById(projectId);
+        Project project = new Project();
         return taskMapper.toTaskResponsePage(taskRepository.findByProject(project, pageable));
     }
 
     @Transactional
     public TaskResponse createTask(CreateTaskRequest request) {
-        Project project = projectService.getProjectEntityById(request.projectId());
+//        Project project = projectService.getProjectEntityById(request.projectId());
         TaskPriority priority = (request.priority() != null) ? request.priority() : null;
-        User assignee = (request.assigneeId() != null) ? userService.getUserEntityById(request.assigneeId()) : null;
-        User reporter = userService.getUserEntityById(request.reporterId());
+//        User assignee = (request.assigneeId() != null) ? userService.getUserEntityById(request.assigneeId()) : null;
+//        User reporter = userService.getUserEntityById(request.reporterId());
 
         Task task = Task.builder()
                 .title(request.title())
                 .description(request.description())
                 .status(request.status())
                 .priority(priority)
-                .project(project)
-                .assignee(assignee)
-                .reporter(reporter)
+//                .project(project)
+//                .assignee(assignee)
+//                .reporter(reporter)
                 .dueDate(request.dueDate())
                 .build();
 
@@ -95,8 +94,8 @@ public class TaskService {
             hasChanges = true;
         }
         if (request.assigneeId() != null && !request.assigneeId().equals(task.getAssignee().getId())) {
-            User assignee = userService.getUserEntityById(request.assigneeId());
-            task.setAssignee(assignee);
+//            User assignee = userService.getUserEntityById(request.assigneeId());
+//            task.setAssignee(assignee);
             hasChanges = true;
         }
         if (request.dueDate() != null && !request.dueDate().equals(task.getDueDate())) {
@@ -117,7 +116,8 @@ public class TaskService {
     }
 
     public Page<TaskResponse> getTasksByAssignee(Long userId, Pageable pageable) {
-        User assignee = userService.getUserEntityById(userId);
+//        User assignee = userService.getUserEntityById(userId);
+        User assignee = new User();
         return taskMapper.toTaskResponsePage(taskRepository.findByAssignee(assignee, pageable));
     }
 

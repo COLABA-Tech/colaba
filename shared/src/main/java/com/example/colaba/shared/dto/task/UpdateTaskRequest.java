@@ -1,7 +1,7 @@
 package com.example.colaba.shared.dto.task;
 
-import com.example.colaba.task.entity.task.TaskPriority;
-import com.example.colaba.task.entity.task.TaskStatus;
+import com.example.colaba.shared.entity.task.TaskPriority;
+import com.example.colaba.shared.entity.task.TaskStatus;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 

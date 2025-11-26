@@ -1,16 +1,15 @@
 package com.example.colaba.project.service;
 
-import com.example.colaba.project.entity.Project;
-import com.example.colaba.project.entity.Tag;
 import com.example.colaba.project.mapper.TagMapper;
 import com.example.colaba.project.repository.TagRepository;
 import com.example.colaba.shared.dto.tag.CreateTagRequest;
 import com.example.colaba.shared.dto.tag.TagResponse;
 import com.example.colaba.shared.dto.tag.UpdateTagRequest;
+import com.example.colaba.shared.entity.Project;
+import com.example.colaba.shared.entity.Tag;
+import com.example.colaba.shared.entity.task.Task;
 import com.example.colaba.shared.exception.tag.DuplicateTagException;
 import com.example.colaba.shared.exception.tag.TagNotFoundException;
-import com.example.colaba.task.entity.task.Task;
-import com.example.colaba.task.service.TaskService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,7 +23,7 @@ import java.util.List;
 public class TagService {
     private final TagRepository tagRepository;
     private final ProjectService projectService;
-    private final TaskService taskService;
+    //    private final TaskService taskService;  // TODO
     private final TagMapper tagMapper;
 
     public Page<TagResponse> getAllTags(Pageable pageable) {
@@ -92,7 +91,8 @@ public class TagService {
 
     @Transactional
     public void assignTagToTask(Long taskId, Long tagId) {
-        Task task = taskService.getTaskEntityById(taskId);
+//        Task task = taskService.getTaskEntityById(taskId);
+        Task task = new Task();
         Tag tag = tagRepository.findById(tagId)
                 .orElseThrow(() -> new TagNotFoundException(tagId));
         if (!tag.getProject().getId().equals(task.getProject().getId())) {
@@ -101,16 +101,16 @@ public class TagService {
         boolean added = task.getTags().add(tag);
         if (added) {
             tag.getTasks().add(task);
-            taskService.saveTask(task);
+//            taskService.saveTask(task);
         }
     }
 
     @Transactional
     public void removeTagFromTask(Long taskId, Long tagId) {
-        Task task = taskService.getTaskEntityById(taskId);
+//        Task task = taskService.getTaskEntityById(taskId);
         Tag tag = tagRepository.findById(tagId)
                 .orElseThrow(() -> new TagNotFoundException(tagId));
-        task.getTags().remove(tag);
-        taskService.saveTask(task);
+//        task.getTags().remove(tag);
+//        taskService.saveTask(task);
     }
 }

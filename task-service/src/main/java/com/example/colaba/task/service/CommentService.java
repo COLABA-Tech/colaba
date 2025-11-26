@@ -4,16 +4,13 @@ import com.example.colaba.shared.dto.comment.CommentResponse;
 import com.example.colaba.shared.dto.comment.CommentScrollResponse;
 import com.example.colaba.shared.dto.comment.CreateCommentRequest;
 import com.example.colaba.shared.dto.comment.UpdateCommentRequest;
+import com.example.colaba.shared.entity.Comment;
+import com.example.colaba.shared.entity.task.Task;
 import com.example.colaba.shared.exception.comment.CommentNotFoundException;
 import com.example.colaba.shared.exception.comment.TaskNotFoundException;
-import com.example.colaba.shared.exception.comment.UserNotFoundException;
-import com.example.colaba.task.entity.Comment;
-import com.example.colaba.task.entity.task.Task;
 import com.example.colaba.task.mapper.CommentMapper;
 import com.example.colaba.task.repository.CommentRepository;
 import com.example.colaba.task.repository.TaskRepository;
-import com.example.colaba.user.entity.User;
-import com.example.colaba.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
@@ -27,21 +24,21 @@ import java.util.List;
 public class CommentService {
 
     private final CommentRepository commentRepository;
-    private final UserRepository userRepository;
+    //    private final UserRepository userRepository;  // TODO
     private final TaskRepository taskRepository;
     private final CommentMapper commentMapper;
 
     @Transactional
     public CommentResponse createComment(CreateCommentRequest request) {
-        User user = userRepository.findById(request.userId())
-                .orElseThrow(() -> new UserNotFoundException(request.userId()));
+//        User user = userRepository.findById(request.userId())
+//                .orElseThrow(() -> new UserNotFoundException(request.userId()));
 
         Task task = taskRepository.findById(request.taskId())
                 .orElseThrow(() -> new TaskNotFoundException(request.taskId()));
 
         Comment comment = Comment.builder()
                 .task(task)
-                .user(user)
+//                .user(user)
                 .content(request.content())
                 .build();
 

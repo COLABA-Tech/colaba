@@ -1,6 +1,6 @@
 package com.example.colaba.shared.dto.projectmember;
 
-import com.example.colaba.project.entity.projectmember.ProjectRole;
+import com.example.colaba.shared.entity.projectmember.ProjectRole;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 

@@ -1,7 +1,7 @@
 package com.example.colaba.task.mapper;
 
 import com.example.colaba.shared.dto.task.TaskResponse;
-import com.example.colaba.task.entity.task.Task;
+import com.example.colaba.shared.entity.task.Task;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.springframework.data.domain.Page;

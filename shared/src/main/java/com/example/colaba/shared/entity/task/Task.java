@@ -1,8 +1,8 @@
-package com.example.colaba.task.entity.task;
+package com.example.colaba.shared.entity.task;
 
-import com.example.colaba.project.entity.Project;
-import com.example.colaba.project.entity.Tag;
-import com.example.colaba.user.entity.User;
+import com.example.colaba.shared.entity.Project;
+import com.example.colaba.shared.entity.Tag;
+import com.example.colaba.shared.entity.User;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

@@ -1,6 +1,6 @@
 package com.example.colaba.user.repository;
 
-import com.example.colaba.user.entity.User;
+import com.example.colaba.shared.entity.User;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

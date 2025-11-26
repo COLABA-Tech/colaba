@@ -1,4 +1,4 @@
-package com.example.colaba.project.entity.projectmember;
+package com.example.colaba.shared.entity.projectmember;
 
 import lombok.*;
 

@@ -1,18 +1,15 @@
 package com.example.colaba.project.service;
 
-import com.example.colaba.project.entity.Project;
-import com.example.colaba.project.entity.projectmember.ProjectMember;
-import com.example.colaba.project.entity.projectmember.ProjectMemberId;
-import com.example.colaba.project.entity.projectmember.ProjectRole;
 import com.example.colaba.project.mapper.ProjectMemberMapper;
 import com.example.colaba.project.repository.ProjectMemberRepository;
 import com.example.colaba.shared.dto.projectmember.CreateProjectMemberRequest;
 import com.example.colaba.shared.dto.projectmember.ProjectMemberResponse;
 import com.example.colaba.shared.dto.projectmember.UpdateProjectMemberRequest;
-import com.example.colaba.shared.exception.projectmember.DuplicateProjectMemberException;
+import com.example.colaba.shared.entity.Project;
+import com.example.colaba.shared.entity.projectmember.ProjectMember;
+import com.example.colaba.shared.entity.projectmember.ProjectMemberId;
+import com.example.colaba.shared.entity.projectmember.ProjectRole;
 import com.example.colaba.shared.exception.projectmember.ProjectMemberNotFoundException;
-import com.example.colaba.user.entity.User;
-import com.example.colaba.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProjectMemberService {
     private final ProjectMemberRepository projectMemberRepository;
     private final ProjectService projectService;
-    private final UserService userService;
+    //    private final UserService userService;  // TODO
     private final ProjectMemberMapper projectMemberMapper;
 
     public Page<ProjectMemberResponse> getMembersByProject(Long projectId, Pageable pageable) {
@@ -36,18 +33,18 @@ public class ProjectMemberService {
     @Transactional
     public ProjectMemberResponse createMembership(Long projectId, CreateProjectMemberRequest request) {
         Project project = projectService.getProjectEntityById(projectId);
-        User user = userService.getUserEntityById(request.userId());
+//        User user = userService.getUserEntityById(request.userId());
 
         ProjectMemberId id = new ProjectMemberId(projectId, request.userId());
         if (projectMemberRepository.existsById(id)) {
-            throw new DuplicateProjectMemberException(user.getUsername(), projectId);
+//            throw new DuplicateProjectMemberException(user.getUsername(), projectId);
         }
 
         ProjectMember member = ProjectMember.builder()
                 .projectId(project.getId())
-                .userId(user.getId())
+//                .userId(user.getId())
                 .project(project)
-                .user(user)
+//                .user(user)
                 .role(request.role() != null ? request.role() : ProjectRole.getDefault())
                 .build();
 

@@ -1,7 +1,7 @@
 package com.example.colaba.task.mapper;
 
 import com.example.colaba.shared.dto.comment.CommentResponse;
-import com.example.colaba.task.entity.Comment;
+import com.example.colaba.shared.entity.Comment;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 
