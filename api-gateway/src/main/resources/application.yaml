@@ -3,21 +3,27 @@ spring:
     name: api-gateway
   cloud:
     gateway:
-      routes:
-        - id: user-service
-          uri: lb://USER-SERVICE
-          predicates:
-            - Path=/api/users/**
+      server:
+        webflux:
+          discovery:
+            locator:
+              enabled: true
+              lower-case-service-id: true
+          routes:
+            - id: user-service
+              uri: lb://USER-SERVICE
+              predicates:
+                - Path=/api/users/**
 
-        - id: project-service
-          uri: lb://PROJECT-SERVICE
-          predicates:
-            - Path=/api/projects/**
+            - id: project-service
+              uri: lb://PROJECT-SERVICE
+              predicates:
+                - Path=/api/projects/**
 
-        - id: task-service
-          uri: lb://TASK-SERVICE
-          predicates:
-            - Path=/api/tasks/**, /api/comments/**
+            - id: task-service
+              uri: lb://TASK-SERVICE
+              predicates:
+                - Path=/api/tasks/**, /api/comments/**
 
 server:
   port: 8080

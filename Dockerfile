@@ -14,7 +14,7 @@ COPY user-service/pom.xml user-service/
 COPY project-service/pom.xml project-service/
 COPY task-service/pom.xml task-service/
 
-RUN ./mvnw dependency:go-offline -B
+RUN --mount=type=cache,target=/root/.m2 ./mvnw dependency:go-offline -B
 
 COPY discovery-server/src discovery-server/src
 COPY config-server/src config-server/src
