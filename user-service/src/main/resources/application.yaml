@@ -1,6 +1,9 @@
 spring:
   application:
     name: user-service
+  cloud:
+    config:
+      enabled: false  # TODO
   r2dbc:
     url: ${SPRING_R2DBC_URL:r2dbc:postgresql://localhost:5432/colabadb}
     username: ${SPRING_DATASOURCE_USERNAME:colaba_user}

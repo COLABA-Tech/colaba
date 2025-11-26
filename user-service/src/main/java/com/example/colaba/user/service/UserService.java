@@ -11,9 +11,13 @@ import com.example.colaba.shared.exception.user.UserNotFoundException;
 import com.example.colaba.user.mapper.UserMapper;
 import com.example.colaba.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.reactive.TransactionalOperator;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 
@@ -23,84 +27,131 @@ public class UserService {
     //    private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final TransactionalOperator transactionalOperator;
 
-    @Transactional
-    public UserResponse createUser(CreateUserRequest request) {
-        if (userRepository.existsByUsername(request.username())) {
-            throw new DuplicateUserEntityUsernameException(request.username());
-        }
-        if (userRepository.existsByEmail(request.email())) {
-            throw new DuplicateUserEntityEmailException(request.email());
-        }
-        User user = User.builder()
-                .username(request.username())
-                .email(request.email())
-                .build();
-        User savedUser = userRepository.save(user);
-        return userMapper.toUserResponse(savedUser);
+    public Mono<UserResponse> createUser(CreateUserRequest request) {
+        return userRepository.existsByUsername(request.username())
+                .flatMap(usernameExists -> {
+                    if (usernameExists) {
+                        return Mono.error(new DuplicateUserEntityUsernameException(request.username()));
+                    }
+                    return userRepository.existsByEmail(request.email());
+                })
+                .flatMap(emailExists -> {
+                    if (emailExists) {
+                        return Mono.error(new DuplicateUserEntityEmailException(request.email()));
+                    }
+
+                    User user = User.builder()
+                            .username(request.username())
+                            .email(request.email())
+                            .build();
+
+                    return userRepository.save(user)
+                            .map(userMapper::toUserResponse);
+                })
+                .as(transactionalOperator::transactional);
     }
 
-    public UserResponse getUserById(Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException(id));
-        return userMapper.toUserResponse(user);
-    }
-
-    public User getUserEntityById(Long id) {
+    public Mono<UserResponse> getUserById(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException(id));
+                .switchIfEmpty(Mono.error(new UserNotFoundException(id)))
+                .map(userMapper::toUserResponse);
     }
 
-    public UserResponse getUserByUsername(String username) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException(username));
-        return userMapper.toUserResponse(user);
+    public Mono<User> getUserEntityById(Long id) {
+        return userRepository.findById(id)
+                .switchIfEmpty(Mono.error(new UserNotFoundException(id)));
+    }
+
+    public Mono<UserResponse> getUserByUsername(String username) {
+        return userRepository.findByUsername(username)
+                .switchIfEmpty(Mono.error(new UserNotFoundException(username)))
+                .map(userMapper::toUserResponse);
+    }
+
+    public Mono<UserResponse> updateUser(Long id, UpdateUserRequest request) {
+        return userRepository.findById(id)
+                .switchIfEmpty(Mono.error(new UserNotFoundException(id)))
+                .flatMap(user -> {
+                    boolean hasChanges = false;
+
+                    if (request.username() != null && !request.username().isBlank() && !request.username().equals(user.getUsername())) {
+                        user.setUsername(request.username());
+                        hasChanges = true;
+                    }
+
+                    if (request.email() != null && !request.email().isBlank() && !request.email().equals(user.getEmail())) {
+                        user.setEmail(request.email());
+                        hasChanges = true;
+                    }
+
+                    if (hasChanges) {
+                        return userRepository.save(user);
+                    } else {
+                        return Mono.just(user);
+                    }
+                })
+                .map(userMapper::toUserResponse)
+                .as(transactionalOperator::transactional);
     }
 
     @Transactional
-    public UserResponse updateUser(Long id, UpdateUserRequest request) {
-        User user = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException(id));
-        boolean hasChanges = false;
-        if (request.username() != null && !request.username().isBlank() && !request.username().equals(user.getUsername())) {
-            user.setUsername(request.username());
-            hasChanges = true;
-        }
-        if (request.email() != null && !request.email().isBlank() && !request.email().equals(user.getEmail())) {
-            user.setEmail(request.email());
-            hasChanges = true;
-        }
-        User saved = hasChanges ? userRepository.save(user) : user;
-        return userMapper.toUserResponse(saved);
+    public Mono<Void> deleteUser(Long id) {
+        return userRepository.existsById(id)
+                .flatMap(exists -> {
+                    if (!exists) {
+                        return Mono.error(new UserNotFoundException(id));
+                    }
+
+                    // TODO
+                    // List<Project> ownedProjects = projectRepository.findByOwner(user);
+                    // projectRepository.deleteAll(ownedProjects);
+
+                    return userRepository.deleteById(id);
+                })
+                .as(transactionalOperator::transactional);
     }
 
-    @Transactional
-    public void deleteUser(Long id) {
-        User user = getUserEntityById(id);
+    public Mono<Page<UserResponse>> getAllUsers(Pageable pageable) {
+        return userRepository.findAll()
+                .collectList()
+                .map(allUsers -> {
+                    // Ручная пагинация
+                    int start = (int) pageable.getOffset();
+                    int end = Math.min((start + pageable.getPageSize()), allUsers.size());
 
-        // TODO
-//        List<Project> ownedProjects = projectRepository.findByOwner(user);
-//        projectRepository.deleteAll(ownedProjects);
+                    if (start > allUsers.size()) {
+                        List<UserResponse> emptyContent = List.of();
+                        return new PageImpl<>(emptyContent, pageable, allUsers.size());
+                    }
 
-        userRepository.deleteById(id);
+                    List<User> pageContent = allUsers.subList(start, end);
+                    List<UserResponse> content = userMapper.toUserResponseList(pageContent);
+                    return (Page<UserResponse>) new PageImpl<>(content, pageable, allUsers.size());
+                })
+                .onErrorMap(Exception.class, e -> new IllegalArgumentException("Invalid pagination parameters: " + e.getMessage()));
     }
 
-    public Page<UserResponse> getAllUsers(Pageable pageable) {
-        try {
-            Page<User> users = userRepository.findAll(pageable);
-            return userMapper.toUserResponsePage(users);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid pagination parameters: " + e.getMessage());
-        }
-    }
-
-    public UserScrollResponse getUsersScroll(String cursor, int limit) {
+    public Mono<UserScrollResponse> getUsersScroll(String cursor, int limit) {
         long offset = cursor.isEmpty() ? 0 : Long.parseLong(cursor);
-        int page = (int) (offset / limit);
-        Pageable pageable = PageRequest.of(page, limit, Sort.by("id"));
-        Slice<User> users = userRepository.findAll(pageable);
-        List<UserResponse> userResponseList = userMapper.toUserResponseList(users.getContent());
-        String nextCursor = String.valueOf(offset + users.getNumberOfElements());
-        boolean hasMore = users.hasNext();
-        return new UserScrollResponse(userResponseList, nextCursor, hasMore);
+
+        return userRepository.findAll()
+                .collectList()
+                .map(allUsers -> {
+                    // Ручная пагинация для scroll
+                    int start = (int) offset;
+                    int end = Math.min((start + limit), allUsers.size());
+
+                    if (start > allUsers.size()) {
+                        return new UserScrollResponse(List.of(), String.valueOf(offset), false);
+                    }
+
+                    List<User> pageContent = allUsers.subList(start, end);
+                    List<UserResponse> userResponseList = userMapper.toUserResponseList(pageContent);
+                    String nextCursor = String.valueOf(offset + userResponseList.size());
+                    boolean hasMore = end < allUsers.size();
+                    return new UserScrollResponse(userResponseList, nextCursor, hasMore);
+                });
     }
 }

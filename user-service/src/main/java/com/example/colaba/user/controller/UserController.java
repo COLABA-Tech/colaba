@@ -17,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 
 @RestController
 @RequestMapping("/api/users")
@@ -31,9 +32,9 @@ public class UserController extends BaseController {
             @ApiResponse(responseCode = "201", description = "User created successfully"),
             @ApiResponse(responseCode = "400", description = "Validation error or duplicate username/email")
     })
-    public ResponseEntity<UserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
-        UserResponse userResponse = userService.createUser(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(userResponse);
+    public Mono<ResponseEntity<UserResponse>> createUser(@Valid @RequestBody CreateUserRequest request) {
+        return userService.createUser(request)
+                .map(userResponse -> ResponseEntity.status(HttpStatus.CREATED).body(userResponse));
     }
 
     @GetMapping("/{username}")
@@ -42,9 +43,9 @@ public class UserController extends BaseController {
             @ApiResponse(responseCode = "200", description = "User found"),
             @ApiResponse(responseCode = "404", description = "User not found")
     })
-    public ResponseEntity<UserResponse> getUserByUsername(@PathVariable String username) {
-        UserResponse user = userService.getUserByUsername(username);
-        return ResponseEntity.ok(user);
+    public Mono<ResponseEntity<UserResponse>> getUserByUsername(@PathVariable String username) {
+        return userService.getUserByUsername(username)
+                .map(ResponseEntity::ok);
     }
 
     @GetMapping
@@ -52,10 +53,10 @@ public class UserController extends BaseController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Paginated list of users")
     })
-    public ResponseEntity<Page<UserResponse>> getAllUsers(Pageable pageable) {
+    public Mono<ResponseEntity<Page<UserResponse>>> getAllUsers(Pageable pageable) {
         pageable = validatePageable(pageable);
-        Page<UserResponse> users = userService.getAllUsers(pageable);
-        return ResponseEntity.ok(users);
+        return userService.getAllUsers(pageable)
+                .map(ResponseEntity::ok);
     }
 
     @GetMapping("/scroll")
@@ -63,11 +64,11 @@ public class UserController extends BaseController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Scroll response with users, nextCursor, and hasMore flag")
     })
-    public ResponseEntity<UserScrollResponse> getUsersScroll(@RequestParam(defaultValue = "0") String cursor,
-                                                             @RequestParam(defaultValue = "20") int limit) {
+    public Mono<ResponseEntity<UserScrollResponse>> getUsersScroll(@RequestParam(defaultValue = "0") String cursor,
+                                                                   @RequestParam(defaultValue = "20") int limit) {
         if (limit > 50) limit = 50;
-        UserScrollResponse response = userService.getUsersScroll(cursor, limit);
-        return ResponseEntity.ok(response);
+        return userService.getUsersScroll(cursor, limit)
+                .map(ResponseEntity::ok);
     }
 
     @GetMapping("/paginated")
@@ -75,12 +76,12 @@ public class UserController extends BaseController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Paginated list of users with total count header")
     })
-    public ResponseEntity<Page<UserResponse>> getUsersPaginated(Pageable pageable) {
+    public Mono<ResponseEntity<Page<UserResponse>>> getUsersPaginated(Pageable pageable) {
         pageable = validatePageable(pageable);
-        Page<UserResponse> users = userService.getAllUsers(pageable);
-        return ResponseEntity.ok()
-                .header("X-Total-Count", String.valueOf(users.getTotalElements()))
-                .body(users);
+        return userService.getAllUsers(pageable)
+                .map(users -> ResponseEntity.ok()
+                        .header("X-Total-Count", String.valueOf(users.getTotalElements()))
+                        .body(users));
     }
 
     @PutMapping("/{id}")
@@ -90,9 +91,9 @@ public class UserController extends BaseController {
             @ApiResponse(responseCode = "400", description = "Validation error or duplicate username/email"),
             @ApiResponse(responseCode = "404", description = "User not found")
     })
-    public ResponseEntity<UserResponse> updateUser(@PathVariable Long id, @Valid @RequestBody UpdateUserRequest request) {
-        UserResponse updated = userService.updateUser(id, request);
-        return ResponseEntity.ok(updated);
+    public Mono<ResponseEntity<UserResponse>> updateUser(@PathVariable Long id, @Valid @RequestBody UpdateUserRequest request) {
+        return userService.updateUser(id, request)
+                .map(ResponseEntity::ok);
     }
 
     @DeleteMapping("/{id}")
@@ -101,8 +102,8 @@ public class UserController extends BaseController {
             @ApiResponse(responseCode = "204", description = "User deleted successfully"),
             @ApiResponse(responseCode = "404", description = "User not found")
     })
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-        userService.deleteUser(id);
-        return ResponseEntity.noContent().build();
+    public Mono<ResponseEntity<Void>> deleteUser(@PathVariable Long id) {
+        return userService.deleteUser(id)
+                .then(Mono.just(ResponseEntity.noContent().build()));
     }
 }
