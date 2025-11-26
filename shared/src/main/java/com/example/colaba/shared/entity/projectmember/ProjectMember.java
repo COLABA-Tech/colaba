@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "project_members")
@@ -45,5 +45,5 @@ public class ProjectMember {
 
     @CreationTimestamp
     @Column(name = "joined_at", updatable = false)
-    private LocalDateTime joinedAt;
+    private OffsetDateTime joinedAt;
 }

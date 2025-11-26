@@ -2,7 +2,7 @@ package com.example.colaba.shared.dto.projectmember;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 public record ProjectMemberResponse(
         Long projectId,
@@ -11,6 +11,6 @@ public record ProjectMemberResponse(
         String userUsername,
         String role,
         @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-        LocalDateTime joinedAt
+        OffsetDateTime joinedAt
 ) {
 }

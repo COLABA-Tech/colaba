@@ -1,6 +1,6 @@
 package com.example.colaba.shared.dto.project;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 public record ProjectResponse(
         Long id,
@@ -8,6 +8,6 @@ public record ProjectResponse(
         String description,
         Long ownerId,
         String ownerName,
-        LocalDateTime createdAt
+        OffsetDateTime createdAt
 ) {
 }
