@@ -1,23 +1,15 @@
 package com.example.colaba.user.repository;
 
 import com.example.colaba.shared.entity.User;
-import org.springframework.data.domain.Slice;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
 import org.springframework.stereotype.Repository;
-
-import java.util.Optional;
+import reactor.core.publisher.Mono;
 
 @Repository
-public interface UserRepository extends JpaRepository<User, Long> {
-    Optional<User> findByUsername(String username);
+public interface UserRepository extends R2dbcRepository<User, Long> {
+    Mono<User> findByUsername(String username);
 
-    Optional<User> findByEmail(String email);
+    Mono<Boolean> existsByUsername(String username);
 
-    @Query("SELECT u FROM User u ORDER BY u.id LIMIT ?2 OFFSET ?1")
-    Slice<User> findAllByOffset(long offset, int limit);
-
-    boolean existsByUsername(String username);
-
-    boolean existsByEmail(String email);
+    Mono<Boolean> existsByEmail(String email);
 }
