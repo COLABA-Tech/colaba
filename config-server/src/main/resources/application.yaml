@@ -6,57 +6,27 @@ spring:
       server:
         git:
           uri: https://github.com/COLABA-Tech/colaba-config-repo.git
-          search-paths: config-repo  # Подпапка в repo для yml (создай в корне colaba/config-repo/)
+          search-paths: config-repo
           default-label: main
           clone-on-start: true
-          force-pull: true  # Pull при изменении (новое)
-        # Шифрование: Symmetric key (AC: чувствительные данные)
-        encryption:
-          symmetric:
-            key: ${CONFIG_ENCRYPT_KEY:default-dev-key-16-chars-minimum}  # Env var, 16+ chars
-  # Регистрация в Eureka (сохранили env var)
+          force-pull: true
+
+
   eureka:
     client:
       service-url:
         defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
-      register-with-eureka: true  # Зарегистрировать Config Server в Eureka
+      register-with-eureka: true
       fetch-registry: true
 
 server:
-  port: 8888  # AC: порт 8888 (сохранили)
+  port: 8888
 
-# Actuator для health, info, encrypt (новое, для шифрования и мониторинга)
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,encrypt  # /actuator/encrypt для генерации {cipher}...
+        include: health,info,encrypt
   endpoint:
     health:
       show-details: always
-
-# Профили: dev/prod (AC: через env SPRING_PROFILES_ACTIVE или --spring.profiles.active)
----
-spring:
-  config:
-    activate:
-      on-profile: dev
-  cloud:
-    config:
-      server:
-        encryption:
-          symmetric:
-            key: ${CONFIG_ENCRYPT_KEY_DEV:dev-key-12345678901234}  # Dev key (env var)
----
-spring:
-  config:
-    activate:
-      on-profile: prod
-  cloud:
-    config:
-      server:
-        encryption:
-          symmetric:
-            key: ${CONFIG_ENCRYPT_KEY_PROD:prod-secure-key-1234567890123456}  # Prod key (env var, строже)
-  security:
-    require-ssl: true  # Prod: Включи SSL (env var для cert, если нужно)

@@ -1,39 +1,6 @@
 spring:
-  application:
-    name: project-service
-  datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/colabadb}
-    username: ${SPRING_DATASOURCE_USERNAME:colaba_user}
-    password: ${SPRING_DATASOURCE_PASSWORD}
-    driver-class-name: org.postgresql.Driver
-  jpa:
-    hibernate:
-      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:validate}
-    show-sql: ${SPRING_JPA_SHOW_SQL:false}
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: ${SPRING_JPA_FORMAT_SQL:false}
-  liquibase:
-    change-log: classpath:db/changelog/db.changelog-master.yaml
-    enabled: true
-
-server:
-  port: 8082
-
-eureka:
-  client:
-    service-url:
-      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
-
-springdoc:
-  api-docs:
-    path: /api-docs
-  swagger-ui:
-    path: /swagger-ui
-    operations-sorter: method
-    tags-sorter: alpha
-    display-request-duration: true
-  packages-to-scan: com.example.colaba.controller
-  default-consumes-media-type: application/json
-  default-produces-media-type: application/json
+  config:
+    import: optional:configserver:http://config-server:8888
+  cloud:
+    config:
+      enabled: true
