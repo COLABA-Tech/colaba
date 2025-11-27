@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   postgres:
     image: postgres:18-alpine
@@ -40,15 +42,15 @@ services:
     container_name: colaba-config
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      SPRING_CLOUD_CONFIG_SERVER_GIT_URI: https://github.com/your-username/colaba-config-repo.git
+      CONFIG_ENCRYPT_KEY: ${CONFIG_ENCRYPT_KEY:-docker-key-12345678901234}  # Env дл€ шифровани€ (из лабы)
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka
+      # ”брали GIT_URI Ч теперь в yml через env CONFIG_REPO_URI
     ports:
       - "8888:8888"
     networks:
       - colaba-network
     depends_on:
       - discovery-server
-      - postgres
 
   api-gateway:
     build:
@@ -59,6 +61,7 @@ services:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_CLOUD_CONFIG_URI: http://config-server:8888
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka
+      # ”брали DB vars Ч из Git
     ports:
       - "8080:8080"
     networks:
@@ -76,9 +79,7 @@ services:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_CLOUD_CONFIG_URI: http://config-server:8888
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka
-      SPRING_R2DBC_URL: r2dbc:postgresql://postgres:5432/${COLABA_DB_NAME:-colaba}
-      SPRING_R2DBC_USERNAME: ${COLABA_DB_USERNAME:-colaba_user}
-      SPRING_R2DBC_PASSWORD: ${COLABA_DB_PASSWORD:-colaba_pass}
+      # ”брали R2DBC/DB vars Ч из Git
     ports:
       - "8081:8081"
     networks:
@@ -97,10 +98,7 @@ services:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_CLOUD_CONFIG_URI: http://config-server:8888
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${COLABA_DB_NAME:-colaba}
-      SPRING_DATASOURCE_USERNAME: ${COLABA_DB_USERNAME:-colaba_user}
-      SPRING_DATASOURCE_PASSWORD: ${COLABA_DB_PASSWORD:-colaba_pass}
-      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      # ”брали DATASOURCE vars Ч из Git
     ports:
       - "8082:8082"
     networks:
@@ -109,7 +107,7 @@ services:
       - config-server
       - discovery-server
       - postgres
-      - user-service
+      - user-service  # ÷епочка
 
   task-service:
     build:
@@ -120,10 +118,7 @@ services:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_CLOUD_CONFIG_URI: http://config-server:8888
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${COLABA_DB_NAME:-colaba}
-      SPRING_DATASOURCE_USERNAME: ${COLABA_DB_USERNAME:-colaba_user}
-      SPRING_DATASOURCE_PASSWORD: ${COLABA_DB_PASSWORD:-colaba_pass}
-      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      # ”брали DATASOURCE vars Ч из Git
     ports:
       - "8083:8083"
     networks:
@@ -133,7 +128,7 @@ services:
       - discovery-server
       - postgres
       - user-service
-      - project-service
+      - project-service  # ÷епочка
 
 volumes:
   postgres_data:

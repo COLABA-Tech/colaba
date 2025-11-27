@@ -5,9 +5,9 @@ spring:
     config:
       server:
         git:
-          uri: https://github.com/COLABA-Tech/colaba.git
+          uri: https://github.com/COLABA-Tech/colaba-config-repo.git
           search-paths: config-repo  # Подпапка в repo для yml (создай в корне colaba/config-repo/)
-          default-label: lab2
+          default-label: main
           clone-on-start: true
           force-pull: true  # Pull при изменении (новое)
         # Шифрование: Symmetric key (AC: чувствительные данные)
