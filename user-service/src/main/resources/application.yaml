@@ -13,7 +13,7 @@ spring:
     enabled: true
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/colabadb}
     user: ${SPRING_DATASOURCE_USERNAME:colaba_user}
-    password:  ${SPRING_DATASOURCE_PASSWORD}
+    password: ${SPRING_DATASOURCE_PASSWORD}
 
 server:
   port: 8081
