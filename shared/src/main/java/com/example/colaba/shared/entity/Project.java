@@ -38,7 +38,7 @@ public class Project {
     @ManyToOne(fetch = FetchType.LAZY)
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "owner_id", nullable = false)
-    private User owner;
+    private UserJpa owner;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

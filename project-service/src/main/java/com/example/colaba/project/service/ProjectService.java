@@ -7,7 +7,7 @@ import com.example.colaba.shared.dto.project.ProjectResponse;
 import com.example.colaba.shared.dto.project.ProjectScrollResponse;
 import com.example.colaba.shared.dto.project.UpdateProjectRequest;
 import com.example.colaba.shared.entity.Project;
-import com.example.colaba.shared.entity.User;
+import com.example.colaba.shared.entity.UserJpa;
 import com.example.colaba.shared.exception.project.DuplicateProjectNameException;
 import com.example.colaba.shared.exception.project.ProjectNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -105,7 +105,7 @@ public class ProjectService {
     public List<ProjectResponse> getProjectsByOwnerId(Long ownerId) {
 //        User owner = userRepository.findById(ownerId)
 //                .orElseThrow(() -> new UserNotFoundException(ownerId));
-        User owner = new User();
+        UserJpa owner = new UserJpa();
 
         List<Project> projects = projectRepository.findByOwner(owner);
         return projectMapper.toProjectResponseList(projects);

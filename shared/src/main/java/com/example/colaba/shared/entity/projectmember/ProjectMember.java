@@ -1,7 +1,7 @@
 package com.example.colaba.shared.entity.projectmember;
 
 import com.example.colaba.shared.entity.Project;
-import com.example.colaba.shared.entity.User;
+import com.example.colaba.shared.entity.UserJpa;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -36,7 +36,7 @@ public class ProjectMember {
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", insertable = false, updatable = false)
-    private User user;
+    private UserJpa user;
 
     @NotNull(message = "Role is required")
     @Enumerated(EnumType.STRING)

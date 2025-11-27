@@ -33,7 +33,7 @@ public class Comment {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false, foreignKey = @ForeignKey(name = "fk_comment_user"))
     @OnDelete(action = OnDeleteAction.CASCADE)
-    private User user;
+    private UserJpa user;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     @NotBlank

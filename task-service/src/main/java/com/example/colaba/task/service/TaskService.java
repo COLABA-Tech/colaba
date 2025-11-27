@@ -4,7 +4,7 @@ import com.example.colaba.shared.dto.task.CreateTaskRequest;
 import com.example.colaba.shared.dto.task.TaskResponse;
 import com.example.colaba.shared.dto.task.UpdateTaskRequest;
 import com.example.colaba.shared.entity.Project;
-import com.example.colaba.shared.entity.User;
+import com.example.colaba.shared.entity.UserJpa;
 import com.example.colaba.shared.entity.task.Task;
 import com.example.colaba.shared.entity.task.TaskPriority;
 import com.example.colaba.shared.entity.task.TaskStatus;
@@ -117,7 +117,7 @@ public class TaskService {
 
     public Page<TaskResponse> getTasksByAssignee(Long userId, Pageable pageable) {
 //        User assignee = userService.getUserEntityById(userId);
-        User assignee = new User();
+        UserJpa assignee = new UserJpa();
         return taskMapper.toTaskResponsePage(taskRepository.findByAssignee(assignee, pageable));
     }
 

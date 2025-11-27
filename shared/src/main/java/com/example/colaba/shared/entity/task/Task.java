@@ -2,7 +2,7 @@ package com.example.colaba.shared.entity.task;
 
 import com.example.colaba.shared.entity.Project;
 import com.example.colaba.shared.entity.Tag;
-import com.example.colaba.shared.entity.User;
+import com.example.colaba.shared.entity.UserJpa;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -57,12 +57,12 @@ public class Task {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assignee_id")
     @OnDelete(action = OnDeleteAction.SET_NULL)
-    private User assignee;
+    private UserJpa assignee;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reporter_id")
     @OnDelete(action = OnDeleteAction.SET_NULL)
-    private User reporter;
+    private UserJpa reporter;
 
     @Column(name = "due_date")
     private LocalDate dueDate;
