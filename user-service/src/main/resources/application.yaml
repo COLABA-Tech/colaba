@@ -5,12 +5,15 @@ spring:
     config:
       enabled: false  # TODO
   r2dbc:
-    url: ${SPRING_R2DBC_URL:r2dbc:postgresql://localhost:5432/colabadb}
+    url: ${SPRING_R2DBC_URL:r2dbc:postgresql://postgres:5432/colabadb}
     username: ${SPRING_DATASOURCE_USERNAME:colaba_user}
     password: ${SPRING_DATASOURCE_PASSWORD}
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
     enabled: true
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/colabadb}
+    user: ${SPRING_DATASOURCE_USERNAME:colaba_user}
+    password:  ${SPRING_DATASOURCE_PASSWORD}
 
 server:
   port: 8081
@@ -18,7 +21,7 @@ server:
 eureka:
   client:
     service-url:
-      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
+      defaultZone: ${EUREKA_URL:http://discovery-server:8761/eureka}
 
 springdoc:
   api-docs:
@@ -28,6 +31,6 @@ springdoc:
     operations-sorter: method
     tags-sorter: alpha
     display-request-duration: true
-  packages-to-scan: com.example.colaba.controller
+  packages-to-scan: com.example.colaba.user.controller
   default-consumes-media-type: application/json
   default-produces-media-type: application/json

@@ -5,7 +5,7 @@ spring:
     config:
       enabled: false  # TODO
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/colabadb}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/colabadb}
     username: ${SPRING_DATASOURCE_USERNAME:colaba_user}
     password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
@@ -27,7 +27,7 @@ server:
 eureka:
   client:
     service-url:
-      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
+      defaultZone: ${EUREKA_URL:http://discovery-server:8761/eureka}
 
 springdoc:
   api-docs:

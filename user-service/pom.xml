@@ -53,6 +53,12 @@
             <version>1.0.9.RELEASE</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- Common Dependencies from original pom -->
         <dependency>
             <groupId>org.mapstruct</groupId>

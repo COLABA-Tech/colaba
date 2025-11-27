@@ -1,9 +1,13 @@
 spring:
   application:
     name: config-server
+  profiles:
+    active: native
   cloud:
     config:
       server:
+        native:
+          search-locations: classpath:/config-repo
         git:
           uri: ${CONFIG_REPO_URI:https://github.com/COLABA-Tech/colaba-config-repo.git}
           default-label: main
@@ -15,4 +19,4 @@ server:
 eureka:
   client:
     service-url:
-      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
+      defaultZone: ${EUREKA_URL:http://discovery-server:8761/eureka}
