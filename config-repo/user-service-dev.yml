@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/userdb_dev
+    username: postgres
+    password: {cipher}encrypted-dev-pass  # Генерируй
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true  # Dev: логи SQL
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+server:
+  port: 8081
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+springdoc:
+  swagger-ui:
+    path: /swagger-ui
