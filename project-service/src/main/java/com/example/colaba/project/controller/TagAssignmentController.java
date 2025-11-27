@@ -8,6 +8,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/task-tags")
@@ -18,24 +21,24 @@ public class TagAssignmentController extends BaseController {
 
     @GetMapping("/task/{taskId}")
     @Operation(summary = "Get tags for a task")
-    public ResponseEntity<Iterable<TagResponse>> getTagsByTask(@PathVariable Long taskId) {
-        Iterable<TagResponse> tags = tagService.getTagsByTask(taskId);
-        return ResponseEntity.ok(tags);
+    public Mono<ResponseEntity<List<TagResponse>>> getTagsByTask(@PathVariable Long taskId) {
+        return tagService.getTagsByTask(taskId)
+                .map(ResponseEntity::ok);
     }
 
     @PostMapping("/task/{taskId}/tag/{tagId}")
     @Operation(summary = "Assign tag to task")
-    public ResponseEntity<Void> assignTagToTask(
+    public Mono<ResponseEntity<Void>> assignTagToTask(
             @PathVariable Long taskId, @PathVariable Long tagId) {
-        tagService.assignTagToTask(taskId, tagId);
-        return ResponseEntity.ok().build();
+        return tagService.assignTagToTask(taskId, tagId)
+                .then(Mono.just(ResponseEntity.ok().build()));
     }
 
     @DeleteMapping("/task/{taskId}/tag/{tagId}")
     @Operation(summary = "Remove tag from task")
-    public ResponseEntity<Void> removeTagFromTask(
+    public Mono<ResponseEntity<Void>> removeTagFromTask(
             @PathVariable Long taskId, @PathVariable Long tagId) {
-        tagService.removeTagFromTask(taskId, tagId);
-        return ResponseEntity.noContent().build();
+        return tagService.removeTagFromTask(taskId, tagId)
+                .then(Mono.just(ResponseEntity.noContent().build()));
     }
 }

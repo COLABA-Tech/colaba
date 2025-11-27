@@ -16,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 
 @RestController
 @RequestMapping("/api/tags")
@@ -29,10 +30,10 @@ public class TagController extends BaseController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Paginated list of tags")
     })
-    public ResponseEntity<Page<TagResponse>> getAllTags(Pageable pageable) {
+    public Mono<ResponseEntity<Page<TagResponse>>> getAllTags(Pageable pageable) {
         pageable = validatePageable(pageable);
-        Page<TagResponse> tags = tagService.getAllTags(pageable);
-        return ResponseEntity.ok(tags);
+        return tagService.getAllTags(pageable)
+                .map(ResponseEntity::ok);
     }
 
     @GetMapping("/{id}")
@@ -41,9 +42,9 @@ public class TagController extends BaseController {
             @ApiResponse(responseCode = "200", description = "Tag found"),
             @ApiResponse(responseCode = "404", description = "Tag not found")
     })
-    public ResponseEntity<TagResponse> getTagById(@PathVariable Long id) {
-        TagResponse tag = tagService.getTagById(id);
-        return ResponseEntity.ok(tag);
+    public Mono<ResponseEntity<TagResponse>> getTagById(@PathVariable Long id) {
+        return tagService.getTagById(id)
+                .map(ResponseEntity::ok);
     }
 
     @PostMapping
@@ -52,9 +53,9 @@ public class TagController extends BaseController {
             @ApiResponse(responseCode = "201", description = "Tag created successfully"),
             @ApiResponse(responseCode = "400", description = "Validation error")
     })
-    public ResponseEntity<TagResponse> createTag(@Valid @RequestBody CreateTagRequest request) {
-        TagResponse tag = tagService.createTag(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(tag);
+    public Mono<ResponseEntity<TagResponse>> createTag(@Valid @RequestBody CreateTagRequest request) {
+        return tagService.createTag(request)
+                .map(tag -> ResponseEntity.status(HttpStatus.CREATED).body(tag));
     }
 
     @PutMapping("/{id}")
@@ -64,11 +65,11 @@ public class TagController extends BaseController {
             @ApiResponse(responseCode = "400", description = "Validation error"),
             @ApiResponse(responseCode = "404", description = "Tag not found")
     })
-    public ResponseEntity<TagResponse> updateTag(
+    public Mono<ResponseEntity<TagResponse>> updateTag(
             @PathVariable Long id,
             @Valid @RequestBody UpdateTagRequest request) {
-        TagResponse tag = tagService.updateTag(id, request);
-        return ResponseEntity.ok(tag);
+        return tagService.updateTag(id, request)
+                .map(ResponseEntity::ok);
     }
 
     @DeleteMapping("/{id}")
@@ -77,8 +78,8 @@ public class TagController extends BaseController {
             @ApiResponse(responseCode = "204", description = "Tag deleted successfully"),
             @ApiResponse(responseCode = "404", description = "Tag not found")
     })
-    public ResponseEntity<Void> deleteTag(@PathVariable Long id) {
-        tagService.deleteTag(id);
-        return ResponseEntity.noContent().build();
+    public Mono<ResponseEntity<Void>> deleteTag(@PathVariable Long id) {
+        return tagService.deleteTag(id)
+                .then(Mono.just(ResponseEntity.noContent().build()));
     }
 }
