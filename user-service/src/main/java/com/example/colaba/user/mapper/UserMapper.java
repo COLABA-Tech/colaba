@@ -2,9 +2,11 @@ package com.example.colaba.user.mapper;
 
 import com.example.colaba.shared.dto.user.UserResponse;
 import com.example.colaba.shared.entity.User;
+import com.example.colaba.shared.entity.UserJpa;
 import org.mapstruct.Mapper;
 import org.springframework.data.domain.Page;
 
+import java.util.HashSet;
 import java.util.List;
 
 @Mapper(componentModel = "spring")
@@ -15,5 +17,17 @@ public interface UserMapper {
 
     default Page<UserResponse> toUserResponsePage(Page<User> users) {
         return users.map(this::toUserResponse);
+    }
+
+    default UserJpa toUserJpa(User user) {
+        if (user == null) {
+            return null;
+        }
+        return UserJpa.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .memberships(new HashSet<>()) // инициализируем пустым множеством
+                .build();
     }
 }

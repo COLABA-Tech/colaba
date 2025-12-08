@@ -1,10 +1,13 @@
 package com.example.colaba.user.service;
 
+import com.example.colaba.shared.client.ProjectServiceClient;
 import com.example.colaba.shared.dto.user.CreateUserRequest;
 import com.example.colaba.shared.dto.user.UpdateUserRequest;
 import com.example.colaba.shared.dto.user.UserResponse;
 import com.example.colaba.shared.dto.user.UserScrollResponse;
+import com.example.colaba.shared.entity.Project;
 import com.example.colaba.shared.entity.User;
+import com.example.colaba.shared.entity.UserJpa;
 import com.example.colaba.shared.exception.user.DuplicateUserEntityEmailException;
 import com.example.colaba.shared.exception.user.DuplicateUserEntityUsernameException;
 import com.example.colaba.shared.exception.user.UserNotFoundException;
@@ -18,13 +21,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.reactive.TransactionalOperator;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
-    //    private final ProjectRepository projectRepository;
+    private final ProjectServiceClient projectServiceClient;
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final TransactionalOperator transactionalOperator;
@@ -98,17 +102,20 @@ public class UserService {
 
     @Transactional
     public Mono<Void> deleteUser(Long id) {
-        return userRepository.existsById(id)
-                .flatMap(exists -> {
-                    if (!exists) {
-                        return Mono.error(new UserNotFoundException(id));
-                    }
+        return userRepository.findById(id)
+                .switchIfEmpty(Mono.error(new UserNotFoundException(id)))
+                .flatMap(user -> {
+                    UserJpa userJpa = userMapper.toUserJpa(user);
+                    return Mono.fromCallable(() -> {
+                                List<Project> ownedProjects = projectServiceClient.findByOwner(userJpa);
 
-                    // TODO
-                    // List<Project> ownedProjects = projectRepository.findByOwner(user);
-                    // projectRepository.deleteAll(ownedProjects);
-
-                    return userRepository.deleteById(id);
+                                if (!ownedProjects.isEmpty()) {
+                                    projectServiceClient.deleteAll();
+                                }
+                                return user;
+                            })
+                            .subscribeOn(Schedulers.boundedElastic())
+                            .then(userRepository.deleteById(id));
                 })
                 .as(transactionalOperator::transactional);
     }
