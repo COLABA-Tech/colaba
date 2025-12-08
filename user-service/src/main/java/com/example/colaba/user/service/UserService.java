@@ -11,7 +11,7 @@ import com.example.colaba.shared.entity.UserJpa;
 import com.example.colaba.shared.exception.user.DuplicateUserEntityEmailException;
 import com.example.colaba.shared.exception.user.DuplicateUserEntityUsernameException;
 import com.example.colaba.shared.exception.user.UserNotFoundException;
-import com.example.colaba.user.mapper.UserMapper;
+import com.example.colaba.shared.mapper.UserMapper;
 import com.example.colaba.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -124,7 +124,6 @@ public class UserService {
         return userRepository.findAll()
                 .collectList()
                 .map(allUsers -> {
-                    // Ручная пагинация
                     int start = (int) pageable.getOffset();
                     int end = Math.min((start + pageable.getPageSize()), allUsers.size());
 
@@ -136,8 +135,7 @@ public class UserService {
                     List<User> pageContent = allUsers.subList(start, end);
                     List<UserResponse> content = userMapper.toUserResponseList(pageContent);
                     return (Page<UserResponse>) new PageImpl<>(content, pageable, allUsers.size());
-                })
-                .onErrorMap(Exception.class, e -> new IllegalArgumentException("Invalid pagination parameters: " + e.getMessage()));
+                });
     }
 
     public Mono<UserScrollResponse> getUsersScroll(String cursor, int limit) {
@@ -146,7 +144,6 @@ public class UserService {
         return userRepository.findAll()
                 .collectList()
                 .map(allUsers -> {
-                    // Ручная пагинация для scroll
                     int start = (int) offset;
                     int end = Math.min((start + limit), allUsers.size());
 

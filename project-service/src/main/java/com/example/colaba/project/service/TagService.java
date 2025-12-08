@@ -1,6 +1,5 @@
 package com.example.colaba.project.service;
 
-import com.example.colaba.project.mapper.TagMapper;
 import com.example.colaba.project.repository.TagRepository;
 import com.example.colaba.shared.client.TaskServiceClient;
 import com.example.colaba.shared.dto.tag.CreateTagRequest;
@@ -8,9 +7,9 @@ import com.example.colaba.shared.dto.tag.TagResponse;
 import com.example.colaba.shared.dto.tag.UpdateTagRequest;
 import com.example.colaba.shared.entity.Tag;
 import com.example.colaba.shared.entity.task.Task;
-import com.example.colaba.shared.exception.comment.TaskNotFoundException;
 import com.example.colaba.shared.exception.tag.DuplicateTagException;
 import com.example.colaba.shared.exception.tag.TagNotFoundException;
+import com.example.colaba.shared.mapper.TagMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -114,8 +113,7 @@ public class TagService {
     public Mono<Void> assignTagToTask(Long taskId, Long tagId) {
         return Mono.zip(
                 Mono.fromCallable(() -> taskServiceClient.getTaskEntityById(taskId))
-                        .subscribeOn(Schedulers.boundedElastic())
-                        .onErrorMap(e -> new TaskNotFoundException(taskId)),
+                        .subscribeOn(Schedulers.boundedElastic()),
                 Mono.fromCallable(() -> tagRepository.findById(tagId))
                         .subscribeOn(Schedulers.boundedElastic())
                         .flatMap(optionalTag -> {
@@ -145,8 +143,7 @@ public class TagService {
     public Mono<Void> removeTagFromTask(Long taskId, Long tagId) {
         return Mono.zip(
                 Mono.fromCallable(() -> taskServiceClient.getTaskEntityById(taskId))
-                        .subscribeOn(Schedulers.boundedElastic())
-                        .onErrorMap(e -> new TaskNotFoundException(taskId)),
+                        .subscribeOn(Schedulers.boundedElastic()),
                 Mono.fromCallable(() -> tagRepository.findById(tagId))
                         .subscribeOn(Schedulers.boundedElastic())
                         .flatMap(optionalTag -> {

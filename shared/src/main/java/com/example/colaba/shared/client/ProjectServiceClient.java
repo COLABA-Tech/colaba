@@ -5,6 +5,7 @@ import com.example.colaba.shared.entity.UserJpa;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
@@ -17,4 +18,7 @@ public interface ProjectServiceClient {
 
     @DeleteMapping("/all")
     void deleteAll();
+
+    @GetMapping("/entity/{id}")
+    Project getProjectEntityById(@PathVariable Long id);
 }

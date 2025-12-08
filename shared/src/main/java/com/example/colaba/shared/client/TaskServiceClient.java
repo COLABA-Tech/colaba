@@ -9,12 +9,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 @FeignClient(
         name = "task-service",
-        path = "/internal/tasks"  // Изменили с /api/tasks на /internal/tasks
+        path = "/internal/tasks"
 )
 public interface TaskServiceClient {
     @GetMapping("/entity/{id}")
-    Task getTaskEntityById(@PathVariable Long id);  // Убрали Mono<>
+    Task getTaskEntityById(@PathVariable Long id);
 
     @PutMapping("/{id}")
-    Task updateTask(@PathVariable Long id, @RequestBody Task task);  // Убрали Mono<>
+    Task updateTask(@PathVariable Long id, @RequestBody Task task);
 }

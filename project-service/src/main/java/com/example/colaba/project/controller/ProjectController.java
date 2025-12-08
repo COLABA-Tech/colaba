@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.Map;
 
 
 @RestController
@@ -57,26 +58,25 @@ public class ProjectController extends BaseController {
                 .map(ResponseEntity::ok);
     }
 
-    // TODO
-//    @PatchMapping("/{id}/owner")
-//    @Operation(summary = "Change project owner", description = "Changes the owner of a project to a new user by ID.")
-//    @ApiResponses({
-//            @ApiResponse(responseCode = "200", description = "Project owner changed successfully"),
-//            @ApiResponse(responseCode = "400", description = "Invalid request (missing ownerId)"),
-//            @ApiResponse(responseCode = "404", description = "Project or new owner not found")
-//    })
-//    public Mono<ResponseEntity<ProjectResponse>> changeOwner(
-//            @PathVariable Long id,
-//            @RequestBody Map<String, Long> request) {
-//
-//        Long newOwnerId = request.get("ownerId");
-//        if (newOwnerId == null) {
-//            return Mono.error(new IllegalArgumentException("ownerId is required"));
-//        }
-//
-//        return projectService.changeProjectOwner(id, newOwnerId)
-//                .map(ResponseEntity::ok);
-//    }
+    @PatchMapping("/{id}/owner")
+    @Operation(summary = "Change project owner", description = "Changes the owner of a project to a new user by ID.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Project owner changed successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request (missing ownerId)"),
+            @ApiResponse(responseCode = "404", description = "Project or new owner not found")
+    })
+    public Mono<ResponseEntity<ProjectResponse>> changeOwner(
+            @PathVariable Long id,
+            @RequestBody Map<String, Long> request) {
+
+        Long newOwnerId = request.get("ownerId");
+        if (newOwnerId == null) {
+            return Mono.error(new IllegalArgumentException("ownerId is required"));
+        }
+
+        return projectService.changeProjectOwner(id, newOwnerId)
+                .map(ResponseEntity::ok);
+    }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get project by ID", description = "Retrieves a specific project by its ID.")

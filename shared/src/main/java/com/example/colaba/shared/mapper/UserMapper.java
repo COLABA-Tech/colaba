@@ -1,4 +1,4 @@
-package com.example.colaba.user.mapper;
+package com.example.colaba.shared.mapper;
 
 import com.example.colaba.shared.dto.user.UserResponse;
 import com.example.colaba.shared.entity.User;
@@ -27,7 +27,7 @@ public interface UserMapper {
                 .id(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
-                .memberships(new HashSet<>()) // инициализируем пустым множеством
+                .memberships(new HashSet<>())
                 .build();
     }
 }

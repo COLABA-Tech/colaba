@@ -1,0 +1,15 @@
+package com.example.colaba.shared.client;
+
+import com.example.colaba.shared.entity.User;
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+
+@FeignClient(
+        name = "user-service",
+        path = "/internal/users"
+)
+public interface UserServiceClient {
+    @GetMapping("/entity/{id}")
+    User getUserEntityById(@PathVariable Long id);
+}

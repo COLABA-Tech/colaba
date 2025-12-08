@@ -5,7 +5,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {
+        "com.example.colaba.user",
+        "com.example.colaba.shared.mapper"
+})
 @EnableDiscoveryClient
 @EnableFeignClients(basePackages = "com.example.colaba.shared.client")
 public class UserServiceApplication {
