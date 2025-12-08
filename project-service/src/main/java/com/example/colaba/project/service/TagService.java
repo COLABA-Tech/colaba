@@ -69,7 +69,7 @@ public class TagService {
 
                     Tag savedTag = tagRepository.save(tag);
                     return tagMapper.toTagResponse(savedTag);
-                })).subscribeOn(Schedulers.boundedElastic());
+                }).subscribeOn(Schedulers.boundedElastic()));
     }
 
     public Mono<TagResponse> updateTag(Long id, UpdateTagRequest request) {
@@ -81,23 +81,20 @@ public class TagService {
                     }
                     Tag tag = optionalTag.get();
 
-                    boolean hasChanges = false;
-                    if (request.name() != null && !request.name().equals(tag.getName())) {
-                        // Проверка на дубликат имени в рамках проекта
-                        if (tagRepository.findByProjectIdAndNameIgnoreCase(tag.getProject().getId(), request.name()).isPresent()) {
-                            return Mono.error(new DuplicateTagException(request.name(), tag.getProject().getId()));
-                        }
-                        tag.setName(request.name());
-                        hasChanges = true;
-                    }
+                    return Mono.fromCallable(() -> {
+                                boolean hasChanges = false;
+                                if (request.name() != null && !request.name().equals(tag.getName())) {
+                                    if (tagRepository.findByProjectIdAndNameIgnoreCase(tag.getProject().getId(), request.name()).isPresent()) {
+                                        throw new DuplicateTagException(request.name(), tag.getProject().getId());
+                                    }
+                                    tag.setName(request.name());
+                                    hasChanges = true;
+                                }
 
-                    if (hasChanges) {
-                        return Mono.fromCallable(() -> tagRepository.save(tag))
-                                .subscribeOn(Schedulers.boundedElastic())
-                                .map(tagMapper::toTagResponse);
-                    } else {
-                        return Mono.just(tagMapper.toTagResponse(tag));
-                    }
+                                return hasChanges ? tagRepository.save(tag) : tag;
+                            })
+                            .subscribeOn(Schedulers.boundedElastic())
+                            .map(tagMapper::toTagResponse);
                 });
     }
 
@@ -116,7 +113,8 @@ public class TagService {
 
     public Mono<Void> assignTagToTask(Long taskId, Long tagId) {
         return Mono.zip(
-                taskServiceClient.getTaskEntityById(taskId)
+                Mono.fromCallable(() -> taskServiceClient.getTaskEntityById(taskId))
+                        .subscribeOn(Schedulers.boundedElastic())
                         .onErrorMap(e -> new TaskNotFoundException(taskId)),
                 Mono.fromCallable(() -> tagRepository.findById(tagId))
                         .subscribeOn(Schedulers.boundedElastic())
@@ -138,7 +136,7 @@ public class TagService {
                 boolean added = task.getTags().add(tag);
                 if (added) {
                     tag.getTasks().add(task);
-                    taskServiceClient.updateTask(taskId, task).subscribe();
+                    taskServiceClient.updateTask(taskId, task);
                 }
             }).subscribeOn(Schedulers.boundedElastic());
         }).then();
@@ -146,7 +144,8 @@ public class TagService {
 
     public Mono<Void> removeTagFromTask(Long taskId, Long tagId) {
         return Mono.zip(
-                taskServiceClient.getTaskEntityById(taskId)
+                Mono.fromCallable(() -> taskServiceClient.getTaskEntityById(taskId))
+                        .subscribeOn(Schedulers.boundedElastic())
                         .onErrorMap(e -> new TaskNotFoundException(taskId)),
                 Mono.fromCallable(() -> tagRepository.findById(tagId))
                         .subscribeOn(Schedulers.boundedElastic())
@@ -162,7 +161,7 @@ public class TagService {
 
             return Mono.fromRunnable(() -> {
                 task.getTags().remove(tag);
-                taskServiceClient.updateTask(taskId, task).subscribe();
+                taskServiceClient.updateTask(taskId, task);
             }).subscribeOn(Schedulers.boundedElastic());
         }).then();
     }
