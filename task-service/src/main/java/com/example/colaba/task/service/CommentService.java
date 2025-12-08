@@ -1,14 +1,18 @@
 package com.example.colaba.task.service;
 
+import com.example.colaba.shared.client.UserServiceClient;
 import com.example.colaba.shared.dto.comment.CommentResponse;
 import com.example.colaba.shared.dto.comment.CommentScrollResponse;
 import com.example.colaba.shared.dto.comment.CreateCommentRequest;
 import com.example.colaba.shared.dto.comment.UpdateCommentRequest;
 import com.example.colaba.shared.entity.Comment;
+import com.example.colaba.shared.entity.User;
+import com.example.colaba.shared.entity.UserJpa;
 import com.example.colaba.shared.entity.task.Task;
 import com.example.colaba.shared.exception.comment.CommentNotFoundException;
 import com.example.colaba.shared.exception.comment.TaskNotFoundException;
-import com.example.colaba.task.mapper.CommentMapper;
+import com.example.colaba.shared.mapper.CommentMapper;
+import com.example.colaba.shared.mapper.UserMapper;
 import com.example.colaba.task.repository.CommentRepository;
 import com.example.colaba.task.repository.TaskRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,21 +28,22 @@ import java.util.List;
 public class CommentService {
 
     private final CommentRepository commentRepository;
-    //    private final UserRepository userRepository;  // TODO
+    private final UserServiceClient userServiceClient;
     private final TaskRepository taskRepository;
     private final CommentMapper commentMapper;
+    private final UserMapper userMapper;
 
     @Transactional
     public CommentResponse createComment(CreateCommentRequest request) {
-//        User user = userRepository.findById(request.userId())
-//                .orElseThrow(() -> new UserNotFoundException(request.userId()));
+        User user = userServiceClient.getUserEntityById(request.userId());
+        UserJpa userJpa = userMapper.toUserJpa(user);
 
         Task task = taskRepository.findById(request.taskId())
                 .orElseThrow(() -> new TaskNotFoundException(request.taskId()));
 
         Comment comment = Comment.builder()
                 .task(task)
-//                .user(user)
+                .user(userJpa)
                 .content(request.content())
                 .build();
 
@@ -61,18 +66,18 @@ public class CommentService {
         OffsetDateTime cursorTime = (cursor == null || cursor.isBlank())
                 ? OffsetDateTime.now()
                 : OffsetDateTime.parse(cursor);
-
-        Pageable pageable = PageRequest.of(0, limit, Sort.by("createdAt").descending());
-
-        Slice<Comment> slice = commentRepository.findByTaskIdAndCreatedAtBeforeOrderByCreatedAtDesc(taskId, cursorTime, pageable);
-
-        List<CommentResponse> responses = commentMapper.toResponseList(slice.getContent());
-
-        String nextCursor = slice.isEmpty() ? null : slice.getContent().get(slice.getContent().size() - 1).getCreatedAt().toString();
-
-        CommentScrollResponse resp = new CommentScrollResponse(responses, nextCursor, slice.hasNext());
-
-        return resp;
+        Pageable pageable = PageRequest.of(
+                0, limit, Sort.by("createdAt").descending());
+        Slice<Comment> slice = commentRepository
+                .findByTaskIdAndCreatedAtBeforeOrderByCreatedAtDesc(taskId, cursorTime, pageable);
+        List<CommentResponse> responses = commentMapper
+                .toResponseList(slice.getContent());
+        String nextCursor = slice.isEmpty()
+                ? null
+                : slice.getContent()
+                .getLast().getCreatedAt().toString();
+        return new CommentScrollResponse(
+                responses, nextCursor, slice.hasNext());
     }
 
     @Transactional
@@ -81,7 +86,9 @@ public class CommentService {
                 .orElseThrow(() -> new CommentNotFoundException(id));
 
         boolean hasChanges = false;
-        if (request.content() != null && !request.content().isBlank() && !request.content().equals(comment.getContent())) {
+        if (request.content() != null
+                && !request.content().isBlank()
+                && !request.content().equals(comment.getContent())) {
             comment.setContent(request.content());
             hasChanges = true;
         }

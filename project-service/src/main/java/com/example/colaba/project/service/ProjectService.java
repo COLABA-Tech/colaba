@@ -1,14 +1,19 @@
 package com.example.colaba.project.service;
 
-import com.example.colaba.project.mapper.ProjectMapper;
 import com.example.colaba.project.repository.ProjectRepository;
+import com.example.colaba.shared.client.UserServiceClient;
 import com.example.colaba.shared.dto.project.CreateProjectRequest;
 import com.example.colaba.shared.dto.project.ProjectResponse;
 import com.example.colaba.shared.dto.project.ProjectScrollResponse;
 import com.example.colaba.shared.dto.project.UpdateProjectRequest;
 import com.example.colaba.shared.entity.Project;
+import com.example.colaba.shared.entity.User;
+import com.example.colaba.shared.entity.UserJpa;
+import com.example.colaba.shared.exception.comment.UserNotFoundException;
 import com.example.colaba.shared.exception.project.DuplicateProjectNameException;
 import com.example.colaba.shared.exception.project.ProjectNotFoundException;
+import com.example.colaba.shared.mapper.ProjectMapper;
+import com.example.colaba.shared.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -25,20 +30,24 @@ import java.util.List;
 public class ProjectService {
 
     private final ProjectRepository projectRepository;
-    //    private final UserRepository userRepository;  // TODO
+    private final UserServiceClient userServiceClient;
     private final ProjectMapper projectMapper;
+    private final UserMapper userMapper;
 
     @Transactional
     public Mono<ProjectResponse> createProject(CreateProjectRequest request) {
-        // TODO: check user and add owner
         return Mono.fromCallable(() -> {
             if (projectRepository.existsByName(request.name())) {
                 throw new DuplicateProjectNameException(request.name());
             }
 
+            User owner = userServiceClient.getUserEntityById(request.ownerId());
+            UserJpa ownerJpa = userMapper.toUserJpa(owner);
+
             Project project = Project.builder()
                     .name(request.name())
                     .description(request.description())
+                    .owner(ownerJpa)
                     .build();
 
             Project saved = projectRepository.save(project);
@@ -90,24 +99,23 @@ public class ProjectService {
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
-    // TODO: user service
-//    @Transactional
-//    public Mono<ProjectResponse> changeProjectOwner(Long projectId, Long newOwnerId) {
-//        return Mono.zip(
-//                getProjectEntityById(projectId),
-//                userServiceClient.getUserEntityById(newOwnerId)
-//                        .switchIfEmpty(Mono.error(new UserNotFoundException(newOwnerId)))
-//        ).flatMap(tuple -> {
-//            Project project = tuple.getT1();
-//            UserJpa newOwner = tuple.getT2();
-//
-//            return Mono.fromCallable(() -> {
-//                project.setOwner(newOwner);
-//                Project saved = projectRepository.save(project);
-//                return projectMapper.toProjectResponse(saved);
-//            }).subscribeOn(Schedulers.boundedElastic());
-//        });
-//    }
+    @Transactional
+    public Mono<ProjectResponse> changeProjectOwner(Long projectId, Long newOwnerId) {
+        return Mono.zip(
+                getProjectEntityById(projectId),
+                Mono.fromCallable(() -> userServiceClient.getUserEntityById(newOwnerId))
+                        .subscribeOn(Schedulers.boundedElastic())
+                        .flatMap(user -> Mono.just(userMapper.toUserJpa(user)))
+        ).flatMap(tuple -> {
+            Project project = tuple.getT1();
+            UserJpa newOwner = tuple.getT2();
+            return Mono.fromCallable(() -> {
+                project.setOwner(newOwner);
+                Project saved = projectRepository.save(project);
+                return projectMapper.toProjectResponse(saved);
+            }).subscribeOn(Schedulers.boundedElastic());
+        });
+    }
 
     @Transactional
     public Mono<Void> deleteProject(Long id) {
@@ -120,10 +128,15 @@ public class ProjectService {
     }
 
     public Mono<List<ProjectResponse>> getProjectByOwnerId(Long ownerId) {
-        // TODO: check owner
-        return Mono.fromCallable(() -> projectRepository.findByOwnerId(ownerId))
-                .map(projectMapper::toProjectResponseList)
-                .subscribeOn(Schedulers.boundedElastic());
+        return Mono.fromCallable(() -> userServiceClient.getUserEntityById(ownerId))
+                .subscribeOn(Schedulers.boundedElastic())
+                .flatMap(user -> {
+                    UserJpa userJpa = userMapper.toUserJpa(user);
+                    return Mono.fromCallable(() -> projectRepository.findByOwner(userJpa))
+                            .subscribeOn(Schedulers.boundedElastic())
+                            .map(projectMapper::toProjectResponseList);
+                })
+                .onErrorResume(_ -> Mono.error(new UserNotFoundException(ownerId)));
     }
 
     public Mono<ProjectScrollResponse> scroll(int page, int size) {

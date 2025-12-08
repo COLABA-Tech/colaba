@@ -1,7 +1,7 @@
 package com.example.colaba.project.service;
 
-import com.example.colaba.project.mapper.TagMapper;
 import com.example.colaba.project.repository.TagRepository;
+import com.example.colaba.shared.client.TaskServiceClient;
 import com.example.colaba.shared.dto.tag.CreateTagRequest;
 import com.example.colaba.shared.dto.tag.TagResponse;
 import com.example.colaba.shared.dto.tag.UpdateTagRequest;
@@ -9,6 +9,7 @@ import com.example.colaba.shared.entity.Tag;
 import com.example.colaba.shared.entity.task.Task;
 import com.example.colaba.shared.exception.tag.DuplicateTagException;
 import com.example.colaba.shared.exception.tag.TagNotFoundException;
+import com.example.colaba.shared.mapper.TagMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,7 +24,7 @@ import java.util.List;
 public class TagService {
     private final TagRepository tagRepository;
     private final ProjectService projectService;
-    //    private final TaskService taskService;  // TODO
+    private final TaskServiceClient taskServiceClient;
     private final TagMapper tagMapper;
 
     public Mono<Page<TagResponse>> getAllTags(Pageable pageable) {
@@ -67,7 +68,7 @@ public class TagService {
 
                     Tag savedTag = tagRepository.save(tag);
                     return tagMapper.toTagResponse(savedTag);
-                })).subscribeOn(Schedulers.boundedElastic());
+                }).subscribeOn(Schedulers.boundedElastic()));
     }
 
     public Mono<TagResponse> updateTag(Long id, UpdateTagRequest request) {
@@ -79,23 +80,20 @@ public class TagService {
                     }
                     Tag tag = optionalTag.get();
 
-                    boolean hasChanges = false;
-                    if (request.name() != null && !request.name().equals(tag.getName())) {
-                        // Проверка на дубликат имени в рамках проекта
-                        if (tagRepository.findByProjectIdAndNameIgnoreCase(tag.getProject().getId(), request.name()).isPresent()) {
-                            return Mono.error(new DuplicateTagException(request.name(), tag.getProject().getId()));
-                        }
-                        tag.setName(request.name());
-                        hasChanges = true;
-                    }
+                    return Mono.fromCallable(() -> {
+                                boolean hasChanges = false;
+                                if (request.name() != null && !request.name().equals(tag.getName())) {
+                                    if (tagRepository.findByProjectIdAndNameIgnoreCase(tag.getProject().getId(), request.name()).isPresent()) {
+                                        throw new DuplicateTagException(request.name(), tag.getProject().getId());
+                                    }
+                                    tag.setName(request.name());
+                                    hasChanges = true;
+                                }
 
-                    if (hasChanges) {
-                        return Mono.fromCallable(() -> tagRepository.save(tag))
-                                .subscribeOn(Schedulers.boundedElastic())
-                                .map(tagMapper::toTagResponse);
-                    } else {
-                        return Mono.just(tagMapper.toTagResponse(tag));
-                    }
+                                return hasChanges ? tagRepository.save(tag) : tag;
+                            })
+                            .subscribeOn(Schedulers.boundedElastic())
+                            .map(tagMapper::toTagResponse);
                 });
     }
 
@@ -114,9 +112,8 @@ public class TagService {
 
     public Mono<Void> assignTagToTask(Long taskId, Long tagId) {
         return Mono.zip(
-                // TODO
-                // taskService.getTaskEntityById(taskId)
-                Mono.fromCallable(() -> new Task()).subscribeOn(Schedulers.boundedElastic()),
+                Mono.fromCallable(() -> taskServiceClient.getTaskEntityById(taskId))
+                        .subscribeOn(Schedulers.boundedElastic()),
                 Mono.fromCallable(() -> tagRepository.findById(tagId))
                         .subscribeOn(Schedulers.boundedElastic())
                         .flatMap(optionalTag -> {
@@ -137,8 +134,7 @@ public class TagService {
                 boolean added = task.getTags().add(tag);
                 if (added) {
                     tag.getTasks().add(task);
-                    // TODO
-                    // taskService.saveTask(task);
+                    taskServiceClient.updateTask(taskId, task);
                 }
             }).subscribeOn(Schedulers.boundedElastic());
         }).then();
@@ -146,9 +142,8 @@ public class TagService {
 
     public Mono<Void> removeTagFromTask(Long taskId, Long tagId) {
         return Mono.zip(
-                // TODO
-                // taskService.getTaskEntityById(taskId)
-                Mono.fromCallable(() -> new Task()).subscribeOn(Schedulers.boundedElastic()),
+                Mono.fromCallable(() -> taskServiceClient.getTaskEntityById(taskId))
+                        .subscribeOn(Schedulers.boundedElastic()),
                 Mono.fromCallable(() -> tagRepository.findById(tagId))
                         .subscribeOn(Schedulers.boundedElastic())
                         .flatMap(optionalTag -> {
@@ -162,9 +157,8 @@ public class TagService {
             Tag tag = tuple.getT2();
 
             return Mono.fromRunnable(() -> {
-                // TODO
-                // task.getTags().remove(tag);
-                // taskService.saveTask(task);
+                task.getTags().remove(tag);
+                taskServiceClient.updateTask(taskId, task);
             }).subscribeOn(Schedulers.boundedElastic());
         }).then();
     }

@@ -1,4 +1,4 @@
-package com.example.colaba.project.mapper;
+package com.example.colaba.shared.mapper;
 
 import com.example.colaba.shared.dto.tag.TagResponse;
 import com.example.colaba.shared.entity.Tag;

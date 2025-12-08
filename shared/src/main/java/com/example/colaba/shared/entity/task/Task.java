@@ -49,17 +49,17 @@ public class Task {
     private TaskPriority priority;
 
     @NotNull(message = "Project is required")
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "project_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Project project;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "assignee_id")
     @OnDelete(action = OnDeleteAction.SET_NULL)
     private UserJpa assignee;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "reporter_id")
     @OnDelete(action = OnDeleteAction.SET_NULL)
     private UserJpa reporter;

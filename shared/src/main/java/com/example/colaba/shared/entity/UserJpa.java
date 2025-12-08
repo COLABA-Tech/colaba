@@ -35,6 +35,6 @@ public class UserJpa {
     @Size(max = 100)
     private String email;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private Set<ProjectMember> memberships = new HashSet<>();
 }

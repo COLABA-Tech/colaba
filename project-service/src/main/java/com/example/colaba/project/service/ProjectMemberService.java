@@ -1,14 +1,19 @@
 package com.example.colaba.project.service;
 
-import com.example.colaba.project.mapper.ProjectMemberMapper;
 import com.example.colaba.project.repository.ProjectMemberRepository;
+import com.example.colaba.shared.client.UserServiceClient;
 import com.example.colaba.shared.dto.projectmember.CreateProjectMemberRequest;
 import com.example.colaba.shared.dto.projectmember.ProjectMemberResponse;
 import com.example.colaba.shared.dto.projectmember.UpdateProjectMemberRequest;
+import com.example.colaba.shared.entity.Project;
+import com.example.colaba.shared.entity.UserJpa;
 import com.example.colaba.shared.entity.projectmember.ProjectMember;
 import com.example.colaba.shared.entity.projectmember.ProjectMemberId;
 import com.example.colaba.shared.entity.projectmember.ProjectRole;
+import com.example.colaba.shared.exception.projectmember.DuplicateProjectMemberException;
 import com.example.colaba.shared.exception.projectmember.ProjectMemberNotFoundException;
+import com.example.colaba.shared.mapper.ProjectMemberMapper;
+import com.example.colaba.shared.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,12 +26,13 @@ import reactor.core.scheduler.Schedulers;
 public class ProjectMemberService {
     private final ProjectMemberRepository projectMemberRepository;
     private final ProjectService projectService;
-    //    private final UserService userService;  // TODO
+    private final UserServiceClient userServiceClient;
     private final ProjectMemberMapper projectMemberMapper;
+    private final UserMapper userMapper;
 
     public Mono<Page<ProjectMemberResponse>> getMembersByProject(Long projectId, Pageable pageable) {
         return projectService.getProjectEntityById(projectId)
-                .flatMap(project -> Mono.fromCallable(() ->
+                .flatMap(_ -> Mono.fromCallable(() ->
                         projectMemberMapper.toProjectMemberResponsePage(
                                 projectMemberRepository.findByProjectId(projectId, pageable)
                         )
@@ -34,26 +40,34 @@ public class ProjectMemberService {
     }
 
     public Mono<ProjectMemberResponse> createMembership(Long projectId, CreateProjectMemberRequest request) {
-        // TODO
-        return projectService.getProjectEntityById(projectId)
-                .flatMap(project -> Mono.fromCallable(() -> {
-                    ProjectMemberId id = new ProjectMemberId(projectId, request.userId());
+        return Mono.zip(
+                projectService.getProjectEntityById(projectId),
+                Mono.fromCallable(() -> userServiceClient.getUserEntityById(request.userId()))
+                        .subscribeOn(Schedulers.boundedElastic())
+                        .flatMap(user -> Mono.just(userMapper.toUserJpa(user)))
+        ).flatMap(tuple -> {
+            Project project = tuple.getT1();
+            UserJpa user = tuple.getT2();
 
-                    if (projectMemberRepository.existsById(id)) {
-                        // throw new DuplicateProjectMemberException(user.getUsername(), projectId);
-                    }
+            return Mono.fromCallable(() -> {
+                ProjectMemberId id = new ProjectMemberId(projectId, user.getId());
 
-                    ProjectMember member = ProjectMember.builder()
-                            .projectId(project.getId())
-                            // .userId(user.getId())
-                            .project(project)
-                            // .user(user)
-                            .role(request.role() != null ? request.role() : ProjectRole.getDefault())
-                            .build();
+                if (projectMemberRepository.existsById(id)) {
+                    throw new DuplicateProjectMemberException(user.getUsername(), projectId);
+                }
 
-                    ProjectMember saved = projectMemberRepository.save(member);
-                    return projectMemberMapper.toProjectMemberResponse(saved);
-                }).subscribeOn(Schedulers.boundedElastic()));
+                ProjectMember member = ProjectMember.builder()
+                        .projectId(project.getId())
+                        .userId(user.getId())
+                        .project(project)
+                        .user(user)
+                        .role(request.role() != null ? request.role() : ProjectRole.getDefault())
+                        .build();
+
+                ProjectMember saved = projectMemberRepository.save(member);
+                return projectMemberMapper.toProjectMemberResponse(saved);
+            }).subscribeOn(Schedulers.boundedElastic());
+        });
     }
 
     public Mono<ProjectMemberResponse> updateMembership(Long projectId, Long userId, UpdateProjectMemberRequest request) {

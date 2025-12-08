@@ -1,4 +1,4 @@
-package com.example.colaba.task.mapper;
+package com.example.colaba.shared.mapper;
 
 import com.example.colaba.shared.dto.task.TaskResponse;
 import com.example.colaba.shared.entity.task.Task;
