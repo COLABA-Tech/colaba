@@ -10,20 +10,35 @@ spring:
               enabled: true
               lower-case-service-id: true
           routes:
-            - id: user-service
+            - id: user-service-public
               uri: lb://USER-SERVICE
               predicates:
                 - Path=/api/users/**
 
-            - id: project-service
+            - id: user-service-internal
+              uri: lb://USER-SERVICE
+              predicates:
+                - Path=/api/users/internal/**
+
+            - id: project-service-public
               uri: lb://PROJECT-SERVICE
               predicates:
                 - Path=/api/projects/**, /api/tags/**, /api/task-tags/**
 
-            - id: task-service
+            - id: project-service-internal
+              uri: lb://PROJECT-SERVICE
+              predicates:
+                - Path=/api/projects/internal/**
+
+            - id: task-service-public
               uri: lb://TASK-SERVICE
               predicates:
                 - Path=/api/tasks/**, /api/comments/**
+
+            - id: task-service-internal
+              uri: lb://TASK-SERVICE
+              predicates:
+                - Path=/api/tasks/internal/**
 
 server:
   port: 8080

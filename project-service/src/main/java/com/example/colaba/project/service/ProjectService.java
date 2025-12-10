@@ -9,11 +9,12 @@ import com.example.colaba.shared.dto.project.UpdateProjectRequest;
 import com.example.colaba.shared.entity.Project;
 import com.example.colaba.shared.entity.User;
 import com.example.colaba.shared.entity.UserJpa;
-import com.example.colaba.shared.exception.comment.UserNotFoundException;
 import com.example.colaba.shared.exception.project.DuplicateProjectNameException;
 import com.example.colaba.shared.exception.project.ProjectNotFoundException;
+import com.example.colaba.shared.exception.user.UserNotFoundException;
 import com.example.colaba.shared.mapper.ProjectMapper;
 import com.example.colaba.shared.mapper.UserMapper;
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -41,7 +42,12 @@ public class ProjectService {
                 throw new DuplicateProjectNameException(request.name());
             }
 
-            User owner = userServiceClient.getUserEntityById(request.ownerId());
+            User owner;
+            try {
+                owner = userServiceClient.getUserEntityById(request.ownerId());
+            } catch (FeignException.NotFound e) {
+                throw new UserNotFoundException(request.ownerId());
+            }
             UserJpa ownerJpa = userMapper.toUserJpa(owner);
 
             Project project = Project.builder()
@@ -94,6 +100,18 @@ public class ProjectService {
                 hasChanges = true;
             }
 
+            if (request.ownerId() != null && !request.ownerId().equals(project.getOwner().getId())) {
+                User newOwner;
+                try {
+                    newOwner = userServiceClient.getUserEntityById(request.ownerId());
+                } catch (FeignException.NotFound e) {
+                    throw new UserNotFoundException(request.ownerId());
+                }
+                UserJpa newOwnerJpa = userMapper.toUserJpa(newOwner);
+                project.setOwner(newOwnerJpa);
+                hasChanges = true;
+            }
+
             Project saved = hasChanges ? projectRepository.save(project) : project;
             return projectMapper.toProjectResponse(saved);
         }).subscribeOn(Schedulers.boundedElastic());
@@ -128,15 +146,17 @@ public class ProjectService {
     }
 
     public Mono<List<ProjectResponse>> getProjectByOwnerId(Long ownerId) {
-        return Mono.fromCallable(() -> userServiceClient.getUserEntityById(ownerId))
-                .subscribeOn(Schedulers.boundedElastic())
-                .flatMap(user -> {
-                    UserJpa userJpa = userMapper.toUserJpa(user);
-                    return Mono.fromCallable(() -> projectRepository.findByOwner(userJpa))
-                            .subscribeOn(Schedulers.boundedElastic())
-                            .map(projectMapper::toProjectResponseList);
+        return Mono.fromCallable(() -> {
+                    try {
+                        User user = userServiceClient.getUserEntityById(ownerId);
+                        UserJpa userJpa = userMapper.toUserJpa(user);
+                        return projectRepository.findByOwner(userJpa);
+                    } catch (FeignException.NotFound e) {
+                        throw new UserNotFoundException(ownerId);
+                    }
                 })
-                .onErrorResume(_ -> Mono.error(new UserNotFoundException(ownerId)));
+                .subscribeOn(Schedulers.boundedElastic())
+                .map(projectMapper::toProjectResponseList);
     }
 
     public Mono<ProjectScrollResponse> scroll(int page, int size) {

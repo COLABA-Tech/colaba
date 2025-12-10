@@ -10,13 +10,13 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/internal/projects")
+@RequestMapping("/api/projects/internal")
 @RequiredArgsConstructor
 public class ProjectInternalController {
 
     private final ProjectRepository projectRepository;
 
-    @GetMapping("/owner")
+    @PostMapping("/owner")
     public List<Project> findByOwner(@RequestBody UserJpa owner) {
         return projectRepository.findByOwner(owner);
     }
@@ -24,6 +24,11 @@ public class ProjectInternalController {
     @DeleteMapping("/all")
     public void deleteAll() {
         projectRepository.deleteAll();
+    }
+
+    @DeleteMapping("/{id}")
+    public void deleteProject(@PathVariable Long id) {
+        projectRepository.deleteById(id);
     }
 
     @GetMapping("/entity/{id}")

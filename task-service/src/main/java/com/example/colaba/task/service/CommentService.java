@@ -10,11 +10,13 @@ import com.example.colaba.shared.entity.User;
 import com.example.colaba.shared.entity.UserJpa;
 import com.example.colaba.shared.entity.task.Task;
 import com.example.colaba.shared.exception.comment.CommentNotFoundException;
-import com.example.colaba.shared.exception.comment.TaskNotFoundException;
+import com.example.colaba.shared.exception.task.TaskNotFoundException;
+import com.example.colaba.shared.exception.user.UserNotFoundException;
 import com.example.colaba.shared.mapper.CommentMapper;
 import com.example.colaba.shared.mapper.UserMapper;
 import com.example.colaba.task.repository.CommentRepository;
 import com.example.colaba.task.repository.TaskRepository;
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
@@ -35,7 +37,12 @@ public class CommentService {
 
     @Transactional
     public CommentResponse createComment(CreateCommentRequest request) {
-        User user = userServiceClient.getUserEntityById(request.userId());
+        User user;
+        try {
+            user = userServiceClient.getUserEntityById(request.userId());
+        } catch (FeignException.NotFound e) {
+            throw new UserNotFoundException(request.userId());
+        }
         UserJpa userJpa = userMapper.toUserJpa(user);
 
         Task task = taskRepository.findById(request.taskId())
@@ -103,20 +110,5 @@ public class CommentService {
             throw new CommentNotFoundException(id);
         }
         commentRepository.deleteById(id);
-    }
-
-    @Transactional
-    public long countCommentsByTask(Long taskId) {
-        taskRepository.findById(taskId)
-                .orElseThrow(() -> new TaskNotFoundException(taskId));
-
-        return commentRepository.countByTaskId(taskId);
-    }
-
-    @Transactional
-    public void bulkUpdateContentForTask(Long taskId, String prefix) {
-        List<Comment> comments = commentRepository.findAllByTaskId(taskId);
-        comments.forEach(c -> c.setContent(prefix + c.getContent()));
-        commentRepository.saveAll(comments);
     }
 }

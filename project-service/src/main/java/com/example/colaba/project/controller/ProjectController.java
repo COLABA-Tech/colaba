@@ -18,6 +18,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -36,13 +37,20 @@ public class ProjectController extends BaseController {
     @PostMapping
     @Operation(summary = "Create a new project", description = "Creates a new project with the provided name, description, and owner ID. Validates for unique name and existing owner.")
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Project created successfully"),
+            @ApiResponse(responseCode = "201", description = "Project created successfully"),
             @ApiResponse(responseCode = "400", description = "Validation error or duplicate project name"),
             @ApiResponse(responseCode = "404", description = "Owner user not found")
     })
-    public Mono<ResponseEntity<Void>> create(@Valid @RequestBody CreateProjectRequest request) {
+    public Mono<ResponseEntity<ProjectResponse>> create(@Valid @RequestBody CreateProjectRequest request) {
         return projectService.createProject(request)
-                .then(Mono.just(ResponseEntity.noContent().build()));
+                .map(projectResponse ->
+                        ResponseEntity.created(
+                                ServletUriComponentsBuilder.fromCurrentRequestUri()
+                                        .path("/{id}")
+                                        .buildAndExpand(projectResponse.id())
+                                        .toUri()
+                        ).body(projectResponse)
+                );
     }
 
     @PutMapping("/{id}")

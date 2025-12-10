@@ -1,6 +1,7 @@
 package com.example.colaba.shared.client;
 
 import com.example.colaba.shared.entity.task.Task;
+import com.example.colaba.shared.feign.FeignConfig;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -9,7 +10,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 @FeignClient(
         name = "task-service",
-        path = "/internal/tasks"
+        path = "/api/tasks/internal",
+        configuration = FeignConfig.class
 )
 public interface TaskServiceClient {
     @GetMapping("/entity/{id}")

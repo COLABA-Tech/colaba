@@ -12,8 +12,10 @@ import com.example.colaba.shared.entity.projectmember.ProjectMemberId;
 import com.example.colaba.shared.entity.projectmember.ProjectRole;
 import com.example.colaba.shared.exception.projectmember.DuplicateProjectMemberException;
 import com.example.colaba.shared.exception.projectmember.ProjectMemberNotFoundException;
+import com.example.colaba.shared.exception.user.UserNotFoundException;
 import com.example.colaba.shared.mapper.ProjectMemberMapper;
 import com.example.colaba.shared.mapper.UserMapper;
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -42,7 +44,13 @@ public class ProjectMemberService {
     public Mono<ProjectMemberResponse> createMembership(Long projectId, CreateProjectMemberRequest request) {
         return Mono.zip(
                 projectService.getProjectEntityById(projectId),
-                Mono.fromCallable(() -> userServiceClient.getUserEntityById(request.userId()))
+                Mono.fromCallable(() -> {
+                            try {
+                                return userServiceClient.getUserEntityById(request.userId());
+                            } catch (FeignException.NotFound e) {
+                                throw new UserNotFoundException(request.userId());
+                            }
+                        })
                         .subscribeOn(Schedulers.boundedElastic())
                         .flatMap(user -> Mono.just(userMapper.toUserJpa(user)))
         ).flatMap(tuple -> {

@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
 @RestController
-@RequestMapping("/internal/users")
+@RequestMapping("/api/users/internal")
 @RequiredArgsConstructor
 public class UserInternalController {
 

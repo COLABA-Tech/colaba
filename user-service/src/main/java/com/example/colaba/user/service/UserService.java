@@ -13,6 +13,7 @@ import com.example.colaba.shared.exception.user.DuplicateUserEntityUsernameExcep
 import com.example.colaba.shared.exception.user.UserNotFoundException;
 import com.example.colaba.shared.mapper.UserMapper;
 import com.example.colaba.user.repository.UserRepository;
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -57,17 +58,6 @@ public class UserService {
                 .as(transactionalOperator::transactional);
     }
 
-    public Mono<UserResponse> getUserById(Long id) {
-        return userRepository.findById(id)
-                .switchIfEmpty(Mono.error(new UserNotFoundException(id)))
-                .map(userMapper::toUserResponse);
-    }
-
-    public Mono<User> getUserEntityById(Long id) {
-        return userRepository.findById(id)
-                .switchIfEmpty(Mono.error(new UserNotFoundException(id)));
-    }
-
     public Mono<UserResponse> getUserByUsername(String username) {
         return userRepository.findByUsername(username)
                 .switchIfEmpty(Mono.error(new UserNotFoundException(username)))
@@ -78,23 +68,35 @@ public class UserService {
         return userRepository.findById(id)
                 .switchIfEmpty(Mono.error(new UserNotFoundException(id)))
                 .flatMap(user -> {
-                    boolean hasChanges = false;
+                    Mono<Void> validationChain = Mono.empty();
 
-                    if (request.username() != null && !request.username().isBlank() && !request.username().equals(user.getUsername())) {
-                        user.setUsername(request.username());
-                        hasChanges = true;
+                    if (request.username() != null && !request.username().isBlank()
+                            && !request.username().equals(user.getUsername())) {
+                        validationChain = validationChain.then(
+                                userRepository.existsByUsernameAndIdNot(request.username(), id)
+                                        .filter(exists -> !exists)
+                                        .switchIfEmpty(Mono.error(new DuplicateUserEntityUsernameException(request.username())))
+                                        .then()
+                        ).doOnSuccess(_ -> user.setUsername(request.username()));
                     }
 
-                    if (request.email() != null && !request.email().isBlank() && !request.email().equals(user.getEmail())) {
-                        user.setEmail(request.email());
-                        hasChanges = true;
+                    if (request.email() != null && !request.email().isBlank()
+                            && !request.email().equals(user.getEmail())) {
+                        validationChain = validationChain.then(
+                                userRepository.existsByEmailAndIdNot(request.email(), id)
+                                        .filter(exists -> !exists)
+                                        .switchIfEmpty(Mono.error(new DuplicateUserEntityEmailException(request.email())))
+                                        .then()
+                        ).doOnSuccess(_ -> user.setEmail(request.email()));
                     }
 
-                    if (hasChanges) {
+                    return validationChain.then(Mono.just(user));
+                })
+                .flatMap(user -> {
+                    if (user.getUsername() != null || user.getEmail() != null) {
                         return userRepository.save(user);
-                    } else {
-                        return Mono.just(user);
                     }
+                    return Mono.just(user);
                 })
                 .map(userMapper::toUserResponse)
                 .as(transactionalOperator::transactional);
@@ -104,19 +106,27 @@ public class UserService {
     public Mono<Void> deleteUser(Long id) {
         return userRepository.findById(id)
                 .switchIfEmpty(Mono.error(new UserNotFoundException(id)))
-                .flatMap(user -> {
-                    UserJpa userJpa = userMapper.toUserJpa(user);
-                    return Mono.fromCallable(() -> {
+                .flatMap(user -> Mono.fromCallable(() -> {
+                            try {
+                                UserJpa userJpa = userMapper.toUserJpa(user);
                                 List<Project> ownedProjects = projectServiceClient.findByOwner(userJpa);
-
                                 if (!ownedProjects.isEmpty()) {
-                                    projectServiceClient.deleteAll();
+                                    ownedProjects.forEach(project -> {
+                                        try {
+                                            projectServiceClient.deleteProject(project.getId());
+                                        } catch (FeignException e) {
+                                            System.err.println("Failed to delete project " + project.getId() + ": " + e.getMessage());
+                                        }
+                                    });
                                 }
                                 return user;
-                            })
-                            .subscribeOn(Schedulers.boundedElastic())
-                            .then(userRepository.deleteById(id));
-                })
+                            } catch (FeignException e) {
+                                System.err.println("Failed get projects: " + e.getMessage());
+                                return user;
+                            }
+                        })
+                        .subscribeOn(Schedulers.boundedElastic())
+                        .then(userRepository.deleteById(id)))
                 .as(transactionalOperator::transactional);
     }
 
@@ -134,7 +144,7 @@ public class UserService {
 
                     List<User> pageContent = allUsers.subList(start, end);
                     List<UserResponse> content = userMapper.toUserResponseList(pageContent);
-                    return (Page<UserResponse>) new PageImpl<>(content, pageable, allUsers.size());
+                    return new PageImpl<>(content, pageable, allUsers.size());
                 });
     }
 

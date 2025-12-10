@@ -5,7 +5,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record UpdateProjectRequest(
-
         @NotBlank(message = "Project name must not be blank")
         @Size(max = 255, message = "Project name must be shorter than 255 characters")
         String name,
@@ -15,6 +14,5 @@ public record UpdateProjectRequest(
 
         @NotNull(message = "ownerId must not be null")
         Long ownerId
-
 ) {
 }
