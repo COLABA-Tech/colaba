@@ -67,36 +67,51 @@ public class UserService {
     public Mono<UserResponse> updateUser(Long id, UpdateUserRequest request) {
         return userRepository.findById(id)
                 .switchIfEmpty(Mono.error(new UserNotFoundException(id)))
-                .flatMap(user -> {
-                    Mono<Void> validationChain = Mono.empty();
+                .flatMap(existingUser -> {
+                    boolean needsSave = false;
 
+                    // Проверка и обновление username
                     if (request.username() != null && !request.username().isBlank()
-                            && !request.username().equals(user.getUsername())) {
-                        validationChain = validationChain.then(
-                                userRepository.existsByUsernameAndIdNot(request.username(), id)
-                                        .filter(exists -> !exists)
-                                        .switchIfEmpty(Mono.error(new DuplicateUserEntityUsernameException(request.username())))
-                                        .then()
-                        ).doOnSuccess(_ -> user.setUsername(request.username()));
+                            && !request.username().equals(existingUser.getUsername())) {
+                        return userRepository.existsByUsernameAndIdNot(request.username(), id)
+                                .flatMap(usernameExists -> {
+                                    if (usernameExists) {
+                                        return Mono.error(new DuplicateUserEntityUsernameException(request.username()));
+                                    }
+                                    existingUser.setUsername(request.username());
+
+                                    // Проверка и обновление email
+                                    if (request.email() != null && !request.email().isBlank()
+                                            && !request.email().equals(existingUser.getEmail())) {
+                                        return userRepository.existsByEmailAndIdNot(request.email(), id)
+                                                .flatMap(emailExists -> {
+                                                    if (emailExists) {
+                                                        return Mono.error(new DuplicateUserEntityEmailException(request.email()));
+                                                    }
+                                                    existingUser.setEmail(request.email());
+                                                    return userRepository.save(existingUser);
+                                                });
+                                    } else {
+                                        return userRepository.save(existingUser);
+                                    }
+                                });
                     }
 
+                    // Только email меняется
                     if (request.email() != null && !request.email().isBlank()
-                            && !request.email().equals(user.getEmail())) {
-                        validationChain = validationChain.then(
-                                userRepository.existsByEmailAndIdNot(request.email(), id)
-                                        .filter(exists -> !exists)
-                                        .switchIfEmpty(Mono.error(new DuplicateUserEntityEmailException(request.email())))
-                                        .then()
-                        ).doOnSuccess(_ -> user.setEmail(request.email()));
+                            && !request.email().equals(existingUser.getEmail())) {
+                        return userRepository.existsByEmailAndIdNot(request.email(), id)
+                                .flatMap(emailExists -> {
+                                    if (emailExists) {
+                                        return Mono.error(new DuplicateUserEntityEmailException(request.email()));
+                                    }
+                                    existingUser.setEmail(request.email());
+                                    return userRepository.save(existingUser);
+                                });
                     }
 
-                    return validationChain.then(Mono.just(user));
-                })
-                .flatMap(user -> {
-                    if (user.getUsername() != null || user.getEmail() != null) {
-                        return userRepository.save(user);
-                    }
-                    return Mono.just(user);
+                    // Ничего не меняется
+                    return Mono.just(existingUser);
                 })
                 .map(userMapper::toUserResponse)
                 .as(transactionalOperator::transactional);
