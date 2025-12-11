@@ -42,18 +42,19 @@ public class ProjectService {
                 throw new DuplicateProjectNameException(request.name());
             }
 
-            User owner;
             try {
-                owner = userServiceClient.getUserEntityById(request.ownerId());
-            } catch (FeignException.NotFound e) {
-                throw new UserNotFoundException(request.ownerId());
+                boolean userExists = userServiceClient.userExists(request.ownerId());
+                if (!userExists) {
+                    throw new UserNotFoundException(request.ownerId());
+                }
+            } catch (FeignException e) {
+                throw new RuntimeException("User service unavailable: " + e.getMessage());
             }
-            UserJpa ownerJpa = userMapper.toUserJpa(owner);
 
             Project project = Project.builder()
                     .name(request.name())
                     .description(request.description())
-                    .owner(ownerJpa)
+                    .ownerId(request.ownerId())
                     .build();
 
             Project saved = projectRepository.save(project);
@@ -100,15 +101,16 @@ public class ProjectService {
                 hasChanges = true;
             }
 
-            if (request.ownerId() != null && !request.ownerId().equals(project.getOwner().getId())) {
-                User newOwner;
+            if (request.ownerId() != null && !request.ownerId().equals(project.getOwnerId())) {
                 try {
-                    newOwner = userServiceClient.getUserEntityById(request.ownerId());
-                } catch (FeignException.NotFound e) {
-                    throw new UserNotFoundException(request.ownerId());
+                    boolean userExists = userServiceClient.userExists(request.ownerId());
+                    if (!userExists) {
+                        throw new UserNotFoundException(request.ownerId());
+                    }
+                } catch (FeignException e) {
+                    throw new RuntimeException("User service unavailable: " + e.getMessage());
                 }
-                UserJpa newOwnerJpa = userMapper.toUserJpa(newOwner);
-                project.setOwner(newOwnerJpa);
+                project.setOwnerId(request.ownerId());
                 hasChanges = true;
             }
 
@@ -119,20 +121,24 @@ public class ProjectService {
 
     @Transactional
     public Mono<ProjectResponse> changeProjectOwner(Long projectId, Long newOwnerId) {
-        return Mono.zip(
-                getProjectEntityById(projectId),
-                Mono.fromCallable(() -> userServiceClient.getUserEntityById(newOwnerId))
-                        .subscribeOn(Schedulers.boundedElastic())
-                        .flatMap(user -> Mono.just(userMapper.toUserJpa(user)))
-        ).flatMap(tuple -> {
-            Project project = tuple.getT1();
-            UserJpa newOwner = tuple.getT2();
-            return Mono.fromCallable(() -> {
-                project.setOwner(newOwner);
-                Project saved = projectRepository.save(project);
-                return projectMapper.toProjectResponse(saved);
-            }).subscribeOn(Schedulers.boundedElastic());
-        });
+        return Mono.fromCallable(() -> {
+            Project project = projectRepository.findById(projectId)
+                    .orElseThrow(() -> new ProjectNotFoundException(projectId));
+            if (newOwnerId.equals(project.getOwnerId())) {
+                return projectMapper.toProjectResponse(project);
+            }
+            try {
+                boolean userExists = userServiceClient.userExists(newOwnerId);
+                if (!userExists) {
+                    throw new UserNotFoundException(newOwnerId);
+                }
+            } catch (FeignException e) {
+                throw new RuntimeException("User service unavailable: " + e.getMessage());
+            }
+            project.setOwnerId(newOwnerId);
+            Project saved = projectRepository.save(project);
+            return projectMapper.toProjectResponse(saved);
+        }).subscribeOn(Schedulers.boundedElastic());
     }
 
     @Transactional

@@ -14,4 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 public interface UserServiceClient {
     @GetMapping("/entity/{id}")
     User getUserEntityById(@PathVariable Long id);
+
+    @GetMapping("/api/users/{id}/exists")
+    boolean userExists(@PathVariable Long id);
 }
