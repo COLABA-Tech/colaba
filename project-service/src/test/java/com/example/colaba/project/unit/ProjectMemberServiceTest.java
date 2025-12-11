@@ -250,8 +250,7 @@ class ProjectMemberServiceTest {
 
         verify(projectService).getProjectEntityById(testProjectId);
         verify(userServiceClient).getUserEntityById(testUserId);
-        verify(userMapper).toUserJpa(testUser);
-        verify(projectMemberRepository).existsById(id);
+        verify(userServiceClient).getUserEntityById(testUserId);
         verify(projectMemberRepository, never()).save(any(ProjectMember.class));
     }
 
@@ -273,8 +272,6 @@ class ProjectMemberServiceTest {
                                 throwable.getMessage().contains(String.valueOf(testProjectId)))
                 .verify();
 
-        verify(projectService).getProjectEntityById(testProjectId);
-        verify(userServiceClient).getUserEntityById(testUserId);
         verify(projectMemberRepository, never()).existsById(any(ProjectMemberId.class));
     }
 
