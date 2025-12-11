@@ -1,4 +1,6 @@
 spring:
+  main:
+    allow-bean-definition-overriding: true
   application:
     name: user-service
   cloud:
@@ -14,6 +16,9 @@ spring:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/colabadb}
     user: ${SPRING_DATASOURCE_USERNAME:colaba_user}
     password: ${SPRING_DATASOURCE_PASSWORD}
+  mvc:
+    favicon:
+      enabled: false
 
 server:
   port: 8081
@@ -32,14 +37,34 @@ eureka:
     service-url:
       defaultZone: ${EUREKA_URL:http://discovery-server:8761/eureka}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,mappings,env,beans
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+
 springdoc:
   api-docs:
-    path: /api-docs
+    path: /v3/api-docs-user
+    enabled: true
   swagger-ui:
     path: /swagger-ui
+    enabled: true
+    config-url: /v3/api-docs-user/swagger-config
+    url: /v3/api-docs-user
     operations-sorter: method
     tags-sorter: alpha
     display-request-duration: true
+    disable-swagger-default-url: true
+    urls:
+      - url: /v3/api-docs-user
+        name: User Service API
   packages-to-scan: com.example.colaba.user.controller
   default-consumes-media-type: application/json
   default-produces-media-type: application/json

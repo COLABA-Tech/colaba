@@ -1,4 +1,6 @@
 spring:
+  main:
+    allow-bean-definition-overriding: true
   application:
     name: task-service
   cloud:
@@ -20,6 +22,9 @@ spring:
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
     enabled: true
+  mvc:
+    favicon:
+      enabled: false
 
 server:
   port: 8083
@@ -38,14 +43,32 @@ eureka:
     service-url:
       defaultZone: ${EUREKA_URL:http://discovery-server:8761/eureka}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,mappings,env
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+
 springdoc:
   api-docs:
-    path: /api-docs
+    path: /v3/api-docs-task
+    enabled: true
   swagger-ui:
     path: /swagger-ui
+    enabled: true
+    config-url: /v3/api-docs-task/swagger-config
+    url: /v3/api-docs-task
     operations-sorter: method
     tags-sorter: alpha
     display-request-duration: true
+    disable-swagger-default-url: true
+    urls:
+      - url: /v3/api-docs-task
+        name: Task Service API
   packages-to-scan: com.example.colaba.task.controller
   default-consumes-media-type: application/json
   default-produces-media-type: application/json
