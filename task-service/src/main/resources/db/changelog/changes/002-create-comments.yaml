@@ -18,17 +18,11 @@ databaseChangeLog:
                   type: bigint
                   constraints:
                     nullable: false
-                    foreignKeyName: fk_comment_task
-                    references: tasks(id)
-                    deleteCascade: true
               - column:
                   name: user_id
                   type: bigint
                   constraints:
                     nullable: false
-                    foreignKeyName: fk_comment_user
-                    references: users(id)
-                    deleteCascade: true
               - column:
                   name: content
                   type: text

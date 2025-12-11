@@ -13,13 +13,6 @@ databaseChangeLog:
               - column: { name: created_at, type: TIMESTAMPTZ, defaultValue: "now()" }
               - column: { name: updated_at, type: TIMESTAMPTZ, defaultValue: "now()" }
 
-        - addForeignKeyConstraint:
-            baseTableName: projects
-            baseColumnNames: owner_id
-            referencedTableName: users
-            referencedColumnNames: id
-            constraintName: fk_projects_owner
-
         - createIndex:
             tableName: projects
             indexName: idx_projects_owner_id

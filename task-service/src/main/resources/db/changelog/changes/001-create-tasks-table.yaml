@@ -18,30 +18,6 @@ databaseChangeLog:
               - column: { name: created_at, type: TIMESTAMPTZ, defaultValue: "now()" }
               - column: { name: updated_at, type: TIMESTAMPTZ, defaultValue: "now()" }
 
-        - addForeignKeyConstraint:
-            baseTableName: tasks
-            baseColumnNames: project_id
-            referencedTableName: projects
-            referencedColumnNames: id
-            constraintName: fk_tasks_project
-            onDelete: CASCADE
-
-        - addForeignKeyConstraint:
-            baseTableName: tasks
-            baseColumnNames: assignee_id
-            referencedTableName: users
-            referencedColumnNames: id
-            constraintName: fk_tasks_assignee
-            onDelete: SET NULL
-
-        - addForeignKeyConstraint:
-            baseTableName: tasks
-            baseColumnNames: reporter_id
-            referencedTableName: users
-            referencedColumnNames: id
-            constraintName: fk_tasks_reporter
-            onDelete: SET NULL
-
         - createIndex:
             tableName: tasks
             indexName: idx_tasks_project_id

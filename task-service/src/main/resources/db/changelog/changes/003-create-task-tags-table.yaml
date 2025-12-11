@@ -21,11 +21,3 @@ databaseChangeLog:
             referencedColumnNames: id
             constraintName: fk_task_tags_task_id
             onDelete: CASCADE
-
-        - addForeignKeyConstraint:
-            baseTableName: task_tags
-            baseColumnNames: tag_id
-            referencedTableName: tags
-            referencedColumnNames: id
-            constraintName: fk_task_tags_tag_id
-            onDelete: CASCADE
