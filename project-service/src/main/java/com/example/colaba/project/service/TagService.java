@@ -41,7 +41,7 @@ public class TagService {
                         .subscribeOn(Schedulers.boundedElastic()));
     }
 
-//    // remove
+    // TODO move
 //    public Mono<List<TagResponse>> getTagsByTask(Long taskId) {
 //        return Mono.fromCallable(() -> tagRepository.findByTaskId(taskId))
 //                .subscribeOn(Schedulers.boundedElastic())
@@ -102,7 +102,7 @@ public class TagService {
                 .then();
     }
 
-//    // move
+    // TODO move
 //    @Transactional
 //    public Mono<Void> assignTagToTask(Long taskId, Long tagId) {
 //        return Mono.zip(
