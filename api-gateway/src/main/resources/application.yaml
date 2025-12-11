@@ -1,49 +1,5 @@
 spring:
   application:
     name: api-gateway
-  cloud:
-    gateway:
-      server:
-        webflux:
-          discovery:
-            locator:
-              enabled: true
-              lower-case-service-id: true
-          routes:
-            - id: user-service-public
-              uri: lb://USER-SERVICE
-              predicates:
-                - Path=/api/users/**
-
-            - id: user-service-internal
-              uri: lb://USER-SERVICE
-              predicates:
-                - Path=/api/users/internal/**
-
-            - id: project-service-public
-              uri: lb://PROJECT-SERVICE
-              predicates:
-                - Path=/api/projects/**, /api/tags/**, /api/task-tags/**
-
-            - id: project-service-internal
-              uri: lb://PROJECT-SERVICE
-              predicates:
-                - Path=/api/projects/internal/**
-
-            - id: task-service-public
-              uri: lb://TASK-SERVICE
-              predicates:
-                - Path=/api/tasks/**, /api/comments/**
-
-            - id: task-service-internal
-              uri: lb://TASK-SERVICE
-              predicates:
-                - Path=/api/tasks/internal/**
-
-server:
-  port: 8080
-
-eureka:
-  client:
-    service-url:
-      defaultZone: ${EUREKA_URL:http://discovery-server:8761/eureka}
+  config:
+    import: "optional:configserver:http://config-server:8888"

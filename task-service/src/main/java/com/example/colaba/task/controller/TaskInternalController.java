@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/internal/tasks")
+@RequestMapping("/api/tasks/internal")
 @RequiredArgsConstructor
 public class TaskInternalController {
 
