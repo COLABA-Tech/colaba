@@ -6,13 +6,14 @@ spring:
     config:
       enabled: false # TODO
 
-  # R2DBC (реактивный драйвер — у тебя реактивный user-service)
+
+
   r2dbc:
     url: ${SPRING_R2DBC_URL:r2dbc:postgresql://postgres:5432/colabadb}
     username: ${SPRING_DATASOURCE_USERNAME:colaba_user}
     password: ${SPRING_DATASOURCE_PASSWORD}
 
-  # Liquibase через обычный JDBC (это нормально и работает)
+
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
     enabled: true
