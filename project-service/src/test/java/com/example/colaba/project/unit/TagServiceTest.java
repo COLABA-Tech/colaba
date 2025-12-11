@@ -563,7 +563,7 @@ class TagServiceTest {
     void assignTagToTask_tagNotFound_throwsException() {
         // Given
         when(taskServiceClient.getTaskEntityById(testTaskId)).thenReturn(testTask);
-        when(tagRepository.findById(testTagId)).thenAnswer(_ -> Optional.empty());
+        when(tagRepository.findById(testTagId)).thenReturn(Optional.empty());
 
         // When
         Mono<Void> resultMono = tagService.assignTagToTask(testTaskId, testTagId);
@@ -576,6 +576,7 @@ class TagServiceTest {
                 .verify();
 
         verify(taskServiceClient).getTaskEntityById(testTaskId);
+        verify(tagRepository).findById(testTagId);
         verify(taskServiceClient, never()).updateTask(anyLong(), any(Task.class));
     }
 

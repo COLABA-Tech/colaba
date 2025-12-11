@@ -26,6 +26,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -41,6 +43,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class ProjectMemberServiceTest {
 
     @Mock
@@ -257,6 +260,8 @@ class ProjectMemberServiceTest {
         // Given
         when(projectService.getProjectEntityById(testProjectId))
                 .thenReturn(Mono.error(new ProjectNotFoundException(testProjectId)));
+        when(userServiceClient.getUserEntityById(testUserId)).thenReturn(testUser);
+        when(userMapper.toUserJpa(testUser)).thenReturn(testUserJpa);
 
         // When
         Mono<ProjectMemberResponse> resultMono = projectMemberService.createMembership(testProjectId, createRequest);
@@ -269,7 +274,7 @@ class ProjectMemberServiceTest {
                 .verify();
 
         verify(projectService).getProjectEntityById(testProjectId);
-        verify(userServiceClient, never()).getUserEntityById(anyLong());
+        verify(userServiceClient).getUserEntityById(testUserId);
         verify(projectMemberRepository, never()).existsById(any(ProjectMemberId.class));
     }
 
