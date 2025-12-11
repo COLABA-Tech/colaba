@@ -25,8 +25,8 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString(exclude = {"tags"})
-@EqualsAndHashCode(exclude = {"tags"})
+@ToString
+@EqualsAndHashCode
 public class Task {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -49,20 +49,14 @@ public class Task {
     private TaskPriority priority;
 
     @NotNull(message = "Project is required")
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "project_id", nullable = false)
-    @OnDelete(action = OnDeleteAction.CASCADE)
-    private Project project;
+    @Column(name = "project_id")
+    private Long projectId;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "assignee_id")
-    @OnDelete(action = OnDeleteAction.SET_NULL)
-    private UserJpa assignee;
+    @Column(name = "assignee_id")
+    private Long assigneeId;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "reporter_id")
-    @OnDelete(action = OnDeleteAction.SET_NULL)
-    private UserJpa reporter;
+    @Column(name = "reporter_id")
+    private Long reporterId;
 
     @Column(name = "due_date")
     private LocalDate dueDate;
@@ -74,12 +68,4 @@ public class Task {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private OffsetDateTime updatedAt;
-
-    @ManyToMany
-    @JoinTable(
-            name = "task_tags",
-            joinColumns = @JoinColumn(name = "task_id", referencedColumnName = "id"),
-            inverseJoinColumns = @JoinColumn(name = "tag_id", referencedColumnName = "id")
-    )
-    private Set<Tag> tags = new HashSet<>();
 }

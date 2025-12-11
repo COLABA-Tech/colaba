@@ -20,8 +20,8 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString(exclude = {"tasks"})
-@EqualsAndHashCode(exclude = {"tasks"})
+@ToString
+@EqualsAndHashCode
 public class Tag {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,11 +33,6 @@ public class Tag {
     private String name;
 
     @NotNull(message = "Project is required")
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "project_id", nullable = false)
-    @OnDelete(action = OnDeleteAction.CASCADE)
-    private Project project;
-
-    @ManyToMany(mappedBy = "tags")
-    private Set<Task> tasks = new HashSet<>();
+    @Column(name = "project_id")
+    private Long projectId;
 }

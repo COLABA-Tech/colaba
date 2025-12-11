@@ -35,10 +35,8 @@ public class Project {
     private String description;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.EAGER)
-    @OnDelete(action = OnDeleteAction.CASCADE)
-    @JoinColumn(name = "owner_id", nullable = false)
-    private UserJpa owner;
+    @Column(name = "owner_id", nullable = false)
+    private Long ownerId;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

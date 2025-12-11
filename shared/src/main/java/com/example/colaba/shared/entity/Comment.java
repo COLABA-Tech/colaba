@@ -3,6 +3,7 @@ package com.example.colaba.shared.entity;
 import com.example.colaba.shared.entity.task.Task;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -25,15 +26,13 @@ public class Comment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.EAGER, optional = false)
-    @JoinColumn(name = "task_id", nullable = false, foreignKey = @ForeignKey(name = "fk_comment_task"))
-    @OnDelete(action = OnDeleteAction.CASCADE)
-    private Task task;
+    @NotNull
+    @Column(name = "task_id")
+    private Long taskId;
 
-    @ManyToOne(fetch = FetchType.EAGER, optional = false)
-    @JoinColumn(name = "user_id", nullable = false, foreignKey = @ForeignKey(name = "fk_comment_user"))
-    @OnDelete(action = OnDeleteAction.CASCADE)
-    private UserJpa user;
+    @NotNull
+    @Column(name = "user_id")
+    private Long userId;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     @NotBlank

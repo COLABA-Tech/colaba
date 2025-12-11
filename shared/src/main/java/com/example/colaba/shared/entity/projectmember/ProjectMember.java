@@ -28,16 +28,6 @@ public class ProjectMember {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @NotNull
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "project_id", insertable = false, updatable = false)
-    private Project project;
-
-    @NotNull
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "user_id", insertable = false, updatable = false)
-    private UserJpa user;
-
     @NotNull(message = "Role is required")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
