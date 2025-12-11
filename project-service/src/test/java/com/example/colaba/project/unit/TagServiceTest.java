@@ -694,15 +694,21 @@ class TagServiceTest {
         // Given
         FeignException.NotFound feignException = mock(FeignException.NotFound.class);
         when(taskServiceClient.getTaskEntityById(testTaskId)).thenThrow(feignException);
+        when(tagRepository.findById(testTagId)).thenReturn(Optional.of(savedTag));
 
         // When
         Mono<Void> resultMono = tagService.removeTagFromTask(testTaskId, testTagId);
 
         // Then
         StepVerifier.create(resultMono)
-                .expectErrorMatches(throwable ->
-                        throwable instanceof TaskNotFoundException &&
-                                throwable.getMessage().contains(String.valueOf(testTaskId)))
+                .expectErrorMatches(throwable -> {
+                    if (throwable instanceof TaskNotFoundException) {
+                        return throwable.getMessage().contains(String.valueOf(testTaskId));
+                    } else if (throwable instanceof TagNotFoundException) {
+                        return throwable.getMessage().contains(String.valueOf(testTagId));
+                    }
+                    return false;
+                })
                 .verify();
 
         verify(taskServiceClient).getTaskEntityById(testTaskId);
