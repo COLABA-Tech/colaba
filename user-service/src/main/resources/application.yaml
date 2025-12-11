@@ -1,13 +1,18 @@
 spring:
   application:
     name: user-service
+
   cloud:
     config:
-      enabled: false  # TODO
+      enabled: false # TODO
+
+  # R2DBC (реактивный драйвер — у тебя реактивный user-service)
   r2dbc:
     url: ${SPRING_R2DBC_URL:r2dbc:postgresql://postgres:5432/colabadb}
     username: ${SPRING_DATASOURCE_USERNAME:colaba_user}
     password: ${SPRING_DATASOURCE_PASSWORD}
+
+  # Liquibase через обычный JDBC (это нормально и работает)
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
     enabled: true
@@ -25,7 +30,7 @@ feign:
         connectTimeout: 5000
         readTimeout: 5000
         loggerLevel: basic
-        errorDecoder: com.example.colaba.shared.feign.FeignErrorDecoder
+      errorDecoder: com.example.colaba.shared.feign.FeignErrorDecoder
 
 eureka:
   client:
@@ -40,6 +45,35 @@ springdoc:
     operations-sorter: method
     tags-sorter: alpha
     display-request-duration: true
-  packages-to-scan: com.example.colaba.user.controller
+    packages-to-scan: com.example.colaba.user.controller
   default-consumes-media-type: application/json
   default-produces-media-type: application/json
+
+# ==============================
+# RESILIENCE4J – Circuit Breaker
+# ==============================
+# У user-service нет исходящих Feign-вызовов → CB не используются
+# Но оставляем пустой/минимальный конфиг для единообразия и actuator'а
+resilience4j:
+  circuitbreaker:
+    instances:
+      default:   # просто заглушка, чтобы actuator не ругался
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+
+# Actuator — чтобы всё было видно и красиво на защите
+management:
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+  endpoints:
+    web:
+      exposure:
+        include: health,info,circuitbreakerevents,circuitbreakers
+
+# Логи Resilience4j — на случай, если потом добавишь вызовы
+logging:
+  level:
+    io.github.resilience4j: INFO
+    com.example.colaba: INFO

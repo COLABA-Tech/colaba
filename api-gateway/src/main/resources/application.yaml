@@ -1,44 +1,123 @@
 spring:
   application:
     name: api-gateway
+
   cloud:
     gateway:
-      server:
-        webflux:
-          discovery:
-            locator:
-              enabled: true
-              lower-case-service-id: true
-          routes:
-            - id: user-service-public
-              uri: lb://USER-SERVICE
-              predicates:
-                - Path=/api/users/**
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
 
-            - id: user-service-internal
-              uri: lb://USER-SERVICE
-              predicates:
-                - Path=/api/users/internal/**
+      routes:
+        - id: user-service-public
+          uri: lb://USER-SERVICE
+          predicates:
+            - Path=/api/users/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: user-service-cb
+                statusCode: 503   # Важно! Возвращаем 503 без fallback
 
-            - id: project-service-public
-              uri: lb://PROJECT-SERVICE
-              predicates:
-                - Path=/api/projects/**, /api/tags/**, /api/task-tags/**
+        - id: user-service-internal
+          uri: lb://USER-SERVICE
+          predicates:
+            - Path=/api/users/internal/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: user-service-cb
+                statusCode: 503
 
-            - id: project-service-internal
-              uri: lb://PROJECT-SERVICE
-              predicates:
-                - Path=/api/projects/internal/**
+        - id: project-service-public
+          uri: lb://PROJECT-SERVICE
+          predicates:
+            - Path=/api/projects/**, /api/tags/**, /api/task-tags/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: project-service-cb
+                statusCode: 503
 
-            - id: task-service-public
-              uri: lb://TASK-SERVICE
-              predicates:
-                - Path=/api/tasks/**, /api/comments/**
+        - id: project-service-internal
+          uri: lb://PROJECT-SERVICE
+          predicates:
+            - Path=/api/projects/internal/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: project-service-cb
+                statusCode: 503
 
-            - id: task-service-internal
-              uri: lb://TASK-SERVICE
-              predicates:
-                - Path=/api/tasks/internal/**
+        - id: task-service-public
+          uri: lb://TASK-SERVICE
+          predicates:
+            - Path=/api/tasks/**, /api/comments/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: task-service-cb
+                statusCode: 503
+
+        - id: task-service-internal
+          uri: lb://TASK-SERVICE
+          predicates:
+            - Path=/api/tasks/internal/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: task-service-cb
+                statusCode: 503
+
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Methods Access-Control-Allow-Headers
+
+# Настройка Resilience4j Circuit Breaker — одинаковая для всех сервисов
+resilience4j:
+  circuitbreaker:
+    instances:
+      user-service-cb:
+        registerHealthIndicator: true
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        failureRateThreshold: 50              # >50% ошибок → OPEN
+        slowCallRateThreshold: 100
+        slowCallDurationThreshold: 2s         # вызов дольше 2с = slow
+        waitDurationInOpenState: 20s          # сколько держим в OPEN
+        permitted439NumberOfCallsInHalfOpenState: 5
+        minimumNumberOfCalls: 5
+        slidingWindowSize: 10
+        slidingWindowType: COUNT_BASED
+
+      project-service-cb:
+        registerHealthIndicator: true
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        failureRateThreshold: 50
+        slowCallDurationThreshold: 2s
+        waitDurationInOpenState: 20s
+        permittedNumberOfCallsInHalfOpenState: 5
+        minimumNumberOfCalls: 5
+        slidingWindowSize: 10
+
+      task-service-cb:
+        registerHealthIndicator: true
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        failureRateThreshold: 50
+        slowCallDurationThreshold: 2s
+        waitDurationInOpenState: 20s
+        permittedNumberOfCallsInHalfOpenState: 5
+        minimumNumberOfCalls: 5
+        slidingWindowSize: 10
+
+# Чтобы в /actuator/health видеть состояние Circuit Breaker'ов
+management:
+  endpoint:
+    health:
+      show-details: always
+  endpoints:
+    web:
+      exposure:
+        include: health,info,circuitbreakers
 
 server:
   port: 8080
@@ -47,3 +126,5 @@ eureka:
   client:
     service-url:
       defaultZone: ${EUREKA_URL:http://discovery-server:8761/eureka}
+  instance:
+    prefer-ip-address: true

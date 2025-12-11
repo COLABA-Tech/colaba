@@ -13,7 +13,7 @@ services:
     networks:
       - colaba-network
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${COLABA_DB_USERNAME:-colaba}" ]
+      test: [ "CMD-SHELL", "pg_isready -d ${COLABA_DB_NAME:-colaba} -U ${COLABA_DB_USERNAME:-colaba_user}" ]
       interval: 5s
       timeout: 5s
       retries: 10

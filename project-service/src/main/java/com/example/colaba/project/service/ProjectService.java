@@ -1,11 +1,7 @@
 package com.example.colaba.project.service;
 
 import com.example.colaba.project.repository.ProjectRepository;
-import com.example.colaba.shared.client.UserServiceClient;
-import com.example.colaba.shared.dto.project.CreateProjectRequest;
-import com.example.colaba.shared.dto.project.ProjectResponse;
-import com.example.colaba.shared.dto.project.ProjectScrollResponse;
-import com.example.colaba.shared.dto.project.UpdateProjectRequest;
+import com.example.colaba.shared.dto.project.*;
 import com.example.colaba.shared.entity.Project;
 import com.example.colaba.shared.entity.User;
 import com.example.colaba.shared.entity.UserJpa;
@@ -31,7 +27,7 @@ import java.util.List;
 public class ProjectService {
 
     private final ProjectRepository projectRepository;
-    private final UserServiceClient userServiceClient;
+    private final UserClientWrapper userClientWrapper;   // ← Через обёртку с Circuit Breaker
     private final ProjectMapper projectMapper;
     private final UserMapper userMapper;
 
@@ -44,12 +40,12 @@ public class ProjectService {
 
             User owner;
             try {
-                owner = userServiceClient.getUserEntityById(request.ownerId());
+                owner = userClientWrapper.getUserEntityById(request.ownerId());
             } catch (FeignException.NotFound e) {
                 throw new UserNotFoundException(request.ownerId());
             }
-            UserJpa ownerJpa = userMapper.toUserJpa(owner);
 
+            UserJpa ownerJpa = userMapper.toUserJpa(owner);
             Project project = Project.builder()
                     .name(request.name())
                     .description(request.description())
@@ -87,6 +83,7 @@ public class ProjectService {
                     .orElseThrow(() -> new ProjectNotFoundException(id));
 
             boolean hasChanges = false;
+
             if (request.name() != null && !request.name().isBlank() && !request.name().equals(project.getName())) {
                 if (projectRepository.existsByNameAndIdNot(request.name(), id)) {
                     throw new DuplicateProjectNameException(request.name());
@@ -103,12 +100,11 @@ public class ProjectService {
             if (request.ownerId() != null && !request.ownerId().equals(project.getOwner().getId())) {
                 User newOwner;
                 try {
-                    newOwner = userServiceClient.getUserEntityById(request.ownerId());
+                    newOwner = userClientWrapper.getUserEntityById(request.ownerId());
                 } catch (FeignException.NotFound e) {
                     throw new UserNotFoundException(request.ownerId());
                 }
-                UserJpa newOwnerJpa = userMapper.toUserJpa(newOwner);
-                project.setOwner(newOwnerJpa);
+                project.setOwner(userMapper.toUserJpa(newOwner));
                 hasChanges = true;
             }
 
@@ -119,20 +115,21 @@ public class ProjectService {
 
     @Transactional
     public Mono<ProjectResponse> changeProjectOwner(Long projectId, Long newOwnerId) {
-        return Mono.zip(
-                getProjectEntityById(projectId),
-                Mono.fromCallable(() -> userServiceClient.getUserEntityById(newOwnerId))
+        return getProjectEntityById(projectId)
+                .zipWhen(project -> Mono.fromCallable(() -> userClientWrapper.getUserEntityById(newOwnerId))
                         .subscribeOn(Schedulers.boundedElastic())
-                        .flatMap(user -> Mono.just(userMapper.toUserJpa(user)))
-        ).flatMap(tuple -> {
-            Project project = tuple.getT1();
-            UserJpa newOwner = tuple.getT2();
-            return Mono.fromCallable(() -> {
-                project.setOwner(newOwner);
-                Project saved = projectRepository.save(project);
-                return projectMapper.toProjectResponse(saved);
-            }).subscribeOn(Schedulers.boundedElastic());
-        });
+                        .onErrorMap(FeignException.NotFound.class,
+                                ex -> new UserNotFoundException(newOwnerId))
+                )
+                .flatMap(tuple -> {
+                    Project project = tuple.getT1();
+                    User user = tuple.getT2();
+                    project.setOwner(userMapper.toUserJpa(user));
+
+                    return Mono.fromCallable(() -> projectRepository.save(project))
+                            .map(projectMapper::toProjectResponse)
+                            .subscribeOn(Schedulers.boundedElastic());
+                });
     }
 
     @Transactional
@@ -147,13 +144,14 @@ public class ProjectService {
 
     public Mono<List<ProjectResponse>> getProjectByOwnerId(Long ownerId) {
         return Mono.fromCallable(() -> {
+                    User user;
                     try {
-                        User user = userServiceClient.getUserEntityById(ownerId);
-                        UserJpa userJpa = userMapper.toUserJpa(user);
-                        return projectRepository.findByOwner(userJpa);
+                        user = userClientWrapper.getUserEntityById(ownerId);
                     } catch (FeignException.NotFound e) {
                         throw new UserNotFoundException(ownerId);
                     }
+                    UserJpa userJpa = userMapper.toUserJpa(user);
+                    return projectRepository.findByOwner(userJpa);
                 })
                 .subscribeOn(Schedulers.boundedElastic())
                 .map(projectMapper::toProjectResponseList);
@@ -163,12 +161,8 @@ public class ProjectService {
         return Mono.fromCallable(() -> {
             Pageable pageable = PageRequest.of(page, size);
             Page<Project> projectPage = projectRepository.findAll(pageable);
-
             List<ProjectResponse> projects = projectMapper.toProjectResponseList(projectPage.getContent());
-            boolean hasNext = projectPage.hasNext();
-            long total = projectPage.getTotalElements();
-
-            return new ProjectScrollResponse(projects, hasNext, total);
+            return new ProjectScrollResponse(projects, projectPage.hasNext(), projectPage.getTotalElements());
         }).subscribeOn(Schedulers.boundedElastic());
     }
 }

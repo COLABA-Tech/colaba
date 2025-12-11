@@ -1,7 +1,5 @@
 package com.example.colaba.task.service;
 
-import com.example.colaba.shared.client.ProjectServiceClient;
-import com.example.colaba.shared.client.UserServiceClient;
 import com.example.colaba.shared.dto.task.CreateTaskRequest;
 import com.example.colaba.shared.dto.task.TaskResponse;
 import com.example.colaba.shared.dto.task.UpdateTaskRequest;
@@ -27,9 +25,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class TaskService {
+
     private final TaskRepository taskRepository;
-    private final ProjectServiceClient projectServiceClient;
-    private final UserServiceClient userServiceClient;
+    private final ProjectClientWrapper projectClientWrapper;   // ← НОВОЕ
+    private final UserClientWrapper userClientWrapper;         // ← НОВОЕ
     private final TaskMapper taskMapper;
     private final UserMapper userMapper;
 
@@ -46,7 +45,7 @@ public class TaskService {
     public Page<TaskResponse> getTasksByProject(Long projectId, Pageable pageable) {
         Project project;
         try {
-            project = projectServiceClient.getProjectEntityById(projectId);
+            project = projectClientWrapper.getProjectEntityById(projectId);
         } catch (FeignException.NotFound e) {
             throw new ProjectNotFoundException(projectId);
         }
@@ -57,36 +56,30 @@ public class TaskService {
     public TaskResponse createTask(CreateTaskRequest request) {
         Project project;
         try {
-            project = projectServiceClient.getProjectEntityById(request.projectId());
+            project = projectClientWrapper.getProjectEntityById(request.projectId());
         } catch (FeignException.NotFound e) {
             throw new ProjectNotFoundException(request.projectId());
-        } catch (FeignException e) {
-            throw new RuntimeException("Failed to fetch project: " + e.getMessage());
         }
 
         UserJpa assignee = null;
         if (request.assigneeId() != null) {
             try {
-                User user = userServiceClient.getUserEntityById(request.assigneeId());
+                User user = userClientWrapper.getUserEntityById(request.assigneeId());
                 assignee = userMapper.toUserJpa(user);
             } catch (FeignException.NotFound e) {
                 throw new UserNotFoundException(request.assigneeId());
-            } catch (FeignException e) {
-                throw new RuntimeException("Failed to fetch assignee: " + e.getMessage());
             }
         }
 
         UserJpa reporter;
         try {
-            User reporterUser = userServiceClient.getUserEntityById(request.reporterId());
+            User reporterUser = userClientWrapper.getUserEntityById(request.reporterId());
             reporter = userMapper.toUserJpa(reporterUser);
         } catch (FeignException.NotFound e) {
             throw new UserNotFoundException(request.reporterId());
-        } catch (FeignException e) {
-            throw new RuntimeException("Failed to fetch reporter: " + e.getMessage());
         }
 
-        TaskPriority priority = (request.priority() != null) ? request.priority() : null;
+        TaskPriority priority = request.priority() != null ? request.priority() : null;
 
         Task task = Task.builder()
                 .title(request.title())
@@ -119,21 +112,18 @@ public class TaskService {
             hasChanges = true;
         }
         if (request.status() != null && !request.status().equals(task.getStatus())) {
-            TaskStatus status = request.status();
-            task.setStatus(status);
+            task.setStatus(request.status());
             hasChanges = true;
         }
         if (request.priority() != null && !request.priority().equals(task.getPriority())) {
-            TaskPriority priority = request.priority();
-            task.setPriority(priority);
+            task.setPriority(request.priority());
             hasChanges = true;
         }
         if (request.assigneeId() != null &&
                 (task.getAssignee() == null || !request.assigneeId().equals(task.getAssignee().getId()))) {
             try {
-                User user = userServiceClient.getUserEntityById(request.assigneeId());
-                UserJpa assignee = userMapper.toUserJpa(user);
-                task.setAssignee(assignee);
+                User user = userClientWrapper.getUserEntityById(request.assigneeId());
+                task.setAssignee(userMapper.toUserJpa(user));
                 hasChanges = true;
             } catch (FeignException.NotFound e) {
                 throw new UserNotFoundException(request.assigneeId());
@@ -159,7 +149,7 @@ public class TaskService {
     public Page<TaskResponse> getTasksByAssignee(Long userId, Pageable pageable) {
         User user;
         try {
-            user = userServiceClient.getUserEntityById(userId);
+            user = userClientWrapper.getUserEntityById(userId);
         } catch (FeignException.NotFound e) {
             throw new UserNotFoundException(userId);
         }

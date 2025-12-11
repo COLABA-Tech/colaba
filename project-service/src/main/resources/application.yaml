@@ -1,14 +1,17 @@
 spring:
   application:
     name: project-service
+
   cloud:
     config:
-      enabled: false  # TODO
+      enabled: false # TODO
+
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/colabadb}
     username: ${SPRING_DATASOURCE_USERNAME:colaba_user}
     password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
+
   jpa:
     hibernate:
       ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:validate}
@@ -17,6 +20,7 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: ${SPRING_JPA_FORMAT_SQL:false}
+
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
     enabled: true
@@ -31,7 +35,7 @@ feign:
         connectTimeout: 5000
         readTimeout: 5000
         loggerLevel: basic
-        errorDecoder: com.example.colaba.shared.feign.FeignErrorDecoder
+      errorDecoder: com.example.colaba.shared.feign.FeignErrorDecoder
 
 eureka:
   client:
@@ -46,6 +50,51 @@ springdoc:
     operations-sorter: method
     tags-sorter: alpha
     display-request-duration: true
-  packages-to-scan: com.example.colaba.controller
+    packages-to-scan: com.example.colaba.controller
   default-consumes-media-type: application/json
   default-produces-media-type: application/json
+
+# ==============================
+# RESILIENCE4J – Circuit Breaker (Fail Fast)
+# ==============================
+resilience4j:
+  circuitbreaker:
+    instances:
+      # Для вызовов user-service из project-service
+      userClient:
+        registerHealthIndicator: true
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        failureRateThreshold: 50                  # % ошибок
+        slowCallRateThreshold: 100
+        slowCallDurationThreshold: 2s             # >2 сек = slow call
+        waitDurationInOpenState: 15s              # сколько держим OPEN
+        permittedNumberOfCallsInHalfOpenState: 5
+        minimumNumberOfCalls: 5
+        slidingWindowSize: 10
+        slidingWindowType: COUNT_BASED
+
+      # Для вызовов task-service из project-service (если будут)
+      taskClient:
+        registerHealthIndicator: true
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        failureRateThreshold: 50
+        slowCallDurationThreshold: 2s
+        waitDurationInOpenState: 15s
+        permittedNumberOfCallsInHalfOpenState: 5
+        minimumNumberOfCalls: 5
+        slidingWindowSize: 10
+
+# Чтобы в actuator/health видеть статус Circuit Breaker'ов
+management:
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+  endpoints:
+    web:
+      exposure:
+        include: health,info,circuitbreakerevents,circuitbreakers
+
+logging:
+  level:
+    io.github.resilience4j: DEBUG   # удобно видеть OPEN / HALF-OPEN / CLOSED в логах
