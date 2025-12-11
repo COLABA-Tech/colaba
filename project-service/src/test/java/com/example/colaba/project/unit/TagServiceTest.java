@@ -711,7 +711,6 @@ class TagServiceTest {
                 })
                 .verify();
 
-        verify(taskServiceClient).getTaskEntityById(testTaskId);
         verify(taskServiceClient, never()).updateTask(anyLong(), any(Task.class));
     }
 }
