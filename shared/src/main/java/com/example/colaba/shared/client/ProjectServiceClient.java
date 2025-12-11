@@ -18,9 +18,6 @@ public interface ProjectServiceClient {
     @PostMapping("/owner")
     List<Project> findByOwner(@RequestBody UserJpa owner);
 
-    @DeleteMapping("/all")
-    void deleteAll();
-
     @DeleteMapping("/{id}")
     void deleteProject(@PathVariable Long id);
 

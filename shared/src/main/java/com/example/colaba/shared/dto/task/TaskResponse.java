@@ -12,11 +12,8 @@ public record TaskResponse(
         String status,
         String priority,
         Long projectId,
-        String projectName,
         Long assigneeId,
-        String assigneeUsername,
         Long reporterId,
-        String reporterUsername,
         @JsonFormat(pattern = "yyyy-MM-dd")
         LocalDate dueDate,
         @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
