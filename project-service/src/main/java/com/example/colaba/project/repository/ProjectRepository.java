@@ -1,7 +1,6 @@
 package com.example.colaba.project.repository;
 
 import com.example.colaba.shared.entity.Project;
-import com.example.colaba.shared.entity.UserJpa;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -13,5 +12,5 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
 
     boolean existsByNameAndIdNot(String name, Long id);
 
-    List<Project> findByOwner(UserJpa owner);
+    List<Project> findByOwnerId(Long ownerId);
 }

@@ -1,14 +1,10 @@
 package com.example.colaba.shared.entity;
 
-import com.example.colaba.shared.entity.projectmember.ProjectMember;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.*;
-
-import java.util.HashSet;
-import java.util.Set;
 
 @Entity
 @Table(name = "users")
