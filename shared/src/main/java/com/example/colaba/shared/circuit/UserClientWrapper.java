@@ -20,12 +20,6 @@ public class UserClientWrapper {
     }
 
     public User getUserEntityById(Long id) {
-        return cb().executeSupplier(() -> {
-            try {
-                return userServiceClient.getUserEntityById(id);
-            } catch (FeignException.NotFound e) {
-                throw new RuntimeException("User not found", e);
-            }
-        });
+        return cb().executeSupplier(() -> userServiceClient.getUserEntityById(id));
     }
 }

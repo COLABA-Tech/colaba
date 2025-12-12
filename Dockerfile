@@ -24,7 +24,7 @@ COPY user-service/src user-service/src
 COPY project-service/src project-service/src
 COPY task-service/src task-service/src
 
-RUN ./mvnw clean package -DskipTests -B
+RUN ./mvnw clean package -B
 
 FROM eclipse-temurin:25-jre AS discovery-server
 WORKDIR /colaba
