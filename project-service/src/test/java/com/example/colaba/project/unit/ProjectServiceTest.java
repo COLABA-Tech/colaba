@@ -2,7 +2,7 @@ package com.example.colaba.project.unit;
 
 import com.example.colaba.project.repository.ProjectRepository;
 import com.example.colaba.project.service.ProjectService;
-import com.example.colaba.shared.client.UserServiceClient;
+import com.example.colaba.shared.circuit.UserClientWrapper;
 import com.example.colaba.shared.dto.project.CreateProjectRequest;
 import com.example.colaba.shared.dto.project.ProjectResponse;
 import com.example.colaba.shared.dto.project.ProjectScrollResponse;
@@ -43,7 +43,7 @@ class ProjectServiceTest {
     private ProjectRepository projectRepository;
 
     @Mock
-    private UserServiceClient userServiceClient;
+    private UserClientWrapper userClientWrapper;
 
     @Mock
     private ProjectMapper projectMapper;
@@ -101,7 +101,7 @@ class ProjectServiceTest {
         CreateProjectRequest request = new CreateProjectRequest(testProjectName, testDescription, testUserId);
 
         when(projectRepository.existsByName(testProjectName)).thenReturn(false);
-        when(userServiceClient.getUserEntityById(testUserId)).thenReturn(testUser);
+        when(userClientWrapper.getUserEntityById(testUserId)).thenReturn(testUser); // Изменил userClientWrapper на userClientWrapper
         when(userMapper.toUserJpa(testUser)).thenReturn(testUserJpa);
         when(projectRepository.save(any(Project.class))).thenReturn(testProject);
         when(projectMapper.toProjectResponse(testProject)).thenReturn(testProjectResponse);
@@ -118,7 +118,7 @@ class ProjectServiceTest {
                 .verifyComplete();
 
         verify(projectRepository).existsByName(testProjectName);
-        verify(userServiceClient).getUserEntityById(testUserId);
+        verify(userClientWrapper).getUserEntityById(testUserId); // Изменил userClientWrapper на userClientWrapper
         verify(projectRepository).save(any(Project.class));
         verify(projectMapper).toProjectResponse(testProject);
     }
@@ -141,7 +141,7 @@ class ProjectServiceTest {
                 .verify();
 
         verify(projectRepository).existsByName(testProjectName);
-        verify(userServiceClient, never()).getUserEntityById(anyLong());
+        verify(userClientWrapper, never()).getUserEntityById(anyLong());
         verify(projectRepository, never()).save(any(Project.class));
     }
 
@@ -152,7 +152,7 @@ class ProjectServiceTest {
 
         when(projectRepository.existsByName(testProjectName)).thenReturn(false);
         FeignException.NotFound feignException = mock(FeignException.NotFound.class);
-        when(userServiceClient.getUserEntityById(testUserId)).thenThrow(feignException);
+        when(userClientWrapper.getUserEntityById(testUserId)).thenThrow(feignException);
 
         // When
         Mono<ProjectResponse> resultMono = projectService.createProject(request);
@@ -165,7 +165,7 @@ class ProjectServiceTest {
                 .verify();
 
         verify(projectRepository).existsByName(testProjectName);
-        verify(userServiceClient).getUserEntityById(testUserId);
+        verify(userClientWrapper).getUserEntityById(testUserId);
         verify(projectRepository, never()).save(any(Project.class));
     }
 
@@ -330,7 +330,7 @@ class ProjectServiceTest {
         );
 
         when(projectRepository.findById(testId)).thenReturn(Optional.of(testProject));
-        when(userServiceClient.getUserEntityById(newOwnerId)).thenReturn(newOwner);
+        when(userClientWrapper.getUserEntityById(newOwnerId)).thenReturn(newOwner);
         when(userMapper.toUserJpa(newOwner)).thenReturn(newOwnerJpa);
         when(projectRepository.save(any(Project.class))).thenReturn(updatedProject);
         when(projectMapper.toProjectResponse(updatedProject)).thenReturn(updatedResponse);
@@ -346,7 +346,7 @@ class ProjectServiceTest {
                 .verifyComplete();
 
         verify(projectRepository).findById(testId);
-        verify(userServiceClient).getUserEntityById(newOwnerId);
+        verify(userClientWrapper).getUserEntityById(newOwnerId);
         verify(userMapper).toUserJpa(newOwner);
         verify(projectRepository).save(any(Project.class));
     }
@@ -416,7 +416,7 @@ class ProjectServiceTest {
         );
 
         when(projectRepository.findById(testId)).thenReturn(Optional.of(testProject));
-        when(userServiceClient.getUserEntityById(newOwnerId)).thenReturn(newOwner);
+        when(userClientWrapper.getUserEntityById(newOwnerId)).thenReturn(newOwner);
         when(userMapper.toUserJpa(newOwner)).thenReturn(newOwnerJpa);
         when(projectRepository.save(any(Project.class))).thenReturn(updatedProject);
         when(projectMapper.toProjectResponse(updatedProject)).thenReturn(updatedResponse);
@@ -431,7 +431,7 @@ class ProjectServiceTest {
                 .verifyComplete();
 
         verify(projectRepository).findById(testId);
-        verify(userServiceClient).getUserEntityById(newOwnerId);
+        verify(userClientWrapper).getUserEntityById(newOwnerId);
         verify(userMapper).toUserJpa(newOwner);
         verify(projectRepository).save(any(Project.class));
     }
@@ -478,7 +478,7 @@ class ProjectServiceTest {
         List<Project> projects = List.of(testProject);
         List<ProjectResponse> projectResponses = List.of(testProjectResponse);
 
-        when(userServiceClient.getUserEntityById(testUserId)).thenReturn(testUser);
+        when(userClientWrapper.getUserEntityById(testUserId)).thenReturn(testUser);
         when(userMapper.toUserJpa(testUser)).thenReturn(testUserJpa);
         when(projectRepository.findByOwner(testUserJpa)).thenReturn(projects);
         when(projectMapper.toProjectResponseList(projects)).thenReturn(projectResponses);
@@ -493,7 +493,7 @@ class ProjectServiceTest {
                                 list.get(0).id().equals(testId))
                 .verifyComplete();
 
-        verify(userServiceClient).getUserEntityById(testUserId);
+        verify(userClientWrapper).getUserEntityById(testUserId);
         verify(userMapper).toUserJpa(testUser);
         verify(projectRepository).findByOwner(testUserJpa);
         verify(projectMapper).toProjectResponseList(projects);
@@ -503,7 +503,7 @@ class ProjectServiceTest {
     void getProjectByOwnerId_userNotFound_throwsException() {
         // Given
         FeignException.NotFound feignException = mock(FeignException.NotFound.class);
-        when(userServiceClient.getUserEntityById(testUserId)).thenThrow(feignException);
+        when(userClientWrapper.getUserEntityById(testUserId)).thenThrow(feignException);
 
         // When
         Mono<List<ProjectResponse>> resultMono = projectService.getProjectByOwnerId(testUserId);
@@ -515,7 +515,7 @@ class ProjectServiceTest {
                                 throwable.getMessage().contains(String.valueOf(testUserId)))
                 .verify();
 
-        verify(userServiceClient).getUserEntityById(testUserId);
+        verify(userClientWrapper).getUserEntityById(testUserId);
         verify(projectRepository, never()).findByOwner(any(UserJpa.class));
     }
 

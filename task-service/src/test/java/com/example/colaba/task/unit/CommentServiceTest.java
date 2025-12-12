@@ -1,6 +1,6 @@
 package com.example.colaba.task.unit;
 
-import com.example.colaba.shared.client.UserServiceClient;
+import com.example.colaba.shared.circuit.UserClientWrapper;
 import com.example.colaba.shared.dto.comment.CommentResponse;
 import com.example.colaba.shared.dto.comment.CommentScrollResponse;
 import com.example.colaba.shared.dto.comment.CreateCommentRequest;
@@ -42,7 +42,7 @@ class CommentServiceTest {
     private CommentRepository commentRepository;
 
     @Mock
-    private UserServiceClient userServiceClient;
+    private UserClientWrapper userClientWrapper;
 
     @Mock
     private TaskRepository taskRepository;
@@ -107,7 +107,7 @@ class CommentServiceTest {
     void createComment_ShouldReturnResponse_WhenValidRequest() {
         CreateCommentRequest request = new CreateCommentRequest(1L, 1L, "Test content");
 
-        when(userServiceClient.getUserEntityById(1L)).thenReturn(mockUser);
+        when(userClientWrapper.getUserEntityById(1L)).thenReturn(mockUser);
         when(userMapper.toUserJpa(mockUser)).thenReturn(mockUserJpa);
         when(taskRepository.findById(1L)).thenReturn(Optional.of(mockTask));
         when(commentRepository.save(any(Comment.class))).thenReturn(mockComment);
@@ -116,7 +116,7 @@ class CommentServiceTest {
         CommentResponse result = commentService.createComment(request);
 
         assertEquals(mockResponse, result);
-        verify(userServiceClient).getUserEntityById(1L);
+        verify(userClientWrapper).getUserEntityById(1L);
         verify(userMapper).toUserJpa(mockUser);
         verify(taskRepository).findById(1L);
         verify(commentRepository).save(any(Comment.class));
@@ -128,13 +128,13 @@ class CommentServiceTest {
         CreateCommentRequest request = new CreateCommentRequest(1L, 999L, "Test");
 
         FeignException.NotFound feignException = mock(FeignException.NotFound.class);
-        when(userServiceClient.getUserEntityById(999L)).thenThrow(feignException);
+        when(userClientWrapper.getUserEntityById(999L)).thenThrow(feignException);
 
         UserNotFoundException exception = assertThrows(UserNotFoundException.class,
                 () -> commentService.createComment(request));
         assertEquals("User not found: ID " + 999L, exception.getMessage());
 
-        verify(userServiceClient).getUserEntityById(999L);
+        verify(userClientWrapper).getUserEntityById(999L);
         verify(taskRepository, never()).findById(anyLong());
         verify(commentRepository, never()).save(any(Comment.class));
     }
@@ -143,7 +143,7 @@ class CommentServiceTest {
     void createCommFent_ShouldThrowTaskNotFoundException_WhenTaskNotExists() {
         CreateCommentRequest request = new CreateCommentRequest(999L, 1L, "Test");
 
-        when(userServiceClient.getUserEntityById(1L)).thenReturn(mockUser);
+        when(userClientWrapper.getUserEntityById(1L)).thenReturn(mockUser);
         when(userMapper.toUserJpa(mockUser)).thenReturn(mockUserJpa);
         when(taskRepository.findById(999L)).thenReturn(Optional.empty());
 
@@ -151,7 +151,7 @@ class CommentServiceTest {
                 () -> commentService.createComment(request));
         assertEquals("Task not found: ID " + 999L, exception.getMessage());
 
-        verify(userServiceClient).getUserEntityById(1L);
+        verify(userClientWrapper).getUserEntityById(1L);
         verify(userMapper).toUserJpa(mockUser);
         verify(taskRepository).findById(999L);
         verify(commentRepository, never()).save(any(Comment.class));

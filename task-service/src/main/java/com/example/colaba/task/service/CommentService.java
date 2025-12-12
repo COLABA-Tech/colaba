@@ -1,6 +1,6 @@
 package com.example.colaba.task.service;
 
-import com.example.colaba.shared.client.UserServiceClient;
+import com.example.colaba.shared.circuit.UserClientWrapper;
 import com.example.colaba.shared.dto.comment.CommentResponse;
 import com.example.colaba.shared.dto.comment.CommentScrollResponse;
 import com.example.colaba.shared.dto.comment.CreateCommentRequest;
@@ -30,7 +30,7 @@ import java.util.List;
 public class CommentService {
 
     private final CommentRepository commentRepository;
-    private final UserServiceClient userServiceClient;
+    private final UserClientWrapper userClientWrapper;
     private final TaskRepository taskRepository;
     private final CommentMapper commentMapper;
     private final UserMapper userMapper;
@@ -39,7 +39,7 @@ public class CommentService {
     public CommentResponse createComment(CreateCommentRequest request) {
         User user;
         try {
-            user = userServiceClient.getUserEntityById(request.userId());
+            user = userClientWrapper.getUserEntityById(request.userId());
         } catch (FeignException.NotFound e) {
             throw new UserNotFoundException(request.userId());
         }
@@ -73,18 +73,20 @@ public class CommentService {
         OffsetDateTime cursorTime = (cursor == null || cursor.isBlank())
                 ? OffsetDateTime.now()
                 : OffsetDateTime.parse(cursor);
+
         Pageable pageable = PageRequest.of(
                 0, limit, Sort.by("createdAt").descending());
+
         Slice<Comment> slice = commentRepository
                 .findByTaskIdAndCreatedAtBeforeOrderByCreatedAtDesc(taskId, cursorTime, pageable);
-        List<CommentResponse> responses = commentMapper
-                .toResponseList(slice.getContent());
-        String nextCursor = slice.isEmpty()
-                ? null
-                : slice.getContent()
-                .getLast().getCreatedAt().toString();
-        return new CommentScrollResponse(
-                responses, nextCursor, slice.hasNext());
+
+        List<CommentResponse> responses = commentMapper.toResponseList(slice.getContent());
+
+        String nextCursor = slice.hasContent()
+                ? slice.getContent().get(slice.getNumberOfElements() - 1).getCreatedAt().toString()
+                : null;
+
+        return new CommentScrollResponse(responses, nextCursor, slice.hasNext());
     }
 
     @Transactional

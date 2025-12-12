@@ -1,6 +1,6 @@
 package com.example.colaba.user.service;
 
-import com.example.colaba.shared.client.ProjectServiceClient;
+import com.example.colaba.shared.circuit.ProjectClientWrapper;
 import com.example.colaba.shared.dto.user.CreateUserRequest;
 import com.example.colaba.shared.dto.user.UpdateUserRequest;
 import com.example.colaba.shared.dto.user.UserResponse;
@@ -29,7 +29,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class UserService {
-    private final ProjectServiceClient projectServiceClient;
+    private final ProjectClientWrapper projectClientWrapper;
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final TransactionalOperator transactionalOperator;
@@ -124,11 +124,11 @@ public class UserService {
                 .flatMap(user -> Mono.fromCallable(() -> {
                             try {
                                 UserJpa userJpa = userMapper.toUserJpa(user);
-                                List<Project> ownedProjects = projectServiceClient.findByOwner(userJpa);
+                                List<Project> ownedProjects = projectClientWrapper.findByOwner(userJpa);
                                 if (!ownedProjects.isEmpty()) {
                                     ownedProjects.forEach(project -> {
                                         try {
-                                            projectServiceClient.deleteProject(project.getId());
+                                            projectClientWrapper.deleteProject(project.getId());
                                         } catch (FeignException e) {
                                             System.err.println("Failed to delete project " + project.getId() + ": " + e.getMessage());
                                         }

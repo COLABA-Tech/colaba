@@ -3,7 +3,7 @@ package com.example.colaba.project.unit;
 import com.example.colaba.project.repository.TagRepository;
 import com.example.colaba.project.service.ProjectService;
 import com.example.colaba.project.service.TagService;
-import com.example.colaba.shared.client.TaskServiceClient;
+import com.example.colaba.shared.circuit.TaskClientWrapper;
 import com.example.colaba.shared.dto.tag.CreateTagRequest;
 import com.example.colaba.shared.dto.tag.TagResponse;
 import com.example.colaba.shared.dto.tag.UpdateTagRequest;
@@ -47,7 +47,7 @@ class TagServiceTest {
     private ProjectService projectService;
 
     @Mock
-    private TaskServiceClient taskServiceClient;
+    private TaskClientWrapper taskClientWrapper;
 
     @Mock
     private TagMapper tagMapper;
@@ -481,9 +481,9 @@ class TagServiceTest {
                 .tasks(new HashSet<>())
                 .build();
 
-        when(taskServiceClient.getTaskEntityById(testTaskId)).thenReturn(taskWithTags);
+        when(taskClientWrapper.getTaskEntityById(testTaskId)).thenReturn(taskWithTags);
         when(tagRepository.findById(testTagId)).thenReturn(Optional.of(tagWithTasks));
-        when(taskServiceClient.updateTask(eq(testTaskId), any(Task.class))).thenReturn(taskWithTags);
+        when(taskClientWrapper.updateTask(eq(testTaskId), any(Task.class))).thenReturn(taskWithTags);
 
         // When
         Mono<Void> resultMono = tagService.assignTagToTask(testTaskId, testTagId);
@@ -492,9 +492,9 @@ class TagServiceTest {
         StepVerifier.create(resultMono)
                 .verifyComplete();
 
-        verify(taskServiceClient).getTaskEntityById(testTaskId);
+        verify(taskClientWrapper).getTaskEntityById(testTaskId);
         verify(tagRepository).findById(testTagId);
-        verify(taskServiceClient).updateTask(eq(testTaskId), argThat(task ->
+        verify(taskClientWrapper).updateTask(eq(testTaskId), argThat(task ->
                 task.getTags().contains(tagWithTasks)));
     }
 
@@ -517,7 +517,7 @@ class TagServiceTest {
         taskWithTags.getTags().add(tagWithTasks);
         tagWithTasks.getTasks().add(taskWithTags);
 
-        when(taskServiceClient.getTaskEntityById(testTaskId)).thenReturn(taskWithTags);
+        when(taskClientWrapper.getTaskEntityById(testTaskId)).thenReturn(taskWithTags);
         when(tagRepository.findById(testTagId)).thenReturn(Optional.of(tagWithTasks));
 
         // When
@@ -527,9 +527,9 @@ class TagServiceTest {
         StepVerifier.create(resultMono)
                 .verifyComplete();
 
-        verify(taskServiceClient).getTaskEntityById(testTaskId);
+        verify(taskClientWrapper).getTaskEntityById(testTaskId);
         verify(tagRepository).findById(testTagId);
-        verify(taskServiceClient, never()).updateTask(anyLong(), any(Task.class));
+        verify(taskClientWrapper, never()).updateTask(anyLong(), any(Task.class));
     }
 
     @Test
@@ -538,7 +538,7 @@ class TagServiceTest {
         Project otherProject = Project.builder().id(20L).build();
         savedTag.setProject(otherProject);
 
-        when(taskServiceClient.getTaskEntityById(testTaskId)).thenReturn(testTask);
+        when(taskClientWrapper.getTaskEntityById(testTaskId)).thenReturn(testTask);
         when(tagRepository.findById(testTagId)).thenReturn(Optional.of(savedTag));
 
         // When
@@ -551,15 +551,15 @@ class TagServiceTest {
                                 throwable.getMessage().contains("Tag does not belong to task's project"))
                 .verify();
 
-        verify(taskServiceClient).getTaskEntityById(testTaskId);
+        verify(taskClientWrapper).getTaskEntityById(testTaskId);
         verify(tagRepository).findById(testTagId);
-        verify(taskServiceClient, never()).updateTask(anyLong(), any(Task.class));
+        verify(taskClientWrapper, never()).updateTask(anyLong(), any(Task.class));
     }
 
     @Test
     void assignTagToTask_tagNotFound_throwsException() {
         // Given
-        when(taskServiceClient.getTaskEntityById(testTaskId)).thenReturn(testTask);
+        when(taskClientWrapper.getTaskEntityById(testTaskId)).thenReturn(testTask);
         when(tagRepository.findById(testTagId)).thenReturn(Optional.empty());
 
         // When
@@ -572,16 +572,16 @@ class TagServiceTest {
                                 throwable.getMessage().contains(String.valueOf(testTagId)))
                 .verify();
 
-        verify(taskServiceClient).getTaskEntityById(testTaskId);
+        verify(taskClientWrapper).getTaskEntityById(testTaskId);
         verify(tagRepository).findById(testTagId);
-        verify(taskServiceClient, never()).updateTask(anyLong(), any(Task.class));
+        verify(taskClientWrapper, never()).updateTask(anyLong(), any(Task.class));
     }
 
     @Test
     void assignTagToTask_taskNotFound_throwsException() {
         // Given
         FeignException.NotFound feignException = mock(FeignException.NotFound.class);
-        when(taskServiceClient.getTaskEntityById(testTaskId)).thenThrow(feignException);
+        when(taskClientWrapper.getTaskEntityById(testTaskId)).thenThrow(feignException);
         when(tagRepository.findById(testTagId)).thenReturn(Optional.of(savedTag));
 
         // When
@@ -594,8 +594,8 @@ class TagServiceTest {
                                 throwable.getMessage().contains(String.valueOf(testTaskId)))
                 .verify();
 
-        verify(taskServiceClient).getTaskEntityById(testTaskId);
-        verify(taskServiceClient, never()).updateTask(anyLong(), any(Task.class));
+        verify(taskClientWrapper).getTaskEntityById(testTaskId);
+        verify(taskClientWrapper, never()).updateTask(anyLong(), any(Task.class));
     }
 
     @Test
@@ -617,9 +617,9 @@ class TagServiceTest {
         taskWithTags.getTags().add(tagWithTasks);
         tagWithTasks.getTasks().add(taskWithTags);
 
-        when(taskServiceClient.getTaskEntityById(testTaskId)).thenReturn(taskWithTags);
+        when(taskClientWrapper.getTaskEntityById(testTaskId)).thenReturn(taskWithTags);
         when(tagRepository.findById(testTagId)).thenReturn(Optional.of(tagWithTasks));
-        when(taskServiceClient.updateTask(eq(testTaskId), any(Task.class))).thenReturn(taskWithTags);
+        when(taskClientWrapper.updateTask(eq(testTaskId), any(Task.class))).thenReturn(taskWithTags);
 
         // When
         Mono<Void> resultMono = tagService.removeTagFromTask(testTaskId, testTagId);
@@ -628,9 +628,9 @@ class TagServiceTest {
         StepVerifier.create(resultMono)
                 .verifyComplete();
 
-        verify(taskServiceClient).getTaskEntityById(testTaskId);
+        verify(taskClientWrapper).getTaskEntityById(testTaskId);
         verify(tagRepository).findById(testTagId);
-        verify(taskServiceClient).updateTask(eq(testTaskId), argThat(task ->
+        verify(taskClientWrapper).updateTask(eq(testTaskId), argThat(task ->
                 !task.getTags().contains(tagWithTasks)));
     }
 
@@ -650,9 +650,9 @@ class TagServiceTest {
                 .tasks(new HashSet<>())
                 .build();
 
-        when(taskServiceClient.getTaskEntityById(testTaskId)).thenReturn(taskWithTags);
+        when(taskClientWrapper.getTaskEntityById(testTaskId)).thenReturn(taskWithTags);
         when(tagRepository.findById(testTagId)).thenReturn(Optional.of(tagWithTasks));
-        when(taskServiceClient.updateTask(eq(testTaskId), any(Task.class))).thenReturn(taskWithTags);
+        when(taskClientWrapper.updateTask(eq(testTaskId), any(Task.class))).thenReturn(taskWithTags);
 
         // When
         Mono<Void> resultMono = tagService.removeTagFromTask(testTaskId, testTagId);
@@ -661,15 +661,15 @@ class TagServiceTest {
         StepVerifier.create(resultMono)
                 .verifyComplete();
 
-        verify(taskServiceClient).getTaskEntityById(testTaskId);
+        verify(taskClientWrapper).getTaskEntityById(testTaskId);
         verify(tagRepository).findById(testTagId);
-        verify(taskServiceClient).updateTask(eq(testTaskId), any(Task.class));
+        verify(taskClientWrapper).updateTask(eq(testTaskId), any(Task.class));
     }
 
     @Test
     void removeTagFromTask_tagNotFound_throwsException() {
         // Given
-        when(taskServiceClient.getTaskEntityById(testTaskId)).thenReturn(testTask);
+        when(taskClientWrapper.getTaskEntityById(testTaskId)).thenReturn(testTask);
         when(tagRepository.findById(testTagId)).thenReturn(Optional.empty());
 
         // When
@@ -682,16 +682,16 @@ class TagServiceTest {
                                 throwable.getMessage().contains(String.valueOf(testTagId)))
                 .verify();
 
-        verify(taskServiceClient).getTaskEntityById(testTaskId);
+        verify(taskClientWrapper).getTaskEntityById(testTaskId);
         verify(tagRepository).findById(testTagId);
-        verify(taskServiceClient, never()).updateTask(anyLong(), any(Task.class));
+        verify(taskClientWrapper, never()).updateTask(anyLong(), any(Task.class));
     }
 
     @Test
     void removeTagFromTask_taskNotFound_throwsException() {
         // Given
         FeignException.NotFound feignException = mock(FeignException.NotFound.class);
-        when(taskServiceClient.getTaskEntityById(testTaskId)).thenThrow(feignException);
+        when(taskClientWrapper.getTaskEntityById(testTaskId)).thenThrow(feignException);
         when(tagRepository.findById(testTagId)).thenReturn(Optional.of(savedTag));
 
         // When
@@ -704,7 +704,7 @@ class TagServiceTest {
                                 throwable.getMessage().contains(String.valueOf(testTaskId)))
                 .verify();
 
-        verify(taskServiceClient).getTaskEntityById(testTaskId);
-        verify(taskServiceClient, never()).updateTask(anyLong(), any(Task.class));
+        verify(taskClientWrapper).getTaskEntityById(testTaskId);
+        verify(taskClientWrapper, never()).updateTask(anyLong(), any(Task.class));
     }
 }

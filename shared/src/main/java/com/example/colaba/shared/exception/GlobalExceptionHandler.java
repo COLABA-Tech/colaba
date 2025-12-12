@@ -4,6 +4,7 @@ import com.example.colaba.shared.dto.common.ErrorResponseDto;
 import com.example.colaba.shared.exception.common.DuplicateEntityException;
 import com.example.colaba.shared.exception.common.NotFoundException;
 import feign.FeignException;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -22,13 +23,27 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(CallNotPermittedException.class)
+    public ResponseEntity<ErrorResponseDto> handleCircuitBreakerOpen(CallNotPermittedException ex, HttpServletRequest request) {
+        log.warn("Circuit Breaker OPEN: {}", ex.getMessage());
+        ErrorResponseDto dto = ErrorResponseDto.builder()
+                .error("NotFound")
+                .status(HttpStatus.SERVICE_UNAVAILABLE.value())
+                .message("The service is unavailable")
+                .path(request.getRequestURI())
+                .timestamp(OffsetDateTime.now())
+                .build();
+        return ResponseEntity
+                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(dto);
+    }
+
     @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<ErrorResponseDto> handleNotFound(
-            NotFoundException e, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponseDto> handleNotFound(NotFoundException e, HttpServletRequest request) {
         log.warn("Resource not found: {}", e.getMessage());
         ErrorResponseDto dto = ErrorResponseDto.builder()
                 .error("NotFound")
-                .status(404)
+                .status(HttpStatus.NOT_FOUND.value())
                 .message(e.getMessage())
                 .path(request.getRequestURI())
                 .timestamp(OffsetDateTime.now())
@@ -37,12 +52,11 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(DuplicateEntityException.class)
-    public ResponseEntity<ErrorResponseDto> handleDuplicate(
-            DuplicateEntityException e, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponseDto> handleDuplicate(DuplicateEntityException e, HttpServletRequest request) {
         log.warn("Duplicate entity: {}", e.getMessage());
         ErrorResponseDto dto = ErrorResponseDto.builder()
                 .error("DuplicateEntity")
-                .status(409)
+                .status(HttpStatus.CONFLICT.value())
                 .message(e.getMessage())
                 .path(request.getRequestURI())
                 .timestamp(OffsetDateTime.now())
@@ -51,16 +65,14 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponseDto> handleValidation(
-            MethodArgumentNotValidException e, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponseDto> handleValidation(MethodArgumentNotValidException e, HttpServletRequest request) {
         Map<String, String> errors = new HashMap<>();
         for (FieldError error : e.getBindingResult().getFieldErrors()) {
             errors.put(error.getField(), error.getDefaultMessage());
         }
-
         ErrorResponseDto dto = ErrorResponseDto.builder()
                 .error("ValidationError")
-                .status(400)
+                .status(HttpStatus.BAD_REQUEST.value())
                 .message("Invalid input")
                 .path(request.getRequestURI())
                 .timestamp(OffsetDateTime.now())
@@ -70,12 +82,11 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ErrorResponseDto> handleIllegalArgument(
-            IllegalArgumentException e, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponseDto> handleIllegalArgument(IllegalArgumentException e, HttpServletRequest request) {
         log.warn("Illegal argument: {}", e.getMessage());
         ErrorResponseDto dto = ErrorResponseDto.builder()
                 .error("BadRequest")
-                .status(400)
+                .status(HttpStatus.BAD_REQUEST.value())
                 .message(e.getMessage())
                 .path(request.getRequestURI())
                 .timestamp(OffsetDateTime.now())
@@ -84,20 +95,16 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(FeignException.class)
-    public ResponseEntity<ErrorResponseDto> handleFeignException(
-            FeignException e, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponseDto> handleFeignException(FeignException e, HttpServletRequest request) {
         log.error("Feign client error: {}", e.getMessage());
-
         int statusCode = e.status() >= 100 && e.status() <= 599 ? e.status() : 500;
-
         ErrorResponseDto dto = ErrorResponseDto.builder()
                 .error("ServiceError")
                 .status(statusCode)
-                .message("Error calling external service: " + e.getMessage())
+                .message("Error calling external service")
                 .path(request.getRequestURI())
                 .timestamp(OffsetDateTime.now())
                 .build();
-
         return ResponseEntity.status(statusCode).body(dto);
     }
 
@@ -117,16 +124,15 @@ public class GlobalExceptionHandler {
                 .path(request.getRequestURI())
                 .timestamp(OffsetDateTime.now())
                 .build();
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(dto);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(dto);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponseDto> handleGeneralException(
-            Exception e, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponseDto> handleGeneralException(Exception e, HttpServletRequest request) {
         log.error("Unexpected error", e);
         ErrorResponseDto dto = ErrorResponseDto.builder()
                 .error("InternalError")
-                .status(500)
+                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .message("An unexpected error occurred")
                 .path(request.getRequestURI())
                 .timestamp(OffsetDateTime.now())

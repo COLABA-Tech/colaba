@@ -1,7 +1,7 @@
 package com.example.colaba.project.service;
 
 import com.example.colaba.project.repository.ProjectMemberRepository;
-import com.example.colaba.shared.client.UserServiceClient;
+import com.example.colaba.shared.circuit.UserClientWrapper;
 import com.example.colaba.shared.dto.projectmember.CreateProjectMemberRequest;
 import com.example.colaba.shared.dto.projectmember.ProjectMemberResponse;
 import com.example.colaba.shared.dto.projectmember.UpdateProjectMemberRequest;
@@ -28,7 +28,7 @@ import reactor.core.scheduler.Schedulers;
 public class ProjectMemberService {
     private final ProjectMemberRepository projectMemberRepository;
     private final ProjectService projectService;
-    private final UserServiceClient userServiceClient;
+    private final UserClientWrapper userClientWrapper;
     private final ProjectMemberMapper projectMemberMapper;
     private final UserMapper userMapper;
 
@@ -46,7 +46,7 @@ public class ProjectMemberService {
                 projectService.getProjectEntityById(projectId),
                 Mono.fromCallable(() -> {
                             try {
-                                return userServiceClient.getUserEntityById(request.userId());
+                                return userClientWrapper.getUserEntityById(request.userId());
                             } catch (FeignException.NotFound e) {
                                 throw new UserNotFoundException(request.userId());
                             }
