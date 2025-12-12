@@ -19,26 +19,27 @@ import java.util.List;
 public class TagAssignmentController extends BaseController {
     private final TagService tagService;
 
-    @GetMapping("/task/{taskId}")
-    @Operation(summary = "Get tags for a task")
-    public Mono<ResponseEntity<List<TagResponse>>> getTagsByTask(@PathVariable Long taskId) {
-        return tagService.getTagsByTask(taskId)
-                .map(ResponseEntity::ok);
-    }
+    // TODO move to task
+//    @GetMapping("/task/{taskId}")
+//    @Operation(summary = "Get tags for a task")
+//    public Mono<ResponseEntity<List<TagResponse>>> getTagsByTask(@PathVariable Long taskId) {
+//        return tagService.getTagsByTask(taskId)
+//                .map(ResponseEntity::ok);
+//    }
 
-    @PostMapping("/task/{taskId}/tag/{tagId}")
-    @Operation(summary = "Assign tag to task")
-    public Mono<ResponseEntity<Void>> assignTagToTask(
-            @PathVariable Long taskId, @PathVariable Long tagId) {
-        return tagService.assignTagToTask(taskId, tagId)
-                .then(Mono.just(ResponseEntity.ok().build()));
-    }
+//    @PostMapping("/task/{taskId}/tag/{tagId}")
+//    @Operation(summary = "Assign tag to task")
+//    public Mono<ResponseEntity<Void>> assignTagToTask(
+//            @PathVariable Long taskId, @PathVariable Long tagId) {
+//        return tagService.assignTagToTask(taskId, tagId)
+//                .then(Mono.just(ResponseEntity.ok().build()));
+//    }
 
-    @DeleteMapping("/task/{taskId}/tag/{tagId}")
-    @Operation(summary = "Remove tag from task")
-    public Mono<ResponseEntity<Void>> removeTagFromTask(
-            @PathVariable Long taskId, @PathVariable Long tagId) {
-        return tagService.removeTagFromTask(taskId, tagId)
-                .then(Mono.just(ResponseEntity.noContent().build()));
-    }
+//    @DeleteMapping("/task/{taskId}/tag/{tagId}")
+//    @Operation(summary = "Remove tag from task")
+//    public Mono<ResponseEntity<Void>> removeTagFromTask(
+//            @PathVariable Long taskId, @PathVariable Long tagId) {
+//        return tagService.removeTagFromTask(taskId, tagId)
+//                .then(Mono.just(ResponseEntity.noContent().build()));
+//    }
 }

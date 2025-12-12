@@ -1,22 +1,15 @@
 package com.example.colaba.shared.entity.task;
 
-import com.example.colaba.shared.entity.Project;
-import com.example.colaba.shared.entity.Tag;
-import com.example.colaba.shared.entity.UserJpa;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.util.HashSet;
-import java.util.Set;
 
 @Entity
 @Table(name = "tasks")

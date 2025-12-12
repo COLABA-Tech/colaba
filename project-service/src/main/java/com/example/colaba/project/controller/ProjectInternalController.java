@@ -2,7 +2,6 @@ package com.example.colaba.project.controller;
 
 import com.example.colaba.project.repository.ProjectRepository;
 import com.example.colaba.shared.entity.Project;
-import com.example.colaba.shared.entity.UserJpa;
 import com.example.colaba.shared.exception.project.ProjectNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -16,9 +15,9 @@ public class ProjectInternalController {
 
     private final ProjectRepository projectRepository;
 
-    @PostMapping("/owner")
-    public List<Project> findByOwner(@RequestBody UserJpa owner) {
-        return projectRepository.findByOwner(owner);
+    @PostMapping("/owner/{ownerId}")
+    public List<Project> findByOwnerId(@PathVariable Long ownerId) {
+        return projectRepository.findByOwnerId(ownerId);
     }
 
     @DeleteMapping("/all")
