@@ -8,8 +8,6 @@ import org.springframework.data.domain.Page;
 
 @Mapper(componentModel = "spring")
 public interface TagMapper {
-    @Mapping(source = "project.id", target = "projectId")
-    @Mapping(source = "project.name", target = "projectName")
     TagResponse toTagResponse(Tag tag);
 
     default Page<TagResponse> toTagResponsePage(Page<Tag> tags) {

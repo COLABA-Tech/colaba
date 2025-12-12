@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 
 @Mapper(componentModel = "spring")
 public interface ProjectMapper {
-    @Mapping(source = "owner.id", target = "ownerId")
+    @Mapping(source = "ownerId", target = "ownerId")
     ProjectResponse toProjectResponse(Project project);
 
     default List<ProjectResponse> toProjectResponseList(List<Project> projects) {

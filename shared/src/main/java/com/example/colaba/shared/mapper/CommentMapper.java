@@ -14,8 +14,8 @@ public class CommentMapper {
     public CommentResponse toResponse(Comment entity) {
         return new CommentResponse(
                 entity.getId(),
-                entity.getTask().getId(),
-                entity.getUser().getId(),
+                entity.getTaskId(),
+                entity.getUserId(),
                 entity.getContent(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()

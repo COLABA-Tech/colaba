@@ -8,12 +8,7 @@ import org.springframework.data.domain.Page;
 
 @Mapper(componentModel = "spring")
 public interface TaskMapper {
-    @Mapping(source = "project.id", target = "projectId")
-    @Mapping(source = "project.name", target = "projectName")
-    @Mapping(source = "assignee.id", target = "assigneeId")
-    @Mapping(source = "assignee.username", target = "assigneeUsername")
-    @Mapping(source = "reporter.id", target = "reporterId")
-    @Mapping(source = "reporter.username", target = "reporterUsername")
+
     TaskResponse toTaskResponse(Task task);
 
     default Page<TaskResponse> toTaskResponsePage(Page<Task> tasks) {
