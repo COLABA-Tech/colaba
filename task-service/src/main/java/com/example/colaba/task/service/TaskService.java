@@ -1,5 +1,7 @@
 package com.example.colaba.task.service;
 
+import com.example.colaba.shared.circuit.ProjectClientWrapper;
+import com.example.colaba.shared.circuit.UserClientWrapper;
 import com.example.colaba.shared.dto.task.CreateTaskRequest;
 import com.example.colaba.shared.dto.task.TaskResponse;
 import com.example.colaba.shared.dto.task.UpdateTaskRequest;
@@ -8,7 +10,6 @@ import com.example.colaba.shared.entity.User;
 import com.example.colaba.shared.entity.UserJpa;
 import com.example.colaba.shared.entity.task.Task;
 import com.example.colaba.shared.entity.task.TaskPriority;
-import com.example.colaba.shared.entity.task.TaskStatus;
 import com.example.colaba.shared.exception.project.ProjectNotFoundException;
 import com.example.colaba.shared.exception.task.TaskNotFoundException;
 import com.example.colaba.shared.exception.user.UserNotFoundException;
@@ -27,8 +28,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class TaskService {
 
     private final TaskRepository taskRepository;
-    private final ProjectClientWrapper projectClientWrapper;   // ← НОВОЕ
-    private final UserClientWrapper userClientWrapper;         // ← НОВОЕ
+    private final ProjectClientWrapper projectClientWrapper;  // Через обёртку
+    private final UserClientWrapper userClientWrapper;        // Через обёртку
     private final TaskMapper taskMapper;
     private final UserMapper userMapper;
 

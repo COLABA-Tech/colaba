@@ -1,17 +1,20 @@
 spring:
   application:
     name: task-service
-
   cloud:
+    openfeign:
+      client:
+        config:
+          user-service:
+            connectTimeout: 1000
+            readTimeout: 1000
     config:
-      enabled: false # TODO
-
+      enabled: false  # TODO
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/colabadb}
     username: ${SPRING_DATASOURCE_USERNAME:colaba_user}
     password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
-
   jpa:
     hibernate:
       ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:validate}
@@ -20,7 +23,6 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: ${SPRING_JPA_FORMAT_SQL:false}
-
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
     enabled: true
@@ -33,9 +35,11 @@ feign:
     config:
       default:
         connect-timeout: 5000
-        read-timeout: 5000
+        read-timeout: 2000
         logger-level: basic
-      error-decoder: com.example.colaba.shared.feign.FeignErrorDecoder
+        error-decoder: com.example.colaba.shared.feign.FeignErrorDecoder
+  circuitbreaker:
+    enabled: true
 
 eureka:
   client:
@@ -50,54 +54,6 @@ springdoc:
     operations-sorter: method
     tags-sorter: alpha
     display-request-duration: true
-    packages-to-scan: com.example.colaba.task.controller
+  packages-to-scan: com.example.colaba.task.controller
   default-consumes-media-type: application/json
   default-produces-media-type: application/json
-
-# ==============================
-# RESILIENCE4J – Circuit Breaker (Fail Fast) для task-service
-# ==============================
-resilience4j:
-  circuitbreaker:
-    instances:
-      # Вызовы в user-service (например, при получении assignee/reporter)
-      userClient:
-        registerHealthIndicator: true
-        automaticTransitionFromOpenToHalfOpenEnabled: true
-        failureRateThreshold: 50
-        slowCallRateThreshold: 100
-        slowCallDurationThreshold: 2s
-        waitDurationInOpenState: 15s
-        permittedNumberOfCallsInHalfOpenState: 5
-        minimumNumberOfCalls: 5
-        slidingWindowSize: 10
-        slidingWindowType: COUNT_BASED
-
-      # Вызовы в project-service (проверка существования проекта, прав доступа и т.д.)
-      projectClient:
-        registerHealthIndicator: true
-        automaticTransitionFromOpenToHalfOpenEnabled: true
-        failureRateThreshold: 50
-        slowCallRateThreshold: 100
-        slowCallDurationThreshold: 2s
-        waitDurationInOpenState: 15s
-        permittedNumberOfCallsInHalfOpenState: 5
-        minimumNumberOfCalls: 5
-        slidingWindowSize: 10
-
-# Actuator — чтобы видеть состояние CB в /actuator/health и /actuator/circuitbreakers
-management:
-  endpoint:
-    health:
-      show-details: always
-      show-components: always
-  endpoints:
-    web:
-      exposure:
-        include: health,info,circuitbreakerevents,circuitbreakers
-
-# Удобно видеть в логах, когда CB открывается/закрывается
-logging:
-  level:
-    io.github.resilience4j: DEBUG
-    com.example.colaba: INFO

@@ -73,18 +73,20 @@ public class CommentService {
         OffsetDateTime cursorTime = (cursor == null || cursor.isBlank())
                 ? OffsetDateTime.now()
                 : OffsetDateTime.parse(cursor);
+
         Pageable pageable = PageRequest.of(
                 0, limit, Sort.by("createdAt").descending());
+
         Slice<Comment> slice = commentRepository
                 .findByTaskIdAndCreatedAtBeforeOrderByCreatedAtDesc(taskId, cursorTime, pageable);
-        List<CommentResponse> responses = commentMapper
-                .toResponseList(slice.getContent());
-        String nextCursor = slice.isEmpty()
-                ? null
-                : slice.getContent()
-                .getLast().getCreatedAt().toString();
-        return new CommentScrollResponse(
-                responses, nextCursor, slice.hasNext());
+
+        List<CommentResponse> responses = commentMapper.toResponseList(slice.getContent());
+
+        String nextCursor = slice.hasContent()
+                ? slice.getContent().get(slice.getNumberOfElements() - 1).getCreatedAt().toString()
+                : null;
+
+        return new CommentScrollResponse(responses, nextCursor, slice.hasNext());
     }
 
     @Transactional

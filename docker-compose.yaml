@@ -3,7 +3,7 @@ services:
     image: postgres:18-alpine
     container_name: colaba-postgres
     environment:
-      POSTGRES_DB: ${COLABA_DB_NAME:-colaba}
+      POSTGRES_DB: ${COLABA_DB_NAME:-colabadb}
       POSTGRES_USER: ${COLABA_DB_USERNAME:-colaba_user}
       POSTGRES_PASSWORD: ${COLABA_DB_PASSWORD:-colaba_password}
     ports:
@@ -13,7 +13,7 @@ services:
     networks:
       - colaba-network
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -d ${COLABA_DB_NAME:-colaba} -U ${COLABA_DB_USERNAME:-colaba_user}" ]
+      test: [ "CMD-SHELL", "pg_isready -d ${COLABA_DB_NAME:-colabadb} -U ${COLABA_DB_USERNAME:-colaba_user}" ]
       interval: 5s
       timeout: 5s
       retries: 10

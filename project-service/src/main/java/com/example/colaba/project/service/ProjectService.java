@@ -1,7 +1,11 @@
 package com.example.colaba.project.service;
 
 import com.example.colaba.project.repository.ProjectRepository;
-import com.example.colaba.shared.dto.project.*;
+import com.example.colaba.shared.circuit.UserClientWrapper;
+import com.example.colaba.shared.dto.project.CreateProjectRequest;
+import com.example.colaba.shared.dto.project.ProjectResponse;
+import com.example.colaba.shared.dto.project.ProjectScrollResponse;
+import com.example.colaba.shared.dto.project.UpdateProjectRequest;
 import com.example.colaba.shared.entity.Project;
 import com.example.colaba.shared.entity.User;
 import com.example.colaba.shared.entity.UserJpa;
@@ -27,7 +31,7 @@ import java.util.List;
 public class ProjectService {
 
     private final ProjectRepository projectRepository;
-    private final UserClientWrapper userClientWrapper;   // ← Через обёртку с Circuit Breaker
+    private final UserClientWrapper userClientWrapper;
     private final ProjectMapper projectMapper;
     private final UserMapper userMapper;
 
@@ -118,8 +122,7 @@ public class ProjectService {
         return getProjectEntityById(projectId)
                 .zipWhen(project -> Mono.fromCallable(() -> userClientWrapper.getUserEntityById(newOwnerId))
                         .subscribeOn(Schedulers.boundedElastic())
-                        .onErrorMap(FeignException.NotFound.class,
-                                ex -> new UserNotFoundException(newOwnerId))
+                        .onErrorMap(FeignException.NotFound.class, ex -> new UserNotFoundException(newOwnerId))
                 )
                 .flatMap(tuple -> {
                     Project project = tuple.getT1();
