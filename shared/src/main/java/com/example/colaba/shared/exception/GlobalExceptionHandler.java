@@ -13,6 +13,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.OffsetDateTime;
 import java.util.HashMap;
@@ -98,6 +99,25 @@ public class GlobalExceptionHandler {
                 .timestamp(OffsetDateTime.now())
                 .build();
         return ResponseEntity.status(statusCode).body(dto);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponseDto> handleNoResourceFound(
+            NoResourceFoundException e, HttpServletRequest request) {
+        String path = e.getResourcePath();
+        if (path.contains("/v3/api-docs") || path.contains("/swagger-ui") || path.equals("/favicon.ico")) {
+            log.debug("Resource not found (expected for Swagger): {}", path);
+            return null;
+        }
+        log.warn("Resource not found: {}", path);
+        ErrorResponseDto dto = ErrorResponseDto.builder()
+                .error("NoResourceFoundException")
+                .status(HttpStatus.NOT_FOUND.value())
+                .message("Resource not found: " + path)
+                .path(request.getRequestURI())
+                .timestamp(OffsetDateTime.now())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(dto);
     }
 
     @ExceptionHandler(Exception.class)
