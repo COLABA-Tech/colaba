@@ -26,37 +26,40 @@ COPY task-service/src task-service/src
 
 RUN ./mvnw clean package -B
 
-FROM eclipse-temurin:25-jre AS discovery-server
+FROM eclipse-temurin:25-jre AS base
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+FROM base AS discovery-server
 WORKDIR /colaba
 COPY --from=builder /colaba/discovery-server/target/*.jar colaba.jar
 EXPOSE 8761
 ENTRYPOINT ["java", "-jar", "colaba.jar"]
 
-FROM eclipse-temurin:25-jre AS config-server
+FROM base AS config-server
 WORKDIR /colaba
 COPY --from=builder /colaba/config-server/target/*.jar colaba.jar
 EXPOSE 8888
 ENTRYPOINT ["java", "-jar", "colaba.jar"]
 
-FROM eclipse-temurin:25-jre AS api-gateway
+FROM base AS api-gateway
 WORKDIR /colaba
 COPY --from=builder /colaba/api-gateway/target/*.jar colaba.jar
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "colaba.jar"]
 
-FROM eclipse-temurin:25-jre AS user-service
+FROM base AS user-service
 WORKDIR /colaba
 COPY --from=builder /colaba/user-service/target/*.jar colaba.jar
 EXPOSE 8081
 ENTRYPOINT ["java", "-jar", "colaba.jar"]
 
-FROM eclipse-temurin:25-jre AS project-service
+FROM base AS project-service
 WORKDIR /colaba
 COPY --from=builder /colaba/project-service/target/*.jar colaba.jar
 EXPOSE 8082
 ENTRYPOINT ["java", "-jar", "colaba.jar"]
 
-FROM eclipse-temurin:25-jre AS task-service
+FROM base AS task-service
 WORKDIR /colaba
 COPY --from=builder /colaba/task-service/target/*.jar colaba.jar
 EXPOSE 8083

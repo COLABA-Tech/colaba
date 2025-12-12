@@ -1,25 +1,5 @@
 spring:
   application:
     name: discovery-server
-
-server:
-  port: ${SERVER_PORT:8761}  # Env var для порта
-
-eureka:
-  instance:
-    hostname: ${EUREKA_HOSTNAME:localhost}  # Env var для хоста
-  client:
-    register-with-eureka: false
-    fetch-registry: false
-    service-url:
-      defaultZone: "http://${EUREKA_HOSTNAME:localhost}:${SERVER_PORT:8761}/eureka/"
-
-# Actuator для health и дашборда
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,eureka
-  endpoint:
-    health:
-      show-details: always
+  config:
+    import: "optional:configserver:http://config-server:8888"
