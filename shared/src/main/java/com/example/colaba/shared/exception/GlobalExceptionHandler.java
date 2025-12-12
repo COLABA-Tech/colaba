@@ -24,11 +24,18 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(CallNotPermittedException.class)
-    public ResponseEntity<String> handleCircuitBreakerOpen(CallNotPermittedException ex) {
+    public ResponseEntity<ErrorResponseDto> handleCircuitBreakerOpen(CallNotPermittedException ex, HttpServletRequest request) {
         log.warn("Circuit Breaker OPEN: {}", ex.getMessage());
+        ErrorResponseDto dto = ErrorResponseDto.builder()
+                .error("NotFound")
+                .status(HttpStatus.SERVICE_UNAVAILABLE.value())
+                .message("The service is unavailable")
+                .path(request.getRequestURI())
+                .timestamp(OffsetDateTime.now())
+                .build();
         return ResponseEntity
                 .status(HttpStatus.SERVICE_UNAVAILABLE)
-                .body("Сервис временно недоступен. Попробуйте позже.");
+                .body(dto);
     }
 
     @ExceptionHandler(NotFoundException.class)
@@ -36,7 +43,7 @@ public class GlobalExceptionHandler {
         log.warn("Resource not found: {}", e.getMessage());
         ErrorResponseDto dto = ErrorResponseDto.builder()
                 .error("NotFound")
-                .status(404)
+                .status(HttpStatus.NOT_FOUND.value())
                 .message(e.getMessage())
                 .path(request.getRequestURI())
                 .timestamp(OffsetDateTime.now())
@@ -49,7 +56,7 @@ public class GlobalExceptionHandler {
         log.warn("Duplicate entity: {}", e.getMessage());
         ErrorResponseDto dto = ErrorResponseDto.builder()
                 .error("DuplicateEntity")
-                .status(409)
+                .status(HttpStatus.CONFLICT.value())
                 .message(e.getMessage())
                 .path(request.getRequestURI())
                 .timestamp(OffsetDateTime.now())
@@ -65,7 +72,7 @@ public class GlobalExceptionHandler {
         }
         ErrorResponseDto dto = ErrorResponseDto.builder()
                 .error("ValidationError")
-                .status(400)
+                .status(HttpStatus.BAD_REQUEST.value())
                 .message("Invalid input")
                 .path(request.getRequestURI())
                 .timestamp(OffsetDateTime.now())
@@ -79,7 +86,7 @@ public class GlobalExceptionHandler {
         log.warn("Illegal argument: {}", e.getMessage());
         ErrorResponseDto dto = ErrorResponseDto.builder()
                 .error("BadRequest")
-                .status(400)
+                .status(HttpStatus.BAD_REQUEST.value())
                 .message(e.getMessage())
                 .path(request.getRequestURI())
                 .timestamp(OffsetDateTime.now())
@@ -117,7 +124,7 @@ public class GlobalExceptionHandler {
                 .path(request.getRequestURI())
                 .timestamp(OffsetDateTime.now())
                 .build();
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(dto);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(dto);
     }
 
     @ExceptionHandler(Exception.class)
@@ -125,7 +132,7 @@ public class GlobalExceptionHandler {
         log.error("Unexpected error", e);
         ErrorResponseDto dto = ErrorResponseDto.builder()
                 .error("InternalError")
-                .status(500)
+                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .message("An unexpected error occurred")
                 .path(request.getRequestURI())
                 .timestamp(OffsetDateTime.now())
