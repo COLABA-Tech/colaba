@@ -2,7 +2,6 @@ package com.example.colaba.shared.circuit;
 
 import com.example.colaba.shared.client.UserServiceClient;
 import com.example.colaba.shared.entity.User;
-import feign.FeignException;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import lombok.RequiredArgsConstructor;

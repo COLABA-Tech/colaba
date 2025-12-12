@@ -1,6 +1,6 @@
 package com.example.colaba.user.unit;
 
-import com.example.colaba.shared.client.ProjectServiceClient;
+import com.example.colaba.shared.circuit.ProjectClientWrapper;
 import com.example.colaba.shared.dto.user.CreateUserRequest;
 import com.example.colaba.shared.dto.user.UpdateUserRequest;
 import com.example.colaba.shared.dto.user.UserResponse;
@@ -40,7 +40,7 @@ public class UserServiceTest {
     private UserRepository userRepository;
 
     @Mock
-    private ProjectServiceClient projectServiceClient;
+    private ProjectClientWrapper projectClientWrapper;
 
     @Mock
     private TransactionalOperator transactionalOperator;
@@ -312,7 +312,7 @@ public class UserServiceTest {
         UserJpa userJpa = UserJpa.builder().id(test_id).build();
         when(userRepository.findById(test_id)).thenReturn(Mono.just(savedUser));
         when(userMapper.toUserJpa(savedUser)).thenReturn(userJpa);
-        when(projectServiceClient.findByOwner(userJpa)).thenReturn(List.of());
+        when(projectClientWrapper.findByOwner(userJpa)).thenReturn(List.of());
         when(userRepository.deleteById(test_id)).thenReturn(Mono.empty());
         when(transactionalOperator.transactional(any(Mono.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -352,7 +352,7 @@ public class UserServiceTest {
 
         when(userRepository.findById(test_id)).thenReturn(Mono.just(savedUser));
         when(userMapper.toUserJpa(savedUser)).thenReturn(userJpa);
-        when(projectServiceClient.findByOwner(userJpa)).thenReturn(ownedProjects);
+        when(projectClientWrapper.findByOwner(userJpa)).thenReturn(ownedProjects);
         when(userRepository.deleteById(test_id)).thenReturn(Mono.empty());
         when(transactionalOperator.transactional(any(Mono.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -365,9 +365,9 @@ public class UserServiceTest {
 
         verify(userRepository).findById(test_id);
         verify(userMapper).toUserJpa(savedUser);
-        verify(projectServiceClient).findByOwner(userJpa);
-        verify(projectServiceClient).deleteProject(1L);
-        verify(projectServiceClient).deleteProject(2L);
+        verify(projectClientWrapper).findByOwner(userJpa);
+        verify(projectClientWrapper).deleteProject(1L);
+        verify(projectClientWrapper).deleteProject(2L);
         verify(userRepository).deleteById(test_id);
     }
 

@@ -3,7 +3,7 @@ package com.example.colaba.project.unit;
 import com.example.colaba.project.repository.ProjectMemberRepository;
 import com.example.colaba.project.service.ProjectMemberService;
 import com.example.colaba.project.service.ProjectService;
-import com.example.colaba.shared.client.UserServiceClient;
+import com.example.colaba.shared.circuit.UserClientWrapper;
 import com.example.colaba.shared.dto.projectmember.CreateProjectMemberRequest;
 import com.example.colaba.shared.dto.projectmember.ProjectMemberResponse;
 import com.example.colaba.shared.dto.projectmember.UpdateProjectMemberRequest;
@@ -50,7 +50,7 @@ class ProjectMemberServiceTest {
     private ProjectService projectService;
 
     @Mock
-    private UserServiceClient userServiceClient;
+    private UserClientWrapper userClientWrapper;
 
     @Mock
     private ProjectMemberMapper projectMemberMapper;
@@ -163,7 +163,7 @@ class ProjectMemberServiceTest {
         ProjectMemberId id = new ProjectMemberId(testProjectId, testUserId);
 
         when(projectService.getProjectEntityById(testProjectId)).thenReturn(Mono.just(testProject));
-        when(userServiceClient.getUserEntityById(testUserId)).thenReturn(testUser);
+        when(userClientWrapper.getUserEntityById(testUserId)).thenReturn(testUser);
         when(userMapper.toUserJpa(testUser)).thenReturn(testUserJpa);
         when(projectMemberRepository.existsById(id)).thenReturn(false);
         when(projectMemberRepository.save(any(ProjectMember.class))).thenReturn(savedMember);
@@ -181,7 +181,7 @@ class ProjectMemberServiceTest {
                 .verifyComplete();
 
         verify(projectService).getProjectEntityById(testProjectId);
-        verify(userServiceClient).getUserEntityById(testUserId);
+        verify(userClientWrapper).getUserEntityById(testUserId);
         verify(userMapper).toUserJpa(testUser);
         verify(projectMemberRepository).existsById(id);
         verify(projectMemberRepository).save(argThat(member ->
@@ -207,7 +207,7 @@ class ProjectMemberServiceTest {
                 .build();
 
         when(projectService.getProjectEntityById(testProjectId)).thenReturn(Mono.just(testProject));
-        when(userServiceClient.getUserEntityById(testUserId)).thenReturn(testUser);
+        when(userClientWrapper.getUserEntityById(testUserId)).thenReturn(testUser);
         when(userMapper.toUserJpa(testUser)).thenReturn(testUserJpa);
         when(projectMemberRepository.existsById(id)).thenReturn(false);
         when(projectMemberRepository.save(any(ProjectMember.class))).thenReturn(defaultMember);
@@ -231,7 +231,7 @@ class ProjectMemberServiceTest {
         ProjectMemberId id = new ProjectMemberId(testProjectId, testUserId);
 
         when(projectService.getProjectEntityById(testProjectId)).thenReturn(Mono.just(testProject));
-        when(userServiceClient.getUserEntityById(testUserId)).thenReturn(testUser);
+        when(userClientWrapper.getUserEntityById(testUserId)).thenReturn(testUser);
         when(userMapper.toUserJpa(testUser)).thenReturn(testUserJpa);
         when(projectMemberRepository.existsById(id)).thenReturn(true);
 
@@ -246,7 +246,7 @@ class ProjectMemberServiceTest {
                 .verify();
 
         verify(projectService).getProjectEntityById(testProjectId);
-        verify(userServiceClient).getUserEntityById(testUserId);
+        verify(userClientWrapper).getUserEntityById(testUserId);
         verify(userMapper).toUserJpa(testUser);
         verify(projectMemberRepository).existsById(id);
         verify(projectMemberRepository, never()).save(any(ProjectMember.class));
@@ -269,7 +269,7 @@ class ProjectMemberServiceTest {
                 .verify();
 
         verify(projectService).getProjectEntityById(testProjectId);
-        verify(userServiceClient, never()).getUserEntityById(anyLong());
+        verify(userClientWrapper, never()).getUserEntityById(anyLong());
         verify(projectMemberRepository, never()).existsById(any(ProjectMemberId.class));
     }
 
@@ -279,7 +279,7 @@ class ProjectMemberServiceTest {
         FeignException.NotFound feignException = mock(FeignException.NotFound.class);
 
         when(projectService.getProjectEntityById(testProjectId)).thenReturn(Mono.just(testProject));
-        when(userServiceClient.getUserEntityById(testUserId)).thenThrow(feignException);
+        when(userClientWrapper.getUserEntityById(testUserId)).thenThrow(feignException);
 
         // When
         Mono<ProjectMemberResponse> resultMono = projectMemberService.createMembership(testProjectId, createRequest);
@@ -292,7 +292,7 @@ class ProjectMemberServiceTest {
                 .verify();
 
         verify(projectService).getProjectEntityById(testProjectId);
-        verify(userServiceClient).getUserEntityById(testUserId);
+        verify(userClientWrapper).getUserEntityById(testUserId);
         verify(projectMemberRepository, never()).existsById(any(ProjectMemberId.class));
     }
 

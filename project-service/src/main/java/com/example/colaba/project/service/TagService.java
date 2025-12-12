@@ -1,7 +1,7 @@
 package com.example.colaba.project.service;
 
 import com.example.colaba.project.repository.TagRepository;
-import com.example.colaba.shared.client.TaskServiceClient;
+import com.example.colaba.shared.circuit.TaskClientWrapper;
 import com.example.colaba.shared.dto.tag.CreateTagRequest;
 import com.example.colaba.shared.dto.tag.TagResponse;
 import com.example.colaba.shared.dto.tag.UpdateTagRequest;
@@ -27,7 +27,7 @@ import java.util.List;
 public class TagService {
     private final TagRepository tagRepository;
     private final ProjectService projectService;
-    private final TaskServiceClient taskServiceClient;
+    private final TaskClientWrapper taskClientWrapper;
     private final TagMapper tagMapper;
 
     public Mono<Page<TagResponse>> getAllTags(Pageable pageable) {
@@ -118,7 +118,7 @@ public class TagService {
         return Mono.zip(
                 Mono.fromCallable(() -> {
                     try {
-                        return taskServiceClient.getTaskEntityById(taskId);
+                        return taskClientWrapper.getTaskEntityById(taskId);
                     } catch (FeignException.NotFound e) {
                         throw new TaskNotFoundException(taskId);
                     }
@@ -144,7 +144,7 @@ public class TagService {
                 if (added) {
                     tag.getTasks().add(task);
                     try {
-                        taskServiceClient.updateTask(taskId, task);
+                        taskClientWrapper.updateTask(taskId, task);
                     } catch (FeignException.NotFound e) {
                         throw new TaskNotFoundException(taskId);
                     }
@@ -157,7 +157,7 @@ public class TagService {
         return Mono.zip(
                 Mono.fromCallable(() -> {
                     try {
-                        return taskServiceClient.getTaskEntityById(taskId);
+                        return taskClientWrapper.getTaskEntityById(taskId);
                     } catch (FeignException.NotFound e) {
                         throw new TaskNotFoundException(taskId);
                     }
@@ -177,7 +177,7 @@ public class TagService {
             return Mono.fromRunnable(() -> {
                 task.getTags().remove(tag);
                 try {
-                    taskServiceClient.updateTask(taskId, task);
+                    taskClientWrapper.updateTask(taskId, task);
                 } catch (FeignException.NotFound e) {
                     throw new TaskNotFoundException(taskId);
                 }

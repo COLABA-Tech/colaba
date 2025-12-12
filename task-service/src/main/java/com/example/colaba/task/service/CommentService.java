@@ -1,6 +1,6 @@
 package com.example.colaba.task.service;
 
-import com.example.colaba.shared.client.UserServiceClient;
+import com.example.colaba.shared.circuit.UserClientWrapper;
 import com.example.colaba.shared.dto.comment.CommentResponse;
 import com.example.colaba.shared.dto.comment.CommentScrollResponse;
 import com.example.colaba.shared.dto.comment.CreateCommentRequest;
@@ -30,7 +30,7 @@ import java.util.List;
 public class CommentService {
 
     private final CommentRepository commentRepository;
-    private final UserServiceClient userServiceClient;
+    private final UserClientWrapper userClientWrapper;
     private final TaskRepository taskRepository;
     private final CommentMapper commentMapper;
     private final UserMapper userMapper;
@@ -39,7 +39,7 @@ public class CommentService {
     public CommentResponse createComment(CreateCommentRequest request) {
         User user;
         try {
-            user = userServiceClient.getUserEntityById(request.userId());
+            user = userClientWrapper.getUserEntityById(request.userId());
         } catch (FeignException.NotFound e) {
             throw new UserNotFoundException(request.userId());
         }
