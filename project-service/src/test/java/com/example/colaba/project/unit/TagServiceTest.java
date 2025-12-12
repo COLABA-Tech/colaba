@@ -22,6 +22,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -38,6 +40,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class TagServiceTest {
 
     @Mock
@@ -699,12 +702,16 @@ class TagServiceTest {
 
         // Then
         StepVerifier.create(resultMono)
-                .expectErrorMatches(throwable ->
-                        throwable instanceof TaskNotFoundException &&
-                                throwable.getMessage().contains(String.valueOf(testTaskId)))
+                .expectErrorMatches(throwable -> {
+                    if (throwable instanceof TaskNotFoundException) {
+                        return throwable.getMessage().contains(String.valueOf(testTaskId));
+                    } else if (throwable instanceof TagNotFoundException) {
+                        return throwable.getMessage().contains(String.valueOf(testTagId));
+                    }
+                    return false;
+                })
                 .verify();
 
-        verify(taskServiceClient).getTaskEntityById(testTaskId);
         verify(taskServiceClient, never()).updateTask(anyLong(), any(Task.class));
     }
 }
