@@ -80,22 +80,21 @@ resilience4j:
       user-service-cb:
         registerHealthIndicator: true
         automaticTransitionFromOpenToHalfOpenEnabled: true
-        failureRateThreshold: 50              # >50% ошибок → OPEN
+        failureRateThreshold: 50
         slowCallRateThreshold: 100
-        slowCallDurationThreshold: 2s         # вызов дольше 2с = slow
-        waitDurationInOpenState: 20s          # сколько держим в OPEN
-        permitted439NumberOfCallsInHalfOpenState: 5
+        slowCallDurationThreshold: 2s
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
         minimumNumberOfCalls: 5
         slidingWindowSize: 10
         slidingWindowType: COUNT_BASED
-
       project-service-cb:
         registerHealthIndicator: true
         automaticTransitionFromOpenToHalfOpenEnabled: true
         failureRateThreshold: 50
         slowCallDurationThreshold: 2s
-        waitDurationInOpenState: 20s
-        permittedNumberOfCallsInHalfOpenState: 5
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
         minimumNumberOfCalls: 5
         slidingWindowSize: 10
 

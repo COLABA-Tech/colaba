@@ -3,6 +3,12 @@ spring:
     name: project-service
 
   cloud:
+    openfeign:
+      client:
+        config:
+          user-service:
+            connectTimeout: 1000
+            readTimeout: 1000
     config:
       enabled: false # TODO
 
@@ -33,7 +39,7 @@ feign:
     config:
       default:
         connectTimeout: 5000
-        readTimeout: 5000
+        readTimeout: 2000
         loggerLevel: basic
       errorDecoder: com.example.colaba.shared.feign.FeignErrorDecoder
 
@@ -60,27 +66,24 @@ springdoc:
 resilience4j:
   circuitbreaker:
     instances:
-      # Для вызовов user-service из project-service
       userClient:
         registerHealthIndicator: true
         automaticTransitionFromOpenToHalfOpenEnabled: true
-        failureRateThreshold: 50                  # % ошибок
+        failureRateThreshold: 50
         slowCallRateThreshold: 100
-        slowCallDurationThreshold: 2s             # >2 сек = slow call
-        waitDurationInOpenState: 15s              # сколько держим OPEN
-        permittedNumberOfCallsInHalfOpenState: 5
+        slowCallDurationThreshold: 2s
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
         minimumNumberOfCalls: 5
         slidingWindowSize: 10
         slidingWindowType: COUNT_BASED
-
-      # Для вызовов task-service из project-service (если будут)
       taskClient:
         registerHealthIndicator: true
         automaticTransitionFromOpenToHalfOpenEnabled: true
         failureRateThreshold: 50
         slowCallDurationThreshold: 2s
-        waitDurationInOpenState: 15s
-        permittedNumberOfCallsInHalfOpenState: 5
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
         minimumNumberOfCalls: 5
         slidingWindowSize: 10
 
