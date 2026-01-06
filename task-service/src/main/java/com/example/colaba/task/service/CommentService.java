@@ -6,17 +6,12 @@ import com.example.colaba.shared.dto.comment.CommentScrollResponse;
 import com.example.colaba.shared.dto.comment.CreateCommentRequest;
 import com.example.colaba.shared.dto.comment.UpdateCommentRequest;
 import com.example.colaba.shared.entity.Comment;
-import com.example.colaba.shared.entity.User;
-import com.example.colaba.shared.entity.UserJpa;
-import com.example.colaba.shared.entity.task.Task;
 import com.example.colaba.shared.exception.comment.CommentNotFoundException;
 import com.example.colaba.shared.exception.task.TaskNotFoundException;
 import com.example.colaba.shared.exception.user.UserNotFoundException;
-import com.example.colaba.shared.mapper.CommentMapper;
-import com.example.colaba.shared.mapper.UserMapper;
+import com.example.colaba.task.mapper.CommentMapper;
 import com.example.colaba.task.repository.CommentRepository;
 import com.example.colaba.task.repository.TaskRepository;
-import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
@@ -33,24 +28,21 @@ public class CommentService {
     private final UserServiceClient userServiceClient;
     private final TaskRepository taskRepository;
     private final CommentMapper commentMapper;
-    private final UserMapper userMapper;
 
     @Transactional
     public CommentResponse createComment(CreateCommentRequest request) {
-        User user;
-        try {
-            user = userServiceClient.getUserEntityById(request.userId());
-        } catch (FeignException.NotFound e) {
+        boolean userExists = userServiceClient.userExists(request.userId());
+        if (!userExists) {
             throw new UserNotFoundException(request.userId());
         }
-        UserJpa userJpa = userMapper.toUserJpa(user);
 
-        Task task = taskRepository.findById(request.taskId())
-                .orElseThrow(() -> new TaskNotFoundException(request.taskId()));
+        if (!taskRepository.existsById(request.taskId())) {
+            throw new TaskNotFoundException(request.taskId());
+        }
 
         Comment comment = Comment.builder()
-                .task(task)
-                .user(userJpa)
+                .taskId(request.taskId())
+                .userId(request.userId())
                 .content(request.content())
                 .build();
 
@@ -65,11 +57,17 @@ public class CommentService {
     }
 
     public Page<CommentResponse> getCommentsByTask(Long taskId, Pageable pageable) {
+        if (!taskRepository.existsById(taskId)) {
+            throw new TaskNotFoundException(taskId);
+        }
         Page<Comment> comments = commentRepository.findByTaskIdOrderByCreatedAtDesc(taskId, pageable);
         return commentMapper.toResponsePage(comments);
     }
 
     public CommentScrollResponse getCommentsByTaskScroll(Long taskId, String cursor, int limit) {
+        if (!taskRepository.existsById(taskId)) {
+            throw new TaskNotFoundException(taskId);
+        }
         OffsetDateTime cursorTime = (cursor == null || cursor.isBlank())
                 ? OffsetDateTime.now()
                 : OffsetDateTime.parse(cursor);

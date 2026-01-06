@@ -1,10 +1,9 @@
-package com.example.colaba.shared.mapper;
+package com.example.colaba.project.mapper;
 
 import com.example.colaba.shared.dto.projectmember.ProjectMemberResponse;
 import com.example.colaba.shared.entity.projectmember.ProjectMember;
 import com.example.colaba.shared.entity.projectmember.ProjectRole;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 import org.mapstruct.Named;
 import org.springframework.data.domain.Page;
 

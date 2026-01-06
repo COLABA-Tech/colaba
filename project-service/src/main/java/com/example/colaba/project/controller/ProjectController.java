@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
@@ -41,16 +43,19 @@ public class ProjectController extends BaseController {
             @ApiResponse(responseCode = "400", description = "Validation error or duplicate project name"),
             @ApiResponse(responseCode = "404", description = "Owner user not found")
     })
-    public Mono<ResponseEntity<ProjectResponse>> create(@Valid @RequestBody CreateProjectRequest request) {
-        return projectService.createProject(request)
-                .map(projectResponse ->
-                        ResponseEntity.created(
-                                ServletUriComponentsBuilder.fromCurrentRequestUri()
-                                        .path("/{id}")
-                                        .buildAndExpand(projectResponse.id())
-                                        .toUri()
-                        ).body(projectResponse)
-                );
+    public Mono<ResponseEntity<ProjectResponse>> create(@Valid @RequestBody CreateProjectRequest request,
+                                                        HttpServletRequest httpRequest) {
+        return Mono.fromCallable(() -> {
+            String baseUrl = httpRequest.getRequestURL().toString();
+            return projectService.createProject(request)
+                    .map(projectResponse -> {
+                        URI location = ServletUriComponentsBuilder.fromUri(URI.create(baseUrl))
+                                .path("/{id}")
+                                .buildAndExpand(projectResponse.id())
+                                .toUri();
+                        return ResponseEntity.created(location).body(projectResponse);
+                    });
+        }).flatMap(mono -> mono);
     }
 
     @PutMapping("/{id}")
@@ -102,8 +107,9 @@ public class ProjectController extends BaseController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "List of all projects")
     })
-    public Mono<ResponseEntity<List<ProjectResponse>>> getAll() {
-        return projectService.getAllProjects()
+    public Mono<ResponseEntity<Page<ProjectResponse>>> getAll(Pageable pageable) {
+        pageable = validatePageable(pageable);
+        return projectService.getAllProjects(pageable)
                 .map(ResponseEntity::ok);
     }
 

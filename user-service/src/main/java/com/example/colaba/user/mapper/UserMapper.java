@@ -1,4 +1,4 @@
-package com.example.colaba.shared.mapper;
+package com.example.colaba.user.mapper;
 
 import com.example.colaba.shared.dto.user.UserResponse;
 import com.example.colaba.shared.entity.User;
@@ -6,7 +6,6 @@ import com.example.colaba.shared.entity.UserJpa;
 import org.mapstruct.Mapper;
 import org.springframework.data.domain.Page;
 
-import java.util.HashSet;
 import java.util.List;
 
 @Mapper(componentModel = "spring")

@@ -9,7 +9,6 @@ import org.springframework.context.annotation.Import;
 
 @SpringBootApplication(scanBasePackages = {
         "com.example.colaba.user",
-        "com.example.colaba.shared.mapper",
         "com.example.colaba.shared.exception"
 })
 @EnableDiscoveryClient

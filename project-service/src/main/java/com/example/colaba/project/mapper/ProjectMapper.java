@@ -1,4 +1,4 @@
-package com.example.colaba.shared.mapper;
+package com.example.colaba.project.mapper;
 
 import com.example.colaba.shared.dto.project.ProjectResponse;
 import com.example.colaba.shared.entity.Project;

@@ -1,5 +1,6 @@
 package com.example.colaba.project.service;
 
+import com.example.colaba.project.mapper.ProjectMemberMapper;
 import com.example.colaba.project.repository.ProjectMemberRepository;
 import com.example.colaba.shared.client.UserServiceClient;
 import com.example.colaba.shared.dto.projectmember.CreateProjectMemberRequest;
@@ -11,11 +12,11 @@ import com.example.colaba.shared.entity.projectmember.ProjectRole;
 import com.example.colaba.shared.exception.projectmember.DuplicateProjectMemberException;
 import com.example.colaba.shared.exception.projectmember.ProjectMemberNotFoundException;
 import com.example.colaba.shared.exception.user.UserNotFoundException;
-import com.example.colaba.shared.mapper.ProjectMemberMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -36,6 +37,7 @@ public class ProjectMemberService {
                 ).subscribeOn(Schedulers.boundedElastic()));
     }
 
+    @Transactional
     public Mono<ProjectMemberResponse> createMembership(Long projectId, CreateProjectMemberRequest request) {
         return projectService.getProjectEntityById(projectId)
                 .flatMap(_ -> Mono.fromCallable(() -> userServiceClient.userExists(request.userId()))
@@ -60,6 +62,7 @@ public class ProjectMemberService {
                         }));
     }
 
+    @Transactional
     public Mono<ProjectMemberResponse> updateMembership(Long projectId, Long userId, UpdateProjectMemberRequest request) {
         return Mono.fromCallable(() -> {
                     ProjectMemberId id = new ProjectMemberId(projectId, userId);
@@ -88,6 +91,7 @@ public class ProjectMemberService {
                 });
     }
 
+    @Transactional
     public Mono<Void> deleteMembership(Long projectId, Long userId) {
         return Mono.fromCallable(() -> {
                     ProjectMemberId id = new ProjectMemberId(projectId, userId);

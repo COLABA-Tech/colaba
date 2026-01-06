@@ -1,5 +1,6 @@
 package com.example.colaba.project.service;
 
+import com.example.colaba.project.mapper.ProjectMapper;
 import com.example.colaba.project.repository.ProjectRepository;
 import com.example.colaba.shared.client.UserServiceClient;
 import com.example.colaba.shared.dto.project.CreateProjectRequest;
@@ -10,8 +11,6 @@ import com.example.colaba.shared.entity.Project;
 import com.example.colaba.shared.exception.project.DuplicateProjectNameException;
 import com.example.colaba.shared.exception.project.ProjectNotFoundException;
 import com.example.colaba.shared.exception.user.UserNotFoundException;
-import com.example.colaba.shared.mapper.ProjectMapper;
-import com.example.colaba.shared.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -30,7 +29,6 @@ public class ProjectService {
     private final ProjectRepository projectRepository;
     private final UserServiceClient userServiceClient;
     private final ProjectMapper projectMapper;
-    private final UserMapper userMapper;
 
     @Transactional
     public Mono<ProjectResponse> createProject(CreateProjectRequest request) {
@@ -68,9 +66,8 @@ public class ProjectService {
                 .subscribeOn(Schedulers.boundedElastic());
     }
 
-    public Mono<List<ProjectResponse>> getAllProjects() {
-        return Mono.fromCallable(projectRepository::findAll)
-                .map(projectMapper::toProjectResponseList)
+    public Mono<Page<ProjectResponse>> getAllProjects(Pageable pageable) {
+        return Mono.fromCallable(() -> projectMapper.toProjectResponsePage(projectRepository.findAll(pageable)))
                 .subscribeOn(Schedulers.boundedElastic());
     }
 
