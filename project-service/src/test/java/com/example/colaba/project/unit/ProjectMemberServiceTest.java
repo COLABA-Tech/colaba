@@ -1,24 +1,21 @@
 package com.example.colaba.project.unit;
 
+import com.example.colaba.project.circuit.UserServiceClientWrapper;
+import com.example.colaba.project.dto.projectmember.CreateProjectMemberRequest;
+import com.example.colaba.project.dto.projectmember.ProjectMemberResponse;
+import com.example.colaba.project.dto.projectmember.UpdateProjectMemberRequest;
+import com.example.colaba.project.entity.ProjectJpa;
+import com.example.colaba.project.entity.projectmember.ProjectMemberId;
+import com.example.colaba.project.entity.projectmember.ProjectMemberJpa;
+import com.example.colaba.project.entity.projectmember.ProjectRole;
+import com.example.colaba.project.mapper.ProjectMemberMapper;
 import com.example.colaba.project.repository.ProjectMemberRepository;
 import com.example.colaba.project.service.ProjectMemberService;
 import com.example.colaba.project.service.ProjectService;
-import com.example.colaba.shared.circuit.UserClientWrapper;
-import com.example.colaba.shared.dto.projectmember.CreateProjectMemberRequest;
-import com.example.colaba.shared.dto.projectmember.ProjectMemberResponse;
-import com.example.colaba.shared.dto.projectmember.UpdateProjectMemberRequest;
-import com.example.colaba.shared.entity.Project;
-import com.example.colaba.shared.entity.User;
-import com.example.colaba.shared.entity.UserJpa;
-import com.example.colaba.shared.entity.projectmember.ProjectMember;
-import com.example.colaba.shared.entity.projectmember.ProjectMemberId;
-import com.example.colaba.shared.entity.projectmember.ProjectRole;
 import com.example.colaba.shared.exception.project.ProjectNotFoundException;
 import com.example.colaba.shared.exception.projectmember.DuplicateProjectMemberException;
 import com.example.colaba.shared.exception.projectmember.ProjectMemberNotFoundException;
 import com.example.colaba.shared.exception.user.UserNotFoundException;
-import com.example.colaba.shared.mapper.ProjectMemberMapper;
-import com.example.colaba.shared.mapper.UserMapper;
 import feign.FeignException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,7 +47,7 @@ class ProjectMemberServiceTest {
     private ProjectService projectService;
 
     @Mock
-    private UserClientWrapper userClientWrapper;
+    private UserServiceClientWrapper userClientWrapper;
 
     @Mock
     private ProjectMemberMapper projectMemberMapper;
@@ -63,22 +60,22 @@ class ProjectMemberServiceTest {
 
     private CreateProjectMemberRequest createRequest;
     private UpdateProjectMemberRequest updateRequest;
-    private ProjectMember savedMember;
+    private ProjectMemberJpa savedMember;
     private ProjectMemberResponse memberResponse;
 
     private final Long testProjectId = 1L;
     private final Long testUserId = 2L;
     private final String testUsername = "testuser";
     private final ProjectRole testRole = ProjectRole.VIEWER;
-    private Project testProject;
+    private ProjectJpa testProject;
     private User testUser;
     private UserJpa testUserJpa;
 
     @BeforeEach
     void setUp() {
-        testProject = Project.builder()
+        testProject = ProjectJpa.builder()
                 .id(testProjectId)
-                .name("Test Project")
+                .name("Test ProjectJpa")
                 .build();
 
         testUser = User.builder()
@@ -92,7 +89,7 @@ class ProjectMemberServiceTest {
                 .email("test@example.com")
                 .build();
 
-        savedMember = ProjectMember.builder()
+        savedMember = ProjectMemberJpa.builder()
                 .projectId(testProjectId)
                 .userId(testUserId)
                 .project(testProject)
@@ -114,7 +111,7 @@ class ProjectMemberServiceTest {
     void getMembersByProject_success() {
         // Given
         Pageable pageable = PageRequest.of(0, 10);
-        Page<ProjectMember> mockPage = new PageImpl<>(List.of(savedMember));
+        Page<ProjectMemberJpa> mockPage = new PageImpl<>(List.of(savedMember));
         Page<ProjectMemberResponse> mockResponsePage = new PageImpl<>(List.of(memberResponse));
 
         when(projectService.getProjectEntityById(testProjectId)).thenReturn(Mono.just(testProject));
@@ -166,7 +163,7 @@ class ProjectMemberServiceTest {
         when(userClientWrapper.getUserEntityById(testUserId)).thenReturn(testUser);
         when(userMapper.toUserJpa(testUser)).thenReturn(testUserJpa);
         when(projectMemberRepository.existsById(id)).thenReturn(false);
-        when(projectMemberRepository.save(any(ProjectMember.class))).thenReturn(savedMember);
+        when(projectMemberRepository.save(any(ProjectMemberJpa.class))).thenReturn(savedMember);
         when(projectMemberMapper.toProjectMemberResponse(savedMember)).thenReturn(memberResponse);
 
         // When
@@ -198,7 +195,7 @@ class ProjectMemberServiceTest {
         ProjectMemberId id = new ProjectMemberId(testProjectId, testUserId);
         ProjectRole defaultRole = ProjectRole.getDefault();
 
-        ProjectMember defaultMember = ProjectMember.builder()
+        ProjectMemberJpa defaultMember = ProjectMemberJpa.builder()
                 .projectId(testProjectId)
                 .userId(testUserId)
                 .project(testProject)
@@ -210,7 +207,7 @@ class ProjectMemberServiceTest {
         when(userClientWrapper.getUserEntityById(testUserId)).thenReturn(testUser);
         when(userMapper.toUserJpa(testUser)).thenReturn(testUserJpa);
         when(projectMemberRepository.existsById(id)).thenReturn(false);
-        when(projectMemberRepository.save(any(ProjectMember.class))).thenReturn(defaultMember);
+        when(projectMemberRepository.save(any(ProjectMemberJpa.class))).thenReturn(defaultMember);
         when(projectMemberMapper.toProjectMemberResponse(defaultMember)).thenReturn(memberResponse);
 
         // When
@@ -249,7 +246,7 @@ class ProjectMemberServiceTest {
         verify(userClientWrapper).getUserEntityById(testUserId);
         verify(userMapper).toUserJpa(testUser);
         verify(projectMemberRepository).existsById(id);
-        verify(projectMemberRepository, never()).save(any(ProjectMember.class));
+        verify(projectMemberRepository, never()).save(any(ProjectMemberJpa.class));
     }
 
     @Test
@@ -303,7 +300,7 @@ class ProjectMemberServiceTest {
         ProjectRole newRole = ProjectRole.OWNER;
         UpdateProjectMemberRequest changeRequest = new UpdateProjectMemberRequest(newRole);
 
-        ProjectMember updatedMember = ProjectMember.builder()
+        ProjectMemberJpa updatedMember = ProjectMemberJpa.builder()
                 .projectId(testProjectId)
                 .userId(testUserId)
                 .project(testProject)
@@ -317,7 +314,7 @@ class ProjectMemberServiceTest {
         );
 
         when(projectMemberRepository.findById(id)).thenReturn(Optional.of(savedMember));
-        when(projectMemberRepository.save(any(ProjectMember.class))).thenReturn(updatedMember);
+        when(projectMemberRepository.save(any(ProjectMemberJpa.class))).thenReturn(updatedMember);
         when(projectMemberMapper.toProjectMemberResponse(updatedMember)).thenReturn(updatedResponse);
 
         // When
@@ -353,7 +350,7 @@ class ProjectMemberServiceTest {
                 .verifyComplete();
 
         verify(projectMemberRepository).findById(id);
-        verify(projectMemberRepository, never()).save(any(ProjectMember.class));
+        verify(projectMemberRepository, never()).save(any(ProjectMemberJpa.class));
         verify(projectMemberMapper).toProjectMemberResponse(savedMember);
     }
 
@@ -376,7 +373,7 @@ class ProjectMemberServiceTest {
                 .verifyComplete();
 
         verify(projectMemberRepository).findById(id);
-        verify(projectMemberRepository, never()).save(any(ProjectMember.class));
+        verify(projectMemberRepository, never()).save(any(ProjectMemberJpa.class));
         verify(projectMemberMapper).toProjectMemberResponse(savedMember);
     }
 
@@ -398,7 +395,7 @@ class ProjectMemberServiceTest {
                 .verify();
 
         verify(projectMemberRepository).findById(id);
-        verify(projectMemberRepository, never()).save(any(ProjectMember.class));
+        verify(projectMemberRepository, never()).save(any(ProjectMemberJpa.class));
     }
 
     @Test

@@ -1,20 +1,18 @@
 package com.example.colaba.project.unit;
 
+import com.example.colaba.project.circuit.TaskServiceClientWrapper;
+import com.example.colaba.project.dto.tag.CreateTagRequest;
+import com.example.colaba.project.dto.tag.UpdateTagRequest;
+import com.example.colaba.project.entity.TagJpa;
+import com.example.colaba.project.mapper.TagMapper;
 import com.example.colaba.project.repository.TagRepository;
 import com.example.colaba.project.service.ProjectService;
 import com.example.colaba.project.service.TagService;
-import com.example.colaba.shared.circuit.TaskClientWrapper;
-import com.example.colaba.shared.dto.tag.CreateTagRequest;
 import com.example.colaba.shared.dto.tag.TagResponse;
-import com.example.colaba.shared.dto.tag.UpdateTagRequest;
-import com.example.colaba.shared.entity.Project;
-import com.example.colaba.shared.entity.Tag;
-import com.example.colaba.shared.entity.task.Task;
 import com.example.colaba.shared.exception.project.ProjectNotFoundException;
 import com.example.colaba.shared.exception.tag.DuplicateTagException;
 import com.example.colaba.shared.exception.tag.TagNotFoundException;
 import com.example.colaba.shared.exception.task.TaskNotFoundException;
-import com.example.colaba.shared.mapper.TagMapper;
 import feign.FeignException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,7 +45,7 @@ class TagServiceTest {
     private ProjectService projectService;
 
     @Mock
-    private TaskClientWrapper taskClientWrapper;
+    private TaskServiceClientWrapper taskClientWrapper;
 
     @Mock
     private TagMapper tagMapper;
@@ -57,21 +55,21 @@ class TagServiceTest {
 
     private CreateTagRequest createRequest;
     private UpdateTagRequest updateRequest;
-    private Tag savedTag;
+    private TagJpa savedTag;
     private TagResponse tagResponse;
 
     private final Long testTagId = 1L;
     private final Long testTaskId = 2L;
-    private final String testName = "Test Tag";
+    private final String testName = "Test TagJpa";
     private final Long testProjectId = 10L;
-    private Project testProject;
+    private ProjectJpa testProject;
     private Task testTask;
 
     @BeforeEach
     void setUp() {
-        testProject = Project.builder()
+        testProject = ProjectJpa.builder()
                 .id(testProjectId)
-                .name("Test Project")
+                .name("Test ProjectJpa")
                 .build();
 
         testTask = Task.builder()
@@ -80,7 +78,7 @@ class TagServiceTest {
                 .tags(Set.of())
                 .build();
 
-        savedTag = Tag.builder()
+        savedTag = TagJpa.builder()
                 .id(testTagId)
                 .name(testName)
                 .project(testProject)
@@ -99,7 +97,7 @@ class TagServiceTest {
     void getAllTags_success() {
         // Given
         Pageable pageable = PageRequest.of(0, 10);
-        Page<Tag> mockPage = new PageImpl<>(List.of(savedTag));
+        Page<TagJpa> mockPage = new PageImpl<>(List.of(savedTag));
         Page<TagResponse> mockResponsePage = new PageImpl<>(List.of(tagResponse));
 
         when(tagRepository.findAll(pageable)).thenReturn(mockPage);
@@ -155,14 +153,14 @@ class TagServiceTest {
                 .verify();
 
         verify(tagRepository).findById(testTagId);
-        verify(tagMapper, never()).toTagResponse(any(Tag.class));
+        verify(tagMapper, never()).toTagResponse(any(TagJpa.class));
     }
 
     @Test
     void getTagsByProject_success() {
         // Given
         Pageable pageable = PageRequest.of(0, 10);
-        Page<Tag> mockPage = new PageImpl<>(List.of(savedTag));
+        Page<TagJpa> mockPage = new PageImpl<>(List.of(savedTag));
         Page<TagResponse> mockResponsePage = new PageImpl<>(List.of(tagResponse));
 
         when(projectService.getProjectEntityById(testProjectId)).thenReturn(Mono.just(testProject));
@@ -202,7 +200,7 @@ class TagServiceTest {
                 .verify();
 
         verify(projectService).getProjectEntityById(testProjectId);
-        verify(tagRepository, never()).findByProject(any(Project.class), any(Pageable.class));
+        verify(tagRepository, never()).findByProject(any(ProjectJpa.class), any(Pageable.class));
     }
 
     @Test
@@ -239,7 +237,7 @@ class TagServiceTest {
                 .verifyComplete();
 
         verify(tagRepository).findByTaskId(testTaskId);
-        verify(tagMapper, never()).toTagResponse(any(Tag.class));
+        verify(tagMapper, never()).toTagResponse(any(TagJpa.class));
     }
 
     @Test
@@ -247,7 +245,7 @@ class TagServiceTest {
         // Given
         when(projectService.getProjectEntityById(testProjectId)).thenReturn(Mono.just(testProject));
         when(tagRepository.findByProjectIdAndNameIgnoreCase(testProjectId, testName)).thenReturn(Optional.empty());
-        when(tagRepository.save(any(Tag.class))).thenReturn(savedTag);
+        when(tagRepository.save(any(TagJpa.class))).thenReturn(savedTag);
         when(tagMapper.toTagResponse(savedTag)).thenReturn(tagResponse);
 
         // When
@@ -284,7 +282,7 @@ class TagServiceTest {
 
         verify(projectService).getProjectEntityById(testProjectId);
         verify(tagRepository).findByProjectIdAndNameIgnoreCase(testProjectId, testName);
-        verify(tagRepository, never()).save(any(Tag.class));
+        verify(tagRepository, never()).save(any(TagJpa.class));
     }
 
     @Test
@@ -305,20 +303,20 @@ class TagServiceTest {
 
         verify(projectService).getProjectEntityById(testProjectId);
         verify(tagRepository, never()).findByProjectIdAndNameIgnoreCase(anyLong(), anyString());
-        verify(tagRepository, never()).save(any(Tag.class));
+        verify(tagRepository, never()).save(any(TagJpa.class));
     }
 
     @Test
     void updateTag_success_withChange() {
         // Given
-        String newName = "Updated Tag";
+        String newName = "Updated TagJpa";
         UpdateTagRequest changeRequest = new UpdateTagRequest(newName);
-        Tag updatedTag = Tag.builder().id(testTagId).name(newName).project(testProject).build();
+        TagJpa updatedTag = TagJpa.builder().id(testTagId).name(newName).project(testProject).build();
         TagResponse updatedResponse = new TagResponse(testTagId, newName, testProjectId, testProject.getName());
 
         when(tagRepository.findById(testTagId)).thenReturn(Optional.of(savedTag));
         when(tagRepository.findByProjectIdAndNameIgnoreCase(testProjectId, newName)).thenReturn(Optional.empty());
-        when(tagRepository.save(any(Tag.class))).thenReturn(updatedTag);
+        when(tagRepository.save(any(TagJpa.class))).thenReturn(updatedTag);
         when(tagMapper.toTagResponse(updatedTag)).thenReturn(updatedResponse);
 
         // When
@@ -357,7 +355,7 @@ class TagServiceTest {
 
         verify(tagRepository).findById(testTagId);
         verify(tagRepository, never()).findByProjectIdAndNameIgnoreCase(anyLong(), anyString());
-        verify(tagRepository, never()).save(any(Tag.class));
+        verify(tagRepository, never()).save(any(TagJpa.class));
         verify(tagMapper).toTagResponse(savedTag);
     }
 
@@ -365,7 +363,7 @@ class TagServiceTest {
     void updateTag_duplicateName_throwsException() {
         // Given
         UpdateTagRequest duplicateRequest = new UpdateTagRequest("Duplicate Name");
-        Tag duplicateTag = Tag.builder().id(2L).name("Duplicate Name").project(testProject).build();
+        TagJpa duplicateTag = TagJpa.builder().id(2L).name("Duplicate Name").project(testProject).build();
 
         when(tagRepository.findById(testTagId)).thenReturn(Optional.of(savedTag));
         when(tagRepository.findByProjectIdAndNameIgnoreCase(testProjectId, "Duplicate Name")).thenReturn(Optional.of(duplicateTag));
@@ -382,7 +380,7 @@ class TagServiceTest {
 
         verify(tagRepository).findById(testTagId);
         verify(tagRepository).findByProjectIdAndNameIgnoreCase(testProjectId, "Duplicate Name");
-        verify(tagRepository, never()).save(any(Tag.class));
+        verify(tagRepository, never()).save(any(TagJpa.class));
     }
 
     @Test
@@ -402,7 +400,7 @@ class TagServiceTest {
 
         verify(tagRepository).findById(testTagId);
         verify(tagRepository, never()).findByProjectIdAndNameIgnoreCase(anyLong(), anyString());
-        verify(tagRepository, never()).save(any(Tag.class));
+        verify(tagRepository, never()).save(any(TagJpa.class));
     }
 
     @Test
@@ -425,7 +423,7 @@ class TagServiceTest {
 
         verify(tagRepository).findById(testTagId);
         verify(tagRepository, never()).findByProjectIdAndNameIgnoreCase(anyLong(), anyString());
-        verify(tagRepository, never()).save(any(Tag.class));
+        verify(tagRepository, never()).save(any(TagJpa.class));
         verify(tagMapper).toTagResponse(savedTag);
     }
 
@@ -474,7 +472,7 @@ class TagServiceTest {
                 .tags(new HashSet<>())
                 .build();
 
-        Tag tagWithTasks = Tag.builder()
+        TagJpa tagWithTasks = TagJpa.builder()
                 .id(testTagId)
                 .name(testName)
                 .project(testProject)
@@ -507,7 +505,7 @@ class TagServiceTest {
                 .tags(new HashSet<>())
                 .build();
 
-        Tag tagWithTasks = Tag.builder()
+        TagJpa tagWithTasks = TagJpa.builder()
                 .id(testTagId)
                 .name(testName)
                 .project(testProject)
@@ -535,7 +533,7 @@ class TagServiceTest {
     @Test
     void assignTagToTask_projectMismatch_throwsException() {
         // Given
-        Project otherProject = Project.builder().id(20L).build();
+        ProjectJpa otherProject = ProjectJpa.builder().id(20L).build();
         savedTag.setProject(otherProject);
 
         when(taskClientWrapper.getTaskEntityById(testTaskId)).thenReturn(testTask);
@@ -548,7 +546,7 @@ class TagServiceTest {
         StepVerifier.create(resultMono)
                 .expectErrorMatches(throwable ->
                         throwable instanceof IllegalArgumentException &&
-                                throwable.getMessage().contains("Tag does not belong to task's project"))
+                                throwable.getMessage().contains("TagJpa does not belong to task's project"))
                 .verify();
 
         verify(taskClientWrapper).getTaskEntityById(testTaskId);
@@ -607,7 +605,7 @@ class TagServiceTest {
                 .tags(new HashSet<>())
                 .build();
 
-        Tag tagWithTasks = Tag.builder()
+        TagJpa tagWithTasks = TagJpa.builder()
                 .id(testTagId)
                 .name(testName)
                 .project(testProject)
@@ -643,7 +641,7 @@ class TagServiceTest {
                 .tags(new HashSet<>())
                 .build();
 
-        Tag tagWithTasks = Tag.builder()
+        TagJpa tagWithTasks = TagJpa.builder()
                 .id(testTagId)
                 .name(testName)
                 .project(testProject)

@@ -3,7 +3,7 @@ package com.example.colaba.task.service;
 import com.example.colaba.shared.exception.comment.CommentNotFoundException;
 import com.example.colaba.shared.exception.task.TaskNotFoundException;
 import com.example.colaba.shared.exception.user.UserNotFoundException;
-import com.example.colaba.task.client.UserServiceClient;
+import com.example.colaba.task.circuit.UserServiceClientWrapper;
 import com.example.colaba.task.dto.comment.CommentResponse;
 import com.example.colaba.task.dto.comment.CommentScrollResponse;
 import com.example.colaba.task.dto.comment.CreateCommentRequest;
@@ -25,7 +25,7 @@ import java.util.List;
 public class CommentService {
 
     private final CommentRepository commentRepository;
-    private final UserServiceClient userServiceClient;
+    private final UserServiceClientWrapper userServiceClient;
     private final TaskRepository taskRepository;
     private final CommentMapper commentMapper;
 

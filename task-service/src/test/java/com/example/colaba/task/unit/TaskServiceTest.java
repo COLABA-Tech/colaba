@@ -1,21 +1,14 @@
 package com.example.colaba.task.unit;
 
-import com.example.colaba.shared.circuit.ProjectClientWrapper;
-import com.example.colaba.shared.circuit.UserClientWrapper;
-import com.example.colaba.shared.dto.task.CreateTaskRequest;
-import com.example.colaba.shared.dto.task.TaskResponse;
-import com.example.colaba.shared.dto.task.UpdateTaskRequest;
-import com.example.colaba.shared.entity.Project;
-import com.example.colaba.shared.entity.User;
-import com.example.colaba.shared.entity.UserJpa;
-import com.example.colaba.shared.entity.task.Task;
-import com.example.colaba.shared.entity.task.TaskPriority;
-import com.example.colaba.shared.entity.task.TaskStatus;
-import com.example.colaba.shared.exception.project.ProjectNotFoundException;
-import com.example.colaba.shared.exception.task.TaskNotFoundException;
-import com.example.colaba.shared.exception.user.UserNotFoundException;
-import com.example.colaba.shared.mapper.TaskMapper;
-import com.example.colaba.shared.mapper.UserMapper;
+import com.example.colaba.task.circuit.ProjectServiceClientWrapper;
+import com.example.colaba.task.circuit.UserServiceClientWrapper;
+import com.example.colaba.task.dto.task.CreateTaskRequest;
+import com.example.colaba.task.dto.task.TaskResponse;
+import com.example.colaba.task.dto.task.UpdateTaskRequest;
+import com.example.colaba.task.entity.task.TaskJpa;
+import com.example.colaba.task.entity.task.TaskPriority;
+import com.example.colaba.task.entity.task.TaskStatus;
+import com.example.colaba.task.mapper.TaskMapper;
 import com.example.colaba.task.repository.TaskRepository;
 import com.example.colaba.task.service.TaskService;
 import feign.FeignException;
@@ -47,10 +40,10 @@ class TaskServiceTest {
     private TaskRepository taskRepository;
 
     @Mock
-    private ProjectClientWrapper projectClientWrapper;
+    private ProjectServiceClientWrapper projectClientWrapper;
 
     @Mock
-    private UserClientWrapper userClientWrapper;
+    private UserServiceClientWrapper userClientWrapper;
 
     @Mock
     private TaskMapper taskMapper;
@@ -63,11 +56,11 @@ class TaskServiceTest {
 
     private CreateTaskRequest request;
     private UpdateTaskRequest updateRequest;
-    private Task savedTask;
+    private TaskJpa savedTask;
     private TaskResponse taskResponse;
 
     private final Long testId = 1L;
-    private final String testTitle = "Test Task";
+    private final String testTitle = "Test TaskJpa";
     private final String testDescription = "Test Description";
     private final TaskStatus testStatus = TaskStatus.TODO;
     private final TaskPriority testPriority = TaskPriority.LOW;
@@ -76,7 +69,7 @@ class TaskServiceTest {
     private final Long testReporterId = 1L;
     private final LocalDate testDueDate = LocalDate.now();
 
-    private Project testProject;
+    private ProjectJpa testProject;
     private User testAssignee;
     private User testReporter;
     private UserJpa testAssigneeJpa;
@@ -97,7 +90,7 @@ class TaskServiceTest {
                 .owner(testReporterJpa)
                 .build();
 
-        savedTask = Task.builder()
+        savedTask = TaskJpa.builder()
                 .id(testId)
                 .title(testTitle)
                 .description(testDescription)
@@ -137,7 +130,7 @@ class TaskServiceTest {
         when(userClientWrapper.getUserEntityById(testAssigneeId)).thenReturn(testAssignee);
         when(userMapper.toUserJpa(testReporter)).thenReturn(testReporterJpa);
         when(userMapper.toUserJpa(testAssignee)).thenReturn(testAssigneeJpa);
-        when(taskRepository.save(any(Task.class))).thenReturn(savedTask);
+        when(taskRepository.save(any(TaskJpa.class))).thenReturn(savedTask);
         when(taskMapper.toTaskResponse(savedTask)).thenReturn(taskResponse);
 
         // When (act)
@@ -153,7 +146,7 @@ class TaskServiceTest {
         verify(projectClientWrapper).getProjectEntityById(testProjectId);
         verify(userClientWrapper).getUserEntityById(testReporterId);
         verify(userClientWrapper).getUserEntityById(testAssigneeId);
-        verify(taskRepository).save(any(Task.class));
+        verify(taskRepository).save(any(TaskJpa.class));
         verify(taskMapper).toTaskResponse(savedTask);
     }
 
@@ -168,7 +161,7 @@ class TaskServiceTest {
                 () -> taskService.createTask(request));
         assertEquals("Project not found: ID " + testProjectId, exception.getMessage());
         verify(userClientWrapper, never()).getUserEntityById(anyLong());
-        verify(taskRepository, never()).save(any(Task.class));
+        verify(taskRepository, never()).save(any(TaskJpa.class));
     }
 
     @Test
@@ -185,7 +178,7 @@ class TaskServiceTest {
                 () -> taskService.createTask(request));
         assertEquals("User not found: ID " + testReporterId, exception.getMessage());
         verify(userClientWrapper).getUserEntityById(testReporterId);
-        verify(taskRepository, never()).save(any(Task.class));
+        verify(taskRepository, never()).save(any(TaskJpa.class));
     }
 
     @Test
@@ -196,7 +189,7 @@ class TaskServiceTest {
                 testProjectId, null, testReporterId, testDueDate
         );
 
-        Task nullAssigneeTask = Task.builder()
+        TaskJpa nullAssigneeTask = TaskJpa.builder()
                 .id(testId)
                 .title(testTitle)
                 .description(testDescription)
@@ -211,7 +204,7 @@ class TaskServiceTest {
         when(projectClientWrapper.getProjectEntityById(testProjectId)).thenReturn(testProject);
         when(userClientWrapper.getUserEntityById(testReporterId)).thenReturn(testReporter);
         when(userMapper.toUserJpa(testReporter)).thenReturn(testReporterJpa);
-        when(taskRepository.save(any(Task.class))).thenReturn(nullAssigneeTask);
+        when(taskRepository.save(any(TaskJpa.class))).thenReturn(nullAssigneeTask);
         when(taskMapper.toTaskResponse(nullAssigneeTask)).thenReturn(taskResponse);
 
         // When
@@ -221,7 +214,7 @@ class TaskServiceTest {
         assertEquals(testId, result.id());
         verify(userClientWrapper).getUserEntityById(testReporterId);
         verify(userClientWrapper, never()).getUserEntityById(testAssigneeId);
-        verify(taskRepository).save(any(Task.class));
+        verify(taskRepository).save(any(TaskJpa.class));
     }
 
     @Test
@@ -232,7 +225,7 @@ class TaskServiceTest {
                 testProjectId, testAssigneeId, testReporterId, testDueDate
         );
 
-        Task nullPriorityTask = Task.builder()
+        TaskJpa nullPriorityTask = TaskJpa.builder()
                 .id(testId)
                 .title(testTitle)
                 .description(testDescription)
@@ -258,7 +251,7 @@ class TaskServiceTest {
         when(userClientWrapper.getUserEntityById(testAssigneeId)).thenReturn(testAssignee);
         when(userMapper.toUserJpa(testReporter)).thenReturn(testReporterJpa);
         when(userMapper.toUserJpa(testAssignee)).thenReturn(testAssigneeJpa);
-        when(taskRepository.save(any(Task.class))).thenReturn(nullPriorityTask);
+        when(taskRepository.save(any(TaskJpa.class))).thenReturn(nullPriorityTask);
         when(taskMapper.toTaskResponse(nullPriorityTask)).thenReturn(nullPriorityResponse);
 
         // When
@@ -283,7 +276,7 @@ class TaskServiceTest {
                 testProjectId, testAssigneeId, testReporterId, testDueDate
         );
 
-        Task defaultStatusTask = Task.builder()
+        TaskJpa defaultStatusTask = TaskJpa.builder()
                 .id(testId)
                 .title(testTitle)
                 .description(testDescription)
@@ -309,7 +302,7 @@ class TaskServiceTest {
         when(userClientWrapper.getUserEntityById(testAssigneeId)).thenReturn(testAssignee);
         when(userMapper.toUserJpa(testReporter)).thenReturn(testReporterJpa);
         when(userMapper.toUserJpa(testAssignee)).thenReturn(testAssigneeJpa);
-        when(taskRepository.save(any(Task.class))).thenReturn(defaultStatusTask);
+        when(taskRepository.save(any(TaskJpa.class))).thenReturn(defaultStatusTask);
         when(taskMapper.toTaskResponse(defaultStatusTask)).thenReturn(defaultStatusResponse);
 
         // When
@@ -331,7 +324,7 @@ class TaskServiceTest {
                 testProjectId, testAssigneeId, testReporterId, null
         );
 
-        Task nullDueDateTask = Task.builder()
+        TaskJpa nullDueDateTask = TaskJpa.builder()
                 .id(testId)
                 .title(testTitle)
                 .description(testDescription)
@@ -357,7 +350,7 @@ class TaskServiceTest {
         when(userClientWrapper.getUserEntityById(testAssigneeId)).thenReturn(testAssignee);
         when(userMapper.toUserJpa(testReporter)).thenReturn(testReporterJpa);
         when(userMapper.toUserJpa(testAssignee)).thenReturn(testAssigneeJpa);
-        when(taskRepository.save(any(Task.class))).thenReturn(nullDueDateTask);
+        when(taskRepository.save(any(TaskJpa.class))).thenReturn(nullDueDateTask);
         when(taskMapper.toTaskResponse(nullDueDateTask)).thenReturn(nullDueDateResponse);
 
         // When
@@ -379,7 +372,7 @@ class TaskServiceTest {
                 testProjectId, testAssigneeId, testReporterId, testDueDate
         );
 
-        Task nullDescriptionTask = Task.builder()
+        TaskJpa nullDescriptionTask = TaskJpa.builder()
                 .id(testId)
                 .title(testTitle)
                 .description(null)
@@ -405,7 +398,7 @@ class TaskServiceTest {
         when(userClientWrapper.getUserEntityById(testAssigneeId)).thenReturn(testAssignee);
         when(userMapper.toUserJpa(testReporter)).thenReturn(testReporterJpa);
         when(userMapper.toUserJpa(testAssignee)).thenReturn(testAssigneeJpa);
-        when(taskRepository.save(any(Task.class))).thenReturn(nullDescriptionTask);
+        when(taskRepository.save(any(TaskJpa.class))).thenReturn(nullDescriptionTask);
         when(taskMapper.toTaskResponse(nullDescriptionTask)).thenReturn(nullDescriptionResponse);
 
         // When
@@ -428,7 +421,7 @@ class TaskServiceTest {
                 testProjectId, sameUserId, sameUserId, testDueDate
         );
 
-        Task sameUserTask = Task.builder()
+        TaskJpa sameUserTask = TaskJpa.builder()
                 .id(testId)
                 .title(testTitle)
                 .description(testDescription)
@@ -452,7 +445,7 @@ class TaskServiceTest {
         when(projectClientWrapper.getProjectEntityById(testProjectId)).thenReturn(testProject);
         when(userClientWrapper.getUserEntityById(sameUserId)).thenReturn(testReporter);
         when(userMapper.toUserJpa(testReporter)).thenReturn(testReporterJpa);
-        when(taskRepository.save(any(Task.class))).thenReturn(sameUserTask);
+        when(taskRepository.save(any(TaskJpa.class))).thenReturn(sameUserTask);
         when(taskMapper.toTaskResponse(sameUserTask)).thenReturn(sameUserResponse);
 
         // When
@@ -464,7 +457,7 @@ class TaskServiceTest {
         assertEquals(sameUserId, result.reporterId());
         verify(userClientWrapper, times(2)).getUserEntityById(sameUserId);
         verify(userMapper, times(2)).toUserJpa(testReporter);
-        verify(taskRepository).save(any(Task.class));
+        verify(taskRepository).save(any(TaskJpa.class));
     }
 
     @Test
@@ -475,7 +468,7 @@ class TaskServiceTest {
                 testProjectId, testAssigneeId, testReporterId, LocalDate.now().plusDays(7)
         );
 
-        Task expectedTask = Task.builder()
+        TaskJpa expectedTask = TaskJpa.builder()
                 .title("Special Title")
                 .description("Detailed Description")
                 .status(TaskStatus.IN_PROGRESS)
@@ -508,7 +501,7 @@ class TaskServiceTest {
 
         // Then
         assertEquals(testId, result.id());
-        verify(taskRepository).save(any(Task.class));
+        verify(taskRepository).save(any(TaskJpa.class));
     }
 
     @Test
@@ -536,15 +529,15 @@ class TaskServiceTest {
         // When & Then
         TaskNotFoundException exception = assertThrows(TaskNotFoundException.class,
                 () -> taskService.getTaskById(testId));
-        assertEquals("Task not found: ID " + testId, exception.getMessage());
-        verify(taskMapper, never()).toTaskResponse(any(Task.class));
+        assertEquals("TaskJpa not found: ID " + testId, exception.getMessage());
+        verify(taskMapper, never()).toTaskResponse(any(TaskJpa.class));
     }
 
     @Test
     void getTasksByProject_success() {
         // Given
         Pageable pageable = PageRequest.of(0, 10);
-        Page<Task> mockPage = new PageImpl<>(List.of(savedTask));
+        Page<TaskJpa> mockPage = new PageImpl<>(List.of(savedTask));
         Page<TaskResponse> mockResponsePage = new PageImpl<>(List.of(taskResponse));
 
         when(projectClientWrapper.getProjectEntityById(testProjectId)).thenReturn(testProject);
@@ -579,7 +572,7 @@ class TaskServiceTest {
     void getTasksByAssignee_success() {
         // Given
         Pageable pageable = PageRequest.of(0, 10);
-        Page<Task> mockPage = new PageImpl<>(List.of(savedTask));
+        Page<TaskJpa> mockPage = new PageImpl<>(List.of(savedTask));
         Page<TaskResponse> mockResponsePage = new PageImpl<>(List.of(taskResponse));
 
         when(userClientWrapper.getUserEntityById(testAssigneeId)).thenReturn(testAssignee);
@@ -624,7 +617,7 @@ class TaskServiceTest {
                 newAssigneeId, testDueDate.plusDays(1)  // Используем нового assignee
         );
 
-        Task updatedTask = Task.builder()
+        TaskJpa updatedTask = TaskJpa.builder()
                 .id(testId)
                 .title(updateRequest.title())
                 .status(updateRequest.status())
@@ -642,7 +635,7 @@ class TaskServiceTest {
         when(taskRepository.findById(testId)).thenReturn(Optional.of(savedTask));
         when(userClientWrapper.getUserEntityById(newAssigneeId)).thenReturn(newAssignee);
         when(userMapper.toUserJpa(newAssignee)).thenReturn(newAssigneeJpa);
-        when(taskRepository.save(any(Task.class))).thenReturn(updatedTask);
+        when(taskRepository.save(any(TaskJpa.class))).thenReturn(updatedTask);
         when(taskMapper.toTaskResponse(updatedTask)).thenReturn(updatedResponse);
 
         // When
@@ -654,7 +647,7 @@ class TaskServiceTest {
         assertEquals(updateRequest.status().name(), result.status());
         verify(taskRepository).findById(testId);
         verify(userClientWrapper).getUserEntityById(newAssigneeId);
-        verify(taskRepository).save(any(Task.class));
+        verify(taskRepository).save(any(TaskJpa.class));
         verify(taskMapper).toTaskResponse(updatedTask);
     }
 
@@ -675,7 +668,7 @@ class TaskServiceTest {
         assertEquals(testId, result.id());
         assertEquals(testTitle, result.title());
         verify(taskRepository).findById(testId);
-        verify(taskRepository, never()).save(any(Task.class));
+        verify(taskRepository, never()).save(any(TaskJpa.class));
         verify(taskMapper).toTaskResponse(savedTask);
     }
 
@@ -685,7 +678,7 @@ class TaskServiceTest {
         UpdateTaskRequest partialRequest = new UpdateTaskRequest(
                 "Partial Title", null, null, null, null, null
         );
-        Task partialUpdatedTask = Task.builder()
+        TaskJpa partialUpdatedTask = TaskJpa.builder()
                 .id(testId)
                 .title("Partial Title")
                 .description(testDescription)
@@ -704,7 +697,7 @@ class TaskServiceTest {
         );
 
         when(taskRepository.findById(testId)).thenReturn(Optional.of(savedTask));
-        when(taskRepository.save(any(Task.class))).thenReturn(partialUpdatedTask);
+        when(taskRepository.save(any(TaskJpa.class))).thenReturn(partialUpdatedTask);
         when(taskMapper.toTaskResponse(partialUpdatedTask)).thenReturn(partialResponse);
 
         // When
@@ -713,7 +706,7 @@ class TaskServiceTest {
         // Then
         assertEquals("Partial Title", result.title());
         assertEquals(testStatus.name(), result.status());
-        verify(taskRepository).save(any(Task.class));
+        verify(taskRepository).save(any(TaskJpa.class));
     }
 
     @Test
@@ -724,10 +717,10 @@ class TaskServiceTest {
         // When & Then
         TaskNotFoundException exception = assertThrows(TaskNotFoundException.class,
                 () -> taskService.updateTask(testId, updateRequest));
-        assertEquals("Task not found: ID " + testId, exception.getMessage());
-        verify(taskRepository, never()).save(any(Task.class));
+        assertEquals("TaskJpa not found: ID " + testId, exception.getMessage());
+        verify(taskRepository, never()).save(any(TaskJpa.class));
         verify(userClientWrapper, never()).getUserEntityById(anyLong());
-        verify(taskMapper, never()).toTaskResponse(any(Task.class));
+        verify(taskMapper, never()).toTaskResponse(any(TaskJpa.class));
     }
 
     @Test
@@ -736,7 +729,7 @@ class TaskServiceTest {
         UpdateTaskRequest titleChangeRequest = new UpdateTaskRequest(
                 "New Title", null, null, null, null, null
         );
-        Task updatedTask = Task.builder()
+        TaskJpa updatedTask = TaskJpa.builder()
                 .id(testId)
                 .title("New Title")
                 .description(testDescription)
@@ -757,7 +750,7 @@ class TaskServiceTest {
         );
 
         when(taskRepository.findById(testId)).thenReturn(Optional.of(savedTask));
-        when(taskRepository.save(any(Task.class))).thenReturn(updatedTask);
+        when(taskRepository.save(any(TaskJpa.class))).thenReturn(updatedTask);
         when(taskMapper.toTaskResponse(updatedTask)).thenReturn(updatedResponse);
 
         // When
@@ -775,7 +768,7 @@ class TaskServiceTest {
         UpdateTaskRequest descriptionChangeRequest = new UpdateTaskRequest(
                 null, "New Description", null, null, null, null
         );
-        Task updatedTask = Task.builder()
+        TaskJpa updatedTask = TaskJpa.builder()
                 .id(testId)
                 .title(testTitle)
                 .description("New Description")
@@ -796,7 +789,7 @@ class TaskServiceTest {
         );
 
         when(taskRepository.findById(testId)).thenReturn(Optional.of(savedTask));
-        when(taskRepository.save(any(Task.class))).thenReturn(updatedTask);
+        when(taskRepository.save(any(TaskJpa.class))).thenReturn(updatedTask);
         when(taskMapper.toTaskResponse(updatedTask)).thenReturn(updatedResponse);
 
         // When
@@ -815,7 +808,7 @@ class TaskServiceTest {
         UpdateTaskRequest priorityChangeRequest = new UpdateTaskRequest(
                 null, null, null, newPriority, null, null
         );
-        Task updatedTask = Task.builder()
+        TaskJpa updatedTask = TaskJpa.builder()
                 .id(testId)
                 .title(testTitle)
                 .description(testDescription)
@@ -836,7 +829,7 @@ class TaskServiceTest {
         );
 
         when(taskRepository.findById(testId)).thenReturn(Optional.of(savedTask));
-        when(taskRepository.save(any(Task.class))).thenReturn(updatedTask);
+        when(taskRepository.save(any(TaskJpa.class))).thenReturn(updatedTask);
         when(taskMapper.toTaskResponse(updatedTask)).thenReturn(updatedResponse);
 
         // When
@@ -857,7 +850,7 @@ class TaskServiceTest {
         UpdateTaskRequest assigneeChangeRequest = new UpdateTaskRequest(
                 null, null, null, null, newAssigneeId, null
         );
-        Task updatedTask = Task.builder()
+        TaskJpa updatedTask = TaskJpa.builder()
                 .id(testId)
                 .title(testTitle)
                 .description(testDescription)
@@ -880,7 +873,7 @@ class TaskServiceTest {
         when(taskRepository.findById(testId)).thenReturn(Optional.of(savedTask));
         when(userClientWrapper.getUserEntityById(newAssigneeId)).thenReturn(newAssignee);
         when(userMapper.toUserJpa(newAssignee)).thenReturn(newAssigneeJpa);
-        when(taskRepository.save(any(Task.class))).thenReturn(updatedTask);
+        when(taskRepository.save(any(TaskJpa.class))).thenReturn(updatedTask);
         when(taskMapper.toTaskResponse(updatedTask)).thenReturn(updatedResponse);
 
         // When
@@ -916,7 +909,7 @@ class TaskServiceTest {
         // When & Then
         TaskNotFoundException exception = assertThrows(TaskNotFoundException.class,
                 () -> taskService.deleteTask(testId));
-        assertEquals("Task not found: ID " + testId, exception.getMessage());
+        assertEquals("TaskJpa not found: ID " + testId, exception.getMessage());
         verify(taskRepository, never()).deleteById(testId);
     }
 
@@ -924,7 +917,7 @@ class TaskServiceTest {
     void getAllTasks_pagination() {
         // Given
         Pageable pageable = PageRequest.of(0, 10);
-        Page<Task> mockPage = new PageImpl<>(List.of(savedTask));
+        Page<TaskJpa> mockPage = new PageImpl<>(List.of(savedTask));
         Page<TaskResponse> mockResponsePage = new PageImpl<>(List.of(taskResponse));
 
         when(taskRepository.findAll(pageable)).thenReturn(mockPage);

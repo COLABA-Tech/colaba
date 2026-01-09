@@ -9,8 +9,7 @@ import org.springframework.context.annotation.Import;
 
 @SpringBootApplication(scanBasePackages = {
         "com.example.colaba.user",
-        "com.example.colaba.shared.exception",
-        "com.example.colaba.shared.circuit"
+        "com.example.colaba.shared.exception"
 })
 @EnableDiscoveryClient
 @EnableFeignClients(basePackages = "com.example.colaba.user.client")

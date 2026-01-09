@@ -1,28 +1,17 @@
 package com.example.colaba.task.service;
 
 import com.example.colaba.shared.dto.tag.TagResponse;
-import com.example.colaba.shared.circuit.ProjectClientWrapper;
-import com.example.colaba.shared.circuit.UserClientWrapper;
-import com.example.colaba.shared.dto.task.CreateTaskRequest;
-import com.example.colaba.shared.dto.task.TaskResponse;
-import com.example.colaba.shared.dto.task.UpdateTaskRequest;
-import com.example.colaba.shared.entity.Project;
-import com.example.colaba.shared.entity.User;
-import com.example.colaba.shared.entity.UserJpa;
-import com.example.colaba.shared.entity.task.Task;
-import com.example.colaba.shared.entity.task.TaskPriority;
 import com.example.colaba.shared.exception.project.ProjectNotFoundException;
 import com.example.colaba.shared.exception.tag.TagNotFoundException;
 import com.example.colaba.shared.exception.task.TaskNotFoundException;
 import com.example.colaba.shared.exception.user.UserNotFoundException;
-import com.example.colaba.task.client.ProjectServiceClient;
-import com.example.colaba.task.client.UserServiceClient;
+import com.example.colaba.task.circuit.ProjectServiceClientWrapper;
+import com.example.colaba.task.circuit.UserServiceClientWrapper;
 import com.example.colaba.task.dto.task.CreateTaskRequest;
 import com.example.colaba.task.dto.task.TaskResponse;
 import com.example.colaba.task.dto.task.UpdateTaskRequest;
 import com.example.colaba.task.entity.task.TaskJpa;
 import com.example.colaba.task.entity.task.TaskPriority;
-import com.example.colaba.task.entity.task.TaskStatus;
 import com.example.colaba.task.entity.tasktag.TaskTagJpa;
 import com.example.colaba.task.mapper.TaskMapper;
 import com.example.colaba.task.repository.CommentRepository;
@@ -42,8 +31,8 @@ public class TaskService {
     private final TaskRepository taskRepository;
     private final TaskTagRepository taskTagRepository;
     private final CommentRepository commentRepository;
-    private final ProjectServiceClient projectServiceClient;
-    private final UserServiceClient userServiceClient;
+    private final ProjectServiceClientWrapper projectServiceClient;
+    private final UserServiceClientWrapper userServiceClient;
     private final TaskMapper taskMapper;
 
     public Page<TaskResponse> getAllTasks(Pageable pageable) {

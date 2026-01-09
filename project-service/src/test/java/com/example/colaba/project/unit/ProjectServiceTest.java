@@ -1,20 +1,17 @@
 package com.example.colaba.project.unit;
 
+import com.example.colaba.project.circuit.UserServiceClientWrapper;
+import com.example.colaba.project.dto.project.CreateProjectRequest;
+import com.example.colaba.project.dto.project.ProjectScrollResponse;
+import com.example.colaba.project.dto.project.UpdateProjectRequest;
+import com.example.colaba.project.entity.ProjectJpa;
+import com.example.colaba.project.mapper.ProjectMapper;
 import com.example.colaba.project.repository.ProjectRepository;
 import com.example.colaba.project.service.ProjectService;
-import com.example.colaba.shared.circuit.UserClientWrapper;
-import com.example.colaba.shared.dto.project.CreateProjectRequest;
 import com.example.colaba.shared.dto.project.ProjectResponse;
-import com.example.colaba.shared.dto.project.ProjectScrollResponse;
-import com.example.colaba.shared.dto.project.UpdateProjectRequest;
-import com.example.colaba.shared.entity.Project;
-import com.example.colaba.shared.entity.User;
-import com.example.colaba.shared.entity.UserJpa;
 import com.example.colaba.shared.exception.project.DuplicateProjectNameException;
 import com.example.colaba.shared.exception.project.ProjectNotFoundException;
 import com.example.colaba.shared.exception.user.UserNotFoundException;
-import com.example.colaba.shared.mapper.ProjectMapper;
-import com.example.colaba.shared.mapper.UserMapper;
 import feign.FeignException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,7 +40,7 @@ class ProjectServiceTest {
     private ProjectRepository projectRepository;
 
     @Mock
-    private UserClientWrapper userClientWrapper;
+    private UserServiceClientWrapper userClientWrapper;
 
     @Mock
     private ProjectMapper projectMapper;
@@ -56,11 +53,11 @@ class ProjectServiceTest {
 
     private User testUser;
     private UserJpa testUserJpa;
-    private Project testProject;
+    private ProjectJpa testProject;
     private ProjectResponse testProjectResponse;
     private final Long testId = 1L;
     private final Long testUserId = 1L;
-    private final String testProjectName = "Test Project";
+    private final String testProjectName = "Test ProjectJpa";
     private final String testDescription = "Test Description";
 
     @BeforeEach
@@ -77,7 +74,7 @@ class ProjectServiceTest {
                 .email("test@example.com")
                 .build();
 
-        testProject = Project.builder()
+        testProject = ProjectJpa.builder()
                 .id(testId)
                 .name(testProjectName)
                 .description(testDescription)
@@ -103,7 +100,7 @@ class ProjectServiceTest {
         when(projectRepository.existsByName(testProjectName)).thenReturn(false);
         when(userClientWrapper.getUserEntityById(testUserId)).thenReturn(testUser); // Изменил userClientWrapper на userClientWrapper
         when(userMapper.toUserJpa(testUser)).thenReturn(testUserJpa);
-        when(projectRepository.save(any(Project.class))).thenReturn(testProject);
+        when(projectRepository.save(any(ProjectJpa.class))).thenReturn(testProject);
         when(projectMapper.toProjectResponse(testProject)).thenReturn(testProjectResponse);
 
         // When
@@ -119,7 +116,7 @@ class ProjectServiceTest {
 
         verify(projectRepository).existsByName(testProjectName);
         verify(userClientWrapper).getUserEntityById(testUserId); // Изменил userClientWrapper на userClientWrapper
-        verify(projectRepository).save(any(Project.class));
+        verify(projectRepository).save(any(ProjectJpa.class));
         verify(projectMapper).toProjectResponse(testProject);
     }
 
@@ -142,7 +139,7 @@ class ProjectServiceTest {
 
         verify(projectRepository).existsByName(testProjectName);
         verify(userClientWrapper, never()).getUserEntityById(anyLong());
-        verify(projectRepository, never()).save(any(Project.class));
+        verify(projectRepository, never()).save(any(ProjectJpa.class));
     }
 
     @Test
@@ -166,7 +163,7 @@ class ProjectServiceTest {
 
         verify(projectRepository).existsByName(testProjectName);
         verify(userClientWrapper).getUserEntityById(testUserId);
-        verify(projectRepository, never()).save(any(Project.class));
+        verify(projectRepository, never()).save(any(ProjectJpa.class));
     }
 
     @Test
@@ -205,7 +202,7 @@ class ProjectServiceTest {
                 .verify();
 
         verify(projectRepository).findById(testId);
-        verify(projectMapper, never()).toProjectResponse(any(Project.class));
+        verify(projectMapper, never()).toProjectResponse(any(ProjectJpa.class));
     }
 
     @Test
@@ -214,7 +211,7 @@ class ProjectServiceTest {
         when(projectRepository.findById(testId)).thenReturn(Optional.of(testProject));
 
         // When
-        Mono<Project> resultMono = projectService.getProjectEntityById(testId);
+        Mono<ProjectJpa> resultMono = projectService.getProjectEntityById(testId);
 
         // Then
         StepVerifier.create(resultMono)
@@ -227,7 +224,7 @@ class ProjectServiceTest {
     @Test
     void getAllProjects_success() {
         // Given
-        List<Project> projects = List.of(testProject);
+        List<ProjectJpa> projects = List.of(testProject);
         List<ProjectResponse> projectResponses = List.of(testProjectResponse);
 
         when(projectRepository.findAll()).thenReturn(projects);
@@ -250,11 +247,11 @@ class ProjectServiceTest {
     @Test
     void updateProject_success() {
         // Given
-        String updatedName = "Updated Project Name";
+        String updatedName = "Updated ProjectJpa Name";
         String updatedDescription = "Updated Description";
         UpdateProjectRequest request = new UpdateProjectRequest(updatedName, updatedDescription, null);
 
-        Project updatedProject = Project.builder()
+        ProjectJpa updatedProject = ProjectJpa.builder()
                 .id(testId)
                 .name(updatedName)
                 .description(updatedDescription)
@@ -267,7 +264,7 @@ class ProjectServiceTest {
 
         when(projectRepository.findById(testId)).thenReturn(Optional.of(testProject));
         when(projectRepository.existsByNameAndIdNot(updatedName, testId)).thenReturn(false);
-        when(projectRepository.save(any(Project.class))).thenReturn(updatedProject);
+        when(projectRepository.save(any(ProjectJpa.class))).thenReturn(updatedProject);
         when(projectMapper.toProjectResponse(updatedProject)).thenReturn(updatedResponse);
 
         // When
@@ -282,14 +279,14 @@ class ProjectServiceTest {
 
         verify(projectRepository).findById(testId);
         verify(projectRepository).existsByNameAndIdNot(updatedName, testId);
-        verify(projectRepository).save(any(Project.class));
+        verify(projectRepository).save(any(ProjectJpa.class));
         verify(projectMapper).toProjectResponse(updatedProject);
     }
 
     @Test
     void updateProject_duplicateName_throwsException() {
         // Given
-        String duplicateName = "Duplicate Project";
+        String duplicateName = "Duplicate ProjectJpa";
         UpdateProjectRequest request = new UpdateProjectRequest(duplicateName, null, null);
 
         when(projectRepository.findById(testId)).thenReturn(Optional.of(testProject));
@@ -307,7 +304,7 @@ class ProjectServiceTest {
 
         verify(projectRepository).findById(testId);
         verify(projectRepository).existsByNameAndIdNot(duplicateName, testId);
-        verify(projectRepository, never()).save(any(Project.class));
+        verify(projectRepository, never()).save(any(ProjectJpa.class));
     }
 
     @Test
@@ -318,7 +315,7 @@ class ProjectServiceTest {
         UserJpa newOwnerJpa = UserJpa.builder().id(newOwnerId).username("newowner").build();
         UpdateProjectRequest request = new UpdateProjectRequest(null, null, newOwnerId);
 
-        Project updatedProject = Project.builder()
+        ProjectJpa updatedProject = ProjectJpa.builder()
                 .id(testId)
                 .name(testProjectName)
                 .description(testDescription)
@@ -332,7 +329,7 @@ class ProjectServiceTest {
         when(projectRepository.findById(testId)).thenReturn(Optional.of(testProject));
         when(userClientWrapper.getUserEntityById(newOwnerId)).thenReturn(newOwner);
         when(userMapper.toUserJpa(newOwner)).thenReturn(newOwnerJpa);
-        when(projectRepository.save(any(Project.class))).thenReturn(updatedProject);
+        when(projectRepository.save(any(ProjectJpa.class))).thenReturn(updatedProject);
         when(projectMapper.toProjectResponse(updatedProject)).thenReturn(updatedResponse);
 
         // When
@@ -348,7 +345,7 @@ class ProjectServiceTest {
         verify(projectRepository).findById(testId);
         verify(userClientWrapper).getUserEntityById(newOwnerId);
         verify(userMapper).toUserJpa(newOwner);
-        verify(projectRepository).save(any(Project.class));
+        verify(projectRepository).save(any(ProjectJpa.class));
     }
 
     @Test
@@ -371,7 +368,7 @@ class ProjectServiceTest {
 
         verify(projectRepository).findById(testId);
         verify(projectRepository, never()).existsByNameAndIdNot(anyString(), anyLong());
-        verify(projectRepository, never()).save(any(Project.class));
+        verify(projectRepository, never()).save(any(ProjectJpa.class));
         verify(projectMapper).toProjectResponse(testProject);
     }
 
@@ -394,7 +391,7 @@ class ProjectServiceTest {
 
         verify(projectRepository).findById(testId);
         verify(projectRepository, never()).existsByNameAndIdNot(anyString(), anyLong());
-        verify(projectRepository, never()).save(any(Project.class));
+        verify(projectRepository, never()).save(any(ProjectJpa.class));
     }
 
     @Test
@@ -404,7 +401,7 @@ class ProjectServiceTest {
         User newOwner = User.builder().id(newOwnerId).username("newowner").build();
         UserJpa newOwnerJpa = UserJpa.builder().id(newOwnerId).username("newowner").build();
 
-        Project updatedProject = Project.builder()
+        ProjectJpa updatedProject = ProjectJpa.builder()
                 .id(testId)
                 .name(testProjectName)
                 .description(testDescription)
@@ -418,7 +415,7 @@ class ProjectServiceTest {
         when(projectRepository.findById(testId)).thenReturn(Optional.of(testProject));
         when(userClientWrapper.getUserEntityById(newOwnerId)).thenReturn(newOwner);
         when(userMapper.toUserJpa(newOwner)).thenReturn(newOwnerJpa);
-        when(projectRepository.save(any(Project.class))).thenReturn(updatedProject);
+        when(projectRepository.save(any(ProjectJpa.class))).thenReturn(updatedProject);
         when(projectMapper.toProjectResponse(updatedProject)).thenReturn(updatedResponse);
 
         // When
@@ -433,7 +430,7 @@ class ProjectServiceTest {
         verify(projectRepository).findById(testId);
         verify(userClientWrapper).getUserEntityById(newOwnerId);
         verify(userMapper).toUserJpa(newOwner);
-        verify(projectRepository).save(any(Project.class));
+        verify(projectRepository).save(any(ProjectJpa.class));
     }
 
     @Test
@@ -475,7 +472,7 @@ class ProjectServiceTest {
     @Test
     void getProjectByOwnerId_success() {
         // Given
-        List<Project> projects = List.of(testProject);
+        List<ProjectJpa> projects = List.of(testProject);
         List<ProjectResponse> projectResponses = List.of(testProjectResponse);
 
         when(userClientWrapper.getUserEntityById(testUserId)).thenReturn(testUser);
@@ -525,7 +522,7 @@ class ProjectServiceTest {
         int page = 0;
         int size = 10;
         Pageable pageable = PageRequest.of(page, size);
-        Page<Project> projectPage = new PageImpl<>(List.of(testProject), pageable, 1);
+        Page<ProjectJpa> projectPage = new PageImpl<>(List.of(testProject), pageable, 1);
         List<ProjectResponse> projectResponses = List.of(testProjectResponse);
 
         when(projectRepository.findAll(pageable)).thenReturn(projectPage);
@@ -553,13 +550,13 @@ class ProjectServiceTest {
         int size = 1;
         Pageable pageable = PageRequest.of(page, size);
 
-        Project project2 = Project.builder()
+        ProjectJpa project2 = ProjectJpa.builder()
                 .id(2L)
-                .name("Project 2")
+                .name("ProjectJpa 2")
                 .owner(testUserJpa)
                 .build();
 
-        Page<Project> projectPage = new PageImpl<>(List.of(testProject), pageable, 2);
+        Page<ProjectJpa> projectPage = new PageImpl<>(List.of(testProject), pageable, 2);
         List<ProjectResponse> projectResponses = List.of(testProjectResponse);
 
         when(projectRepository.findAll(pageable)).thenReturn(projectPage);

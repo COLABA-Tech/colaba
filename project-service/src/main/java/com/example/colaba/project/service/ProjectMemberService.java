@@ -1,6 +1,6 @@
 package com.example.colaba.project.service;
 
-import com.example.colaba.project.client.UserServiceClient;
+import com.example.colaba.project.circuit.UserServiceClientWrapper;
 import com.example.colaba.project.dto.projectmember.CreateProjectMemberRequest;
 import com.example.colaba.project.dto.projectmember.ProjectMemberResponse;
 import com.example.colaba.project.dto.projectmember.UpdateProjectMemberRequest;
@@ -25,7 +25,7 @@ import reactor.core.scheduler.Schedulers;
 public class ProjectMemberService {
     private final ProjectMemberRepository projectMemberRepository;
     private final ProjectService projectService;
-    private final UserServiceClient userServiceClient;
+    private final UserServiceClientWrapper userServiceClient;
     private final ProjectMemberMapper projectMemberMapper;
 
     public Mono<Page<ProjectMemberResponse>> getMembersByProject(Long projectId, Pageable pageable) {

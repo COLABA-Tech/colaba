@@ -1,19 +1,13 @@
 package com.example.colaba.task.unit;
 
-import com.example.colaba.shared.circuit.UserClientWrapper;
-import com.example.colaba.shared.dto.comment.CommentResponse;
-import com.example.colaba.shared.dto.comment.CommentScrollResponse;
-import com.example.colaba.shared.dto.comment.CreateCommentRequest;
-import com.example.colaba.shared.dto.comment.UpdateCommentRequest;
-import com.example.colaba.shared.entity.Comment;
-import com.example.colaba.shared.entity.User;
-import com.example.colaba.shared.entity.UserJpa;
-import com.example.colaba.shared.entity.task.Task;
 import com.example.colaba.shared.exception.comment.CommentNotFoundException;
 import com.example.colaba.shared.exception.task.TaskNotFoundException;
 import com.example.colaba.shared.exception.user.UserNotFoundException;
-import com.example.colaba.shared.mapper.CommentMapper;
-import com.example.colaba.shared.mapper.UserMapper;
+import com.example.colaba.task.circuit.UserServiceClientWrapper;
+import com.example.colaba.task.dto.comment.CommentResponse;
+import com.example.colaba.task.entity.CommentJpa;
+import com.example.colaba.task.entity.task.TaskJpa;
+import com.example.colaba.task.mapper.CommentMapper;
 import com.example.colaba.task.repository.CommentRepository;
 import com.example.colaba.task.repository.TaskRepository;
 import com.example.colaba.task.service.CommentService;
@@ -42,7 +36,7 @@ class CommentServiceTest {
     private CommentRepository commentRepository;
 
     @Mock
-    private UserClientWrapper userClientWrapper;
+    private UserServiceClientWrapper userClientWrapper;
 
     @Mock
     private TaskRepository taskRepository;
@@ -58,9 +52,9 @@ class CommentServiceTest {
 
     private User mockUser;
     private UserJpa mockUserJpa;
-    private Task mockTask;
-    private Comment mockComment;
-    private Comment mockComment2;
+    private TaskJpa mockTask;
+    private CommentJpa mockComment;
+    private CommentJpa mockComment2;
     private CommentResponse mockResponse;
     private OffsetDateTime fixedCreatedAt = OffsetDateTime.now();
 
@@ -78,12 +72,12 @@ class CommentServiceTest {
                 .username("testuser")
                 .build();
 
-        mockTask = Task.builder()
+        mockTask = TaskJpa.builder()
                 .id(1L)
-                .title("Test Task")
+                .title("Test TaskJpa")
                 .build();
 
-        mockComment = Comment.builder()
+        mockComment = CommentJpa.builder()
                 .id(1L)
                 .task(mockTask)
                 .user(mockUserJpa)
@@ -92,7 +86,7 @@ class CommentServiceTest {
                 .updatedAt(fixedCreatedAt)
                 .build();
 
-        mockComment2 = Comment.builder()
+        mockComment2 = CommentJpa.builder()
                 .id(2L)
                 .task(mockTask)
                 .user(mockUserJpa)
@@ -110,7 +104,7 @@ class CommentServiceTest {
         when(userClientWrapper.getUserEntityById(1L)).thenReturn(mockUser);
         when(userMapper.toUserJpa(mockUser)).thenReturn(mockUserJpa);
         when(taskRepository.findById(1L)).thenReturn(Optional.of(mockTask));
-        when(commentRepository.save(any(Comment.class))).thenReturn(mockComment);
+        when(commentRepository.save(any(CommentJpa.class))).thenReturn(mockComment);
         when(commentMapper.toResponse(mockComment)).thenReturn(mockResponse);
 
         CommentResponse result = commentService.createComment(request);
@@ -119,7 +113,7 @@ class CommentServiceTest {
         verify(userClientWrapper).getUserEntityById(1L);
         verify(userMapper).toUserJpa(mockUser);
         verify(taskRepository).findById(1L);
-        verify(commentRepository).save(any(Comment.class));
+        verify(commentRepository).save(any(CommentJpa.class));
         verify(commentMapper).toResponse(mockComment);
     }
 
@@ -136,7 +130,7 @@ class CommentServiceTest {
 
         verify(userClientWrapper).getUserEntityById(999L);
         verify(taskRepository, never()).findById(anyLong());
-        verify(commentRepository, never()).save(any(Comment.class));
+        verify(commentRepository, never()).save(any(CommentJpa.class));
     }
 
     @Test
@@ -149,12 +143,12 @@ class CommentServiceTest {
 
         TaskNotFoundException exception = assertThrows(TaskNotFoundException.class,
                 () -> commentService.createComment(request));
-        assertEquals("Task not found: ID " + 999L, exception.getMessage());
+        assertEquals("TaskJpa not found: ID " + 999L, exception.getMessage());
 
         verify(userClientWrapper).getUserEntityById(1L);
         verify(userMapper).toUserJpa(mockUser);
         verify(taskRepository).findById(999L);
-        verify(commentRepository, never()).save(any(Comment.class));
+        verify(commentRepository, never()).save(any(CommentJpa.class));
     }
 
     @Test
@@ -173,13 +167,13 @@ class CommentServiceTest {
 
         CommentNotFoundException exception = assertThrows(CommentNotFoundException.class,
                 () -> commentService.getCommentById(999L));
-        assertEquals("Comment not found: 999", exception.getMessage());
+        assertEquals("CommentJpa not found: 999", exception.getMessage());
     }
 
     @Test
     void getCommentsByTask_ShouldReturnPage_WhenValidTaskId() {
         Pageable pageable = PageRequest.of(0, 10);
-        Page<Comment> mockPage = new PageImpl<>(List.of(mockComment));
+        Page<CommentJpa> mockPage = new PageImpl<>(List.of(mockComment));
         Page<CommentResponse> mockRespPage = new PageImpl<>(List.of(mockResponse));
         when(commentRepository.findByTaskIdOrderByCreatedAtDesc(1L, pageable)).thenReturn(mockPage);
         when(commentMapper.toResponsePage(mockPage)).thenReturn(mockRespPage);
@@ -194,8 +188,8 @@ class CommentServiceTest {
         String cursor = null;
         int limit = 2;
         Pageable pageable = PageRequest.of(0, limit, Sort.by("createdAt").descending());
-        List<Comment> content = List.of(mockComment);
-        Slice<Comment> mockSlice = new SliceImpl<>(content, pageable, false);
+        List<CommentJpa> content = List.of(mockComment);
+        Slice<CommentJpa> mockSlice = new SliceImpl<>(content, pageable, false);
         List<CommentResponse> mockResponses = List.of(mockResponse);
         when(commentRepository.findByTaskIdAndCreatedAtBeforeOrderByCreatedAtDesc(eq(1L), any(OffsetDateTime.class), eq(pageable)))
                 .thenReturn(mockSlice);
@@ -212,8 +206,8 @@ class CommentServiceTest {
     void getCommentsByTaskScroll_ShouldReturnHasMoreTrue_WhenBatchFull() {
         int limit = 2;
         Pageable pageable = PageRequest.of(0, limit, Sort.by("createdAt").descending());
-        List<Comment> fullContent = List.of(mockComment, mockComment2);
-        Slice<Comment> mockSlice = new SliceImpl<>(fullContent, pageable, true);
+        List<CommentJpa> fullContent = List.of(mockComment, mockComment2);
+        Slice<CommentJpa> mockSlice = new SliceImpl<>(fullContent, pageable, true);
         when(commentRepository.findByTaskIdAndCreatedAtBeforeOrderByCreatedAtDesc(eq(1L), any(OffsetDateTime.class), eq(pageable)))
                 .thenReturn(mockSlice);
 
@@ -228,8 +222,8 @@ class CommentServiceTest {
         String cursor = "2025-11-12T10:00:00Z";
         int limit = 2;
         Pageable pageable = PageRequest.of(0, limit, Sort.by("createdAt").descending());
-        List<Comment> content = List.of(mockComment);
-        Slice<Comment> mockSlice = new SliceImpl<>(content, pageable, false);
+        List<CommentJpa> content = List.of(mockComment);
+        Slice<CommentJpa> mockSlice = new SliceImpl<>(content, pageable, false);
         List<CommentResponse> mockResponses = List.of(mockResponse);
         when(commentRepository.findByTaskIdAndCreatedAtBeforeOrderByCreatedAtDesc(eq(1L), any(OffsetDateTime.class), eq(pageable)))
                 .thenReturn(mockSlice);
@@ -247,7 +241,7 @@ class CommentServiceTest {
         String cursor = null;
         int limit = 2;
         Pageable pageable = PageRequest.of(0, limit, Sort.by("createdAt").descending());
-        Slice<Comment> emptySlice = new SliceImpl<>(List.of(), pageable, false);
+        Slice<CommentJpa> emptySlice = new SliceImpl<>(List.of(), pageable, false);
         when(commentRepository.findByTaskIdAndCreatedAtBeforeOrderByCreatedAtDesc(eq(1L), any(OffsetDateTime.class), eq(pageable)))
                 .thenReturn(emptySlice);
         when(commentMapper.toResponseList(List.of())).thenReturn(List.of());
@@ -296,7 +290,7 @@ class CommentServiceTest {
         CommentResponse result = commentService.updateComment(1L, request);
 
         assertEquals("Test content", mockComment.getContent());
-        verify(commentRepository, never()).save(any(Comment.class));
+        verify(commentRepository, never()).save(any(CommentJpa.class));
     }
 
     @Test
@@ -308,7 +302,7 @@ class CommentServiceTest {
         CommentResponse result = commentService.updateComment(1L, request);
 
         assertEquals("Test content", mockComment.getContent());
-        verify(commentRepository, never()).save(any(Comment.class));
+        verify(commentRepository, never()).save(any(CommentJpa.class));
         assertEquals(mockResponse, result);
     }
 
@@ -319,7 +313,7 @@ class CommentServiceTest {
 
         CommentNotFoundException exception = assertThrows(CommentNotFoundException.class,
                 () -> commentService.updateComment(999L, request));
-        assertEquals("Comment not found: 999", exception.getMessage());
+        assertEquals("CommentJpa not found: 999", exception.getMessage());
     }
 
     @Test
@@ -330,7 +324,7 @@ class CommentServiceTest {
         CommentResponse result = commentService.updateComment(1L, request);
 
         assertEquals("Test content", mockComment.getContent());
-        verify(commentRepository, never()).save(any(Comment.class));
+        verify(commentRepository, never()).save(any(CommentJpa.class));
     }
 
     @Test
@@ -348,6 +342,6 @@ class CommentServiceTest {
 
         CommentNotFoundException exception = assertThrows(CommentNotFoundException.class,
                 () -> commentService.deleteComment(999L));
-        assertEquals("Comment not found: 999", exception.getMessage());
+        assertEquals("CommentJpa not found: 999", exception.getMessage());
     }
 }

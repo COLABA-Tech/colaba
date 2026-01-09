@@ -4,8 +4,8 @@ import com.example.colaba.shared.dto.project.ProjectResponse;
 import com.example.colaba.shared.exception.user.DuplicateUserEntityEmailException;
 import com.example.colaba.shared.exception.user.DuplicateUserEntityUsernameException;
 import com.example.colaba.shared.exception.user.UserNotFoundException;
-import com.example.colaba.user.client.ProjectServiceClient;
-import com.example.colaba.user.client.TaskServiceClient;
+import com.example.colaba.user.circuit.ProjectServiceClientWrapper;
+import com.example.colaba.user.circuit.TaskServiceClientWrapper;
 import com.example.colaba.user.dto.user.CreateUserRequest;
 import com.example.colaba.user.dto.user.UpdateUserRequest;
 import com.example.colaba.user.dto.user.UserResponse;
@@ -27,8 +27,8 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class UserService {
-    private final ProjectServiceClient projectServiceClient;
-    private final TaskServiceClient taskServiceClient;
+    private final ProjectServiceClientWrapper projectServiceClient;
+    private final TaskServiceClientWrapper taskServiceClient;
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final TransactionalOperator transactionalOperator;

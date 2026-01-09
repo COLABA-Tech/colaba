@@ -1,17 +1,15 @@
 package com.example.colaba.user.unit;
 
-import com.example.colaba.shared.circuit.ProjectClientWrapper;
-import com.example.colaba.shared.dto.user.CreateUserRequest;
-import com.example.colaba.shared.dto.user.UpdateUserRequest;
-import com.example.colaba.shared.dto.user.UserResponse;
-import com.example.colaba.shared.dto.user.UserScrollResponse;
-import com.example.colaba.shared.entity.Project;
-import com.example.colaba.shared.entity.User;
-import com.example.colaba.shared.entity.UserJpa;
 import com.example.colaba.shared.exception.user.DuplicateUserEntityEmailException;
 import com.example.colaba.shared.exception.user.DuplicateUserEntityUsernameException;
 import com.example.colaba.shared.exception.user.UserNotFoundException;
-import com.example.colaba.shared.mapper.UserMapper;
+import com.example.colaba.user.circuit.ProjectServiceClientWrapper;
+import com.example.colaba.user.dto.user.CreateUserRequest;
+import com.example.colaba.user.dto.user.UpdateUserRequest;
+import com.example.colaba.user.dto.user.UserResponse;
+import com.example.colaba.user.dto.user.UserScrollResponse;
+import com.example.colaba.user.entity.User;
+import com.example.colaba.user.mapper.UserMapper;
 import com.example.colaba.user.repository.UserRepository;
 import com.example.colaba.user.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,7 +38,7 @@ public class UserServiceTest {
     private UserRepository userRepository;
 
     @Mock
-    private ProjectClientWrapper projectClientWrapper;
+    private ProjectServiceClientWrapper projectClientWrapper;
 
     @Mock
     private TransactionalOperator transactionalOperator;

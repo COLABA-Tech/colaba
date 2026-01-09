@@ -1,7 +1,7 @@
 package com.example.colaba.project.service;
 
-import com.example.colaba.project.client.TaskServiceClient;
-import com.example.colaba.project.client.UserServiceClient;
+import com.example.colaba.project.circuit.TaskServiceClientWrapper;
+import com.example.colaba.project.circuit.UserServiceClientWrapper;
 import com.example.colaba.project.dto.project.CreateProjectRequest;
 import com.example.colaba.project.dto.project.ProjectScrollResponse;
 import com.example.colaba.project.dto.project.UpdateProjectRequest;
@@ -34,8 +34,8 @@ public class ProjectService {
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final TagRepository tagRepository;
-    private final UserServiceClient userServiceClient;
-    private final TaskServiceClient taskServiceClient;
+    private final UserServiceClientWrapper userServiceClient;
+    private final TaskServiceClientWrapper taskServiceClient;
     private final ProjectMapper projectMapper;
 
     @Transactional
