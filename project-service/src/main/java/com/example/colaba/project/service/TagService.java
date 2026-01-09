@@ -6,6 +6,8 @@ import com.example.colaba.project.dto.tag.UpdateTagRequest;
 import com.example.colaba.project.entity.TagJpa;
 import com.example.colaba.project.mapper.TagMapper;
 import com.example.colaba.project.repository.TagRepository;
+import com.example.colaba.shared.circuit.TaskClientWrapper;
+import com.example.colaba.shared.dto.tag.CreateTagRequest;
 import com.example.colaba.shared.dto.tag.TagResponse;
 import com.example.colaba.shared.exception.tag.DuplicateTagException;
 import com.example.colaba.shared.exception.tag.TagNotFoundException;
@@ -100,5 +102,77 @@ public class TagService {
                             .subscribeOn(Schedulers.boundedElastic());
                 })
                 .then();
+    }
+
+    @Transactional
+    public Mono<Void> assignTagToTask(Long taskId, Long tagId) {
+        return Mono.zip(
+                Mono.fromCallable(() -> {
+                    try {
+                        return taskClientWrapper.getTaskEntityById(taskId);
+                    } catch (FeignException.NotFound e) {
+                        throw new TaskNotFoundException(taskId);
+                    }
+                }).subscribeOn(Schedulers.boundedElastic()),
+                Mono.fromCallable(() -> tagRepository.findById(tagId))
+                        .subscribeOn(Schedulers.boundedElastic())
+                        .flatMap(optionalTag -> {
+                            if (optionalTag.isEmpty()) {
+                                return Mono.error(new TagNotFoundException(tagId));
+                            }
+                            return Mono.just(optionalTag.get());
+                        })
+        ).flatMap(tuple -> {
+            Task task = tuple.getT1();
+            Tag tag = tuple.getT2();
+
+            if (!tag.getProject().getId().equals(task.getProject().getId())) {
+                return Mono.error(new IllegalArgumentException("Tag does not belong to task's project"));
+            }
+
+            return Mono.fromRunnable(() -> {
+                boolean added = task.getTags().add(tag);
+                if (added) {
+                    tag.getTasks().add(task);
+                    try {
+                        taskClientWrapper.updateTask(taskId, task);
+                    } catch (FeignException.NotFound e) {
+                        throw new TaskNotFoundException(taskId);
+                    }
+                }
+            }).subscribeOn(Schedulers.boundedElastic());
+        }).then();
+    }
+
+    public Mono<Void> removeTagFromTask(Long taskId, Long tagId) {
+        return Mono.zip(
+                Mono.fromCallable(() -> {
+                    try {
+                        return taskClientWrapper.getTaskEntityById(taskId);
+                    } catch (FeignException.NotFound e) {
+                        throw new TaskNotFoundException(taskId);
+                    }
+                }).subscribeOn(Schedulers.boundedElastic()),
+                Mono.fromCallable(() -> tagRepository.findById(tagId))
+                        .subscribeOn(Schedulers.boundedElastic())
+                        .flatMap(optionalTag -> {
+                            if (optionalTag.isEmpty()) {
+                                return Mono.error(new TagNotFoundException(tagId));
+                            }
+                            return Mono.just(optionalTag.get());
+                        })
+        ).flatMap(tuple -> {
+            Task task = tuple.getT1();
+            Tag tag = tuple.getT2();
+
+            return Mono.fromRunnable(() -> {
+                task.getTags().remove(tag);
+                try {
+                    taskClientWrapper.updateTask(taskId, task);
+                } catch (FeignException.NotFound e) {
+                    throw new TaskNotFoundException(taskId);
+                }
+            }).subscribeOn(Schedulers.boundedElastic());
+        }).then();
     }
 }

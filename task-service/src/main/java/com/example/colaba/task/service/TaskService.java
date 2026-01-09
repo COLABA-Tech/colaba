@@ -1,6 +1,16 @@
 package com.example.colaba.task.service;
 
 import com.example.colaba.shared.dto.tag.TagResponse;
+import com.example.colaba.shared.circuit.ProjectClientWrapper;
+import com.example.colaba.shared.circuit.UserClientWrapper;
+import com.example.colaba.shared.dto.task.CreateTaskRequest;
+import com.example.colaba.shared.dto.task.TaskResponse;
+import com.example.colaba.shared.dto.task.UpdateTaskRequest;
+import com.example.colaba.shared.entity.Project;
+import com.example.colaba.shared.entity.User;
+import com.example.colaba.shared.entity.UserJpa;
+import com.example.colaba.shared.entity.task.Task;
+import com.example.colaba.shared.entity.task.TaskPriority;
 import com.example.colaba.shared.exception.project.ProjectNotFoundException;
 import com.example.colaba.shared.exception.tag.TagNotFoundException;
 import com.example.colaba.shared.exception.task.TaskNotFoundException;
@@ -106,13 +116,11 @@ public class TaskService {
             hasChanges = true;
         }
         if (request.status() != null && !request.status().equals(task.getStatus())) {
-            TaskStatus status = request.status();
-            task.setStatus(status);
+            task.setStatus(request.status());
             hasChanges = true;
         }
         if (request.priority() != null && !request.priority().equals(task.getPriority())) {
-            TaskPriority priority = request.priority();
-            task.setPriority(priority);
+            task.setPriority(request.priority());
             hasChanges = true;
         }
         if (request.assigneeId() != null && !request.assigneeId().equals(task.getAssigneeId())) {

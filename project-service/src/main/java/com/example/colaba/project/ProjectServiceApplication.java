@@ -11,7 +11,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication(scanBasePackages = {
         "com.example.colaba.project",
-        "com.example.colaba.shared.exception"
+        "com.example.colaba.shared.exception",
+        "com.example.colaba.shared.circuit"
 })
 @EnableDiscoveryClient
 @EnableFeignClients(basePackages = "com.example.colaba.project.client")
