@@ -1,11 +1,12 @@
 package com.example.colaba.project.service;
 
+import com.example.colaba.project.client.TaskServiceClient;
+import com.example.colaba.project.dto.tag.CreateTagRequest;
+import com.example.colaba.project.dto.tag.UpdateTagRequest;
+import com.example.colaba.project.entity.TagJpa;
 import com.example.colaba.project.mapper.TagMapper;
 import com.example.colaba.project.repository.TagRepository;
-import com.example.colaba.shared.dto.tag.CreateTagRequest;
 import com.example.colaba.shared.dto.tag.TagResponse;
-import com.example.colaba.shared.dto.tag.UpdateTagRequest;
-import com.example.colaba.shared.entity.Tag;
 import com.example.colaba.shared.exception.tag.DuplicateTagException;
 import com.example.colaba.shared.exception.tag.TagNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ import reactor.core.scheduler.Schedulers;
 public class TagService {
     private final TagRepository tagRepository;
     private final ProjectService projectService;
+    private final TaskServiceClient taskServiceClient;
     private final TagMapper tagMapper;
 
     public Mono<Page<TagResponse>> getAllTags(Pageable pageable) {
@@ -49,11 +51,11 @@ public class TagService {
                     if (tagRepository.findByProjectIdAndNameIgnoreCase(project.getId(), request.name()).isPresent()) {
                         throw new DuplicateTagException(request.name(), project.getId());
                     }
-                    Tag tag = Tag.builder()
+                    TagJpa tag = TagJpa.builder()
                             .name(request.name())
                             .projectId(project.getId())
                             .build();
-                    Tag savedTag = tagRepository.save(tag);
+                    TagJpa savedTag = tagRepository.save(tag);
                     return tagMapper.toTagResponse(savedTag);
                 }).subscribeOn(Schedulers.boundedElastic()));
     }
@@ -66,7 +68,7 @@ public class TagService {
                     if (optionalTag.isEmpty()) {
                         return Mono.error(new TagNotFoundException(id));
                     }
-                    Tag tag = optionalTag.get();
+                    TagJpa tag = optionalTag.get();
                     return Mono.fromCallable(() -> {
                                 boolean hasChanges = false;
                                 if (request.name() != null && !request.name().equals(tag.getName())) {
@@ -91,7 +93,10 @@ public class TagService {
                     if (!exists) {
                         return Mono.error(new TagNotFoundException(id));
                     }
-                    return Mono.fromRunnable(() -> tagRepository.deleteById(id))
+                    return Mono.fromRunnable(() -> {
+                                taskServiceClient.deleteTaskTagsByTagId(id);
+                                tagRepository.deleteById(id);
+                            })
                             .subscribeOn(Schedulers.boundedElastic());
                 })
                 .then();

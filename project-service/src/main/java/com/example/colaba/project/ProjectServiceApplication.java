@@ -14,7 +14,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
         "com.example.colaba.shared.exception"
 })
 @EnableDiscoveryClient
-@EnableFeignClients(basePackages = "com.example.colaba.shared.client")
+@EnableFeignClients(basePackages = "com.example.colaba.project.client")
 @Import(FeignConfig.class)
 @EntityScan(basePackages = {"com.example.colaba.shared.entity", "com.example.colaba.project.entity"})
 @EnableJpaRepositories(basePackages = "com.example.colaba.project.repository")

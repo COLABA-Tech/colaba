@@ -1,14 +1,14 @@
 package com.example.colaba.project.service;
 
+import com.example.colaba.project.client.UserServiceClient;
+import com.example.colaba.project.dto.projectmember.CreateProjectMemberRequest;
+import com.example.colaba.project.dto.projectmember.ProjectMemberResponse;
+import com.example.colaba.project.dto.projectmember.UpdateProjectMemberRequest;
+import com.example.colaba.project.entity.projectmember.ProjectMemberId;
+import com.example.colaba.project.entity.projectmember.ProjectMemberJpa;
+import com.example.colaba.project.entity.projectmember.ProjectRole;
 import com.example.colaba.project.mapper.ProjectMemberMapper;
 import com.example.colaba.project.repository.ProjectMemberRepository;
-import com.example.colaba.shared.client.UserServiceClient;
-import com.example.colaba.shared.dto.projectmember.CreateProjectMemberRequest;
-import com.example.colaba.shared.dto.projectmember.ProjectMemberResponse;
-import com.example.colaba.shared.dto.projectmember.UpdateProjectMemberRequest;
-import com.example.colaba.shared.entity.projectmember.ProjectMember;
-import com.example.colaba.shared.entity.projectmember.ProjectMemberId;
-import com.example.colaba.shared.entity.projectmember.ProjectRole;
 import com.example.colaba.shared.exception.projectmember.DuplicateProjectMemberException;
 import com.example.colaba.shared.exception.projectmember.ProjectMemberNotFoundException;
 import com.example.colaba.shared.exception.user.UserNotFoundException;
@@ -51,12 +51,12 @@ public class ProjectMemberService {
                                 if (projectMemberRepository.existsById(id)) {
                                     throw new DuplicateProjectMemberException(request.userId(), projectId);
                                 }
-                                ProjectMember member = ProjectMember.builder()
+                                ProjectMemberJpa member = ProjectMemberJpa.builder()
                                         .projectId(projectId)
                                         .userId(request.userId())
                                         .role(request.role() != null ? request.role() : ProjectRole.getDefault())
                                         .build();
-                                ProjectMember saved = projectMemberRepository.save(member);
+                                ProjectMemberJpa saved = projectMemberRepository.save(member);
                                 return projectMemberMapper.toProjectMemberResponse(saved);
                             }).subscribeOn(Schedulers.boundedElastic());
                         }));
@@ -73,7 +73,7 @@ public class ProjectMemberService {
                         return Mono.error(new ProjectMemberNotFoundException(projectId, userId));
                     }
 
-                    ProjectMember member = optionalMember.get();
+                    ProjectMemberJpa member = optionalMember.get();
                     boolean hasChanges = false;
 
                     if (request.role() != null && !request.role().equals(member.getRole())) {

@@ -3,9 +3,9 @@
 //import com.example.colaba.project.repository.TagRepository;
 //import com.example.colaba.project.service.ProjectService;
 //import com.example.colaba.project.service.TagService;
-//import com.example.colaba.shared.dto.tag.CreateTagRequest;
+//import com.example.colaba.project.dto.tag.CreateTagRequest;
 //import com.example.colaba.shared.dto.tag.TagResponse;
-//import com.example.colaba.shared.dto.tag.UpdateTagRequest;
+//import com.example.colaba.project.dto.tag.UpdateTagRequest;
 //import com.example.colaba.shared.entity.Project;
 //import com.example.colaba.shared.entity.Tag;
 //import com.example.colaba.shared.entity.task.Task;

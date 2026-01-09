@@ -1,12 +1,12 @@
 package com.example.colaba.project.controller;
 
+import com.example.colaba.project.dto.project.CreateProjectRequest;
+import com.example.colaba.project.dto.project.ProjectScrollResponse;
+import com.example.colaba.project.dto.project.UpdateProjectRequest;
 import com.example.colaba.project.service.ProjectService;
 import com.example.colaba.project.service.TagService;
 import com.example.colaba.shared.controller.BaseController;
-import com.example.colaba.shared.dto.project.CreateProjectRequest;
 import com.example.colaba.shared.dto.project.ProjectResponse;
-import com.example.colaba.shared.dto.project.ProjectScrollResponse;
-import com.example.colaba.shared.dto.project.UpdateProjectRequest;
 import com.example.colaba.shared.dto.tag.TagResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -144,9 +144,9 @@ public class ProjectController extends BaseController {
             @ApiResponse(responseCode = "204", description = "Project deleted successfully"),
             @ApiResponse(responseCode = "404", description = "Project not found")
     })
-    public Mono<ResponseEntity<Void>> delete(@PathVariable("id") Long id) {
-        return projectService.deleteProject(id)
-                .then(Mono.just(ResponseEntity.noContent().build()));
+    public ResponseEntity<Void> delete(@PathVariable("id") Long id) {
+        projectService.deleteProject(id);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{id}/tags")

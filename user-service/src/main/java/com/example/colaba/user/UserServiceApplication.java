@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Import;
         "com.example.colaba.shared.exception"
 })
 @EnableDiscoveryClient
-@EnableFeignClients(basePackages = "com.example.colaba.shared.client")
+@EnableFeignClients(basePackages = "com.example.colaba.user.client")
 @Import(FeignConfig.class)
 public class UserServiceApplication {
     public static void main(String[] args) {

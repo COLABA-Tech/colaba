@@ -8,8 +8,8 @@
 //import com.example.colaba.shared.dto.project.ProjectScrollResponse;
 //import com.example.colaba.shared.dto.project.UpdateProjectRequest;
 //import com.example.colaba.shared.entity.Project;
-//import com.example.colaba.shared.entity.User;
-//import com.example.colaba.shared.entity.UserJpa;
+//import com.example.colaba.user.entity.User;
+//import com.example.colaba.user.entity.UserJpa;
 //import com.example.colaba.shared.exception.project.DuplicateProjectNameException;
 //import com.example.colaba.shared.exception.project.ProjectNotFoundException;
 //import com.example.colaba.shared.exception.user.UserNotFoundException;

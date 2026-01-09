@@ -6,8 +6,8 @@
 //import com.example.colaba.shared.dto.comment.CreateCommentRequest;
 //import com.example.colaba.shared.dto.comment.UpdateCommentRequest;
 //import com.example.colaba.shared.entity.Comment;
-//import com.example.colaba.shared.entity.User;
-//import com.example.colaba.shared.entity.UserJpa;
+//import com.example.colaba.user.entity.User;
+//import com.example.colaba.user.entity.UserJpa;
 //import com.example.colaba.shared.entity.task.Task;
 //import com.example.colaba.shared.exception.comment.CommentNotFoundException;
 //import com.example.colaba.shared.exception.task.TaskNotFoundException;

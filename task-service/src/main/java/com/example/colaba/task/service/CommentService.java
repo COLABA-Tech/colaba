@@ -1,14 +1,14 @@
 package com.example.colaba.task.service;
 
-import com.example.colaba.shared.client.UserServiceClient;
-import com.example.colaba.shared.dto.comment.CommentResponse;
-import com.example.colaba.shared.dto.comment.CommentScrollResponse;
-import com.example.colaba.shared.dto.comment.CreateCommentRequest;
-import com.example.colaba.shared.dto.comment.UpdateCommentRequest;
-import com.example.colaba.shared.entity.Comment;
 import com.example.colaba.shared.exception.comment.CommentNotFoundException;
 import com.example.colaba.shared.exception.task.TaskNotFoundException;
 import com.example.colaba.shared.exception.user.UserNotFoundException;
+import com.example.colaba.task.client.UserServiceClient;
+import com.example.colaba.task.dto.comment.CommentResponse;
+import com.example.colaba.task.dto.comment.CommentScrollResponse;
+import com.example.colaba.task.dto.comment.CreateCommentRequest;
+import com.example.colaba.task.dto.comment.UpdateCommentRequest;
+import com.example.colaba.task.entity.CommentJpa;
 import com.example.colaba.task.mapper.CommentMapper;
 import com.example.colaba.task.repository.CommentRepository;
 import com.example.colaba.task.repository.TaskRepository;
@@ -40,18 +40,18 @@ public class CommentService {
             throw new TaskNotFoundException(request.taskId());
         }
 
-        Comment comment = Comment.builder()
+        CommentJpa comment = CommentJpa.builder()
                 .taskId(request.taskId())
                 .userId(request.userId())
                 .content(request.content())
                 .build();
 
-        Comment saved = commentRepository.save(comment);
+        CommentJpa saved = commentRepository.save(comment);
         return commentMapper.toResponse(saved);
     }
 
     public CommentResponse getCommentById(Long id) {
-        Comment comment = commentRepository.findById(id)
+        CommentJpa comment = commentRepository.findById(id)
                 .orElseThrow(() -> new CommentNotFoundException(id));
         return commentMapper.toResponse(comment);
     }
@@ -60,7 +60,7 @@ public class CommentService {
         if (!taskRepository.existsById(taskId)) {
             throw new TaskNotFoundException(taskId);
         }
-        Page<Comment> comments = commentRepository.findByTaskIdOrderByCreatedAtDesc(taskId, pageable);
+        Page<CommentJpa> comments = commentRepository.findByTaskIdOrderByCreatedAtDesc(taskId, pageable);
         return commentMapper.toResponsePage(comments);
     }
 
@@ -73,7 +73,7 @@ public class CommentService {
                 : OffsetDateTime.parse(cursor);
         Pageable pageable = PageRequest.of(
                 0, limit, Sort.by("createdAt").descending());
-        Slice<Comment> slice = commentRepository
+        Slice<CommentJpa> slice = commentRepository
                 .findByTaskIdAndCreatedAtBeforeOrderByCreatedAtDesc(taskId, cursorTime, pageable);
         List<CommentResponse> responses = commentMapper
                 .toResponseList(slice.getContent());
@@ -87,7 +87,7 @@ public class CommentService {
 
     @Transactional
     public CommentResponse updateComment(Long id, UpdateCommentRequest request) {
-        Comment comment = commentRepository.findById(id)
+        CommentJpa comment = commentRepository.findById(id)
                 .orElseThrow(() -> new CommentNotFoundException(id));
 
         boolean hasChanges = false;
@@ -98,7 +98,7 @@ public class CommentService {
             hasChanges = true;
         }
 
-        Comment saved = hasChanges ? commentRepository.save(comment) : comment;
+        CommentJpa saved = hasChanges ? commentRepository.save(comment) : comment;
         return commentMapper.toResponse(saved);
     }
 

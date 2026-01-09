@@ -6,8 +6,8 @@
 //import com.example.colaba.shared.dto.user.UserResponse;
 //import com.example.colaba.shared.dto.user.UserScrollResponse;
 //import com.example.colaba.shared.entity.Project;
-//import com.example.colaba.shared.entity.User;
-//import com.example.colaba.shared.entity.UserJpa;
+//import com.example.colaba.user.entity.User;
+//import com.example.colaba.user.entity.UserJpa;
 //import com.example.colaba.shared.exception.user.DuplicateUserEntityEmailException;
 //import com.example.colaba.shared.exception.user.DuplicateUserEntityUsernameException;
 //import com.example.colaba.shared.exception.user.UserNotFoundException;

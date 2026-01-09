@@ -1,6 +1,6 @@
 package com.example.colaba.user.repository;
 
-import com.example.colaba.shared.entity.User;
+import com.example.colaba.user.entity.User;
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.r2dbc.repository.R2dbcRepository;
 import org.springframework.data.repository.query.Param;

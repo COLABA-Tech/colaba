@@ -8,11 +8,11 @@
 //import com.example.colaba.shared.dto.projectmember.ProjectMemberResponse;
 //import com.example.colaba.shared.dto.projectmember.UpdateProjectMemberRequest;
 //import com.example.colaba.shared.entity.Project;
-//import com.example.colaba.shared.entity.User;
-//import com.example.colaba.shared.entity.UserJpa;
-//import com.example.colaba.shared.entity.projectmember.ProjectMember;
-//import com.example.colaba.shared.entity.projectmember.ProjectMemberId;
-//import com.example.colaba.shared.entity.projectmember.ProjectRole;
+//import com.example.colaba.user.entity.User;
+//import com.example.colaba.user.entity.UserJpa;
+//import com.example.colaba.project.entity.projectmember.ProjectMember;
+//import com.example.colaba.project.entity.projectmember.ProjectMemberId;
+//import com.example.colaba.project.entity.projectmember.ProjectRole;
 //import com.example.colaba.shared.exception.project.ProjectNotFoundException;
 //import com.example.colaba.shared.exception.projectmember.DuplicateProjectMemberException;
 //import com.example.colaba.shared.exception.projectmember.ProjectMemberNotFoundException;

@@ -1,15 +1,16 @@
 package com.example.colaba.user.service;
 
-import com.example.colaba.shared.client.ProjectServiceClient;
-import com.example.colaba.shared.dto.user.CreateUserRequest;
-import com.example.colaba.shared.dto.user.UpdateUserRequest;
-import com.example.colaba.shared.dto.user.UserResponse;
-import com.example.colaba.shared.dto.user.UserScrollResponse;
-import com.example.colaba.shared.entity.Project;
-import com.example.colaba.shared.entity.User;
+import com.example.colaba.shared.dto.project.ProjectResponse;
 import com.example.colaba.shared.exception.user.DuplicateUserEntityEmailException;
 import com.example.colaba.shared.exception.user.DuplicateUserEntityUsernameException;
 import com.example.colaba.shared.exception.user.UserNotFoundException;
+import com.example.colaba.user.client.ProjectServiceClient;
+import com.example.colaba.user.client.TaskServiceClient;
+import com.example.colaba.user.dto.user.CreateUserRequest;
+import com.example.colaba.user.dto.user.UpdateUserRequest;
+import com.example.colaba.user.dto.user.UserResponse;
+import com.example.colaba.user.dto.user.UserScrollResponse;
+import com.example.colaba.user.entity.User;
 import com.example.colaba.user.mapper.UserMapper;
 import com.example.colaba.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserService {
     private final ProjectServiceClient projectServiceClient;
+    private final TaskServiceClient taskServiceClient;
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final TransactionalOperator transactionalOperator;
@@ -112,15 +114,17 @@ public class UserService {
         return userRepository.findById(id)
                 .switchIfEmpty(Mono.error(new UserNotFoundException(id)))
                 .flatMap(user -> Mono.fromCallable(() -> {
-                            List<Project> ownedProjects = projectServiceClient.findByOwnerId(user.getId());
+                            List<ProjectResponse> ownedProjects = projectServiceClient.findByOwnerId(user.getId());
                             if (ownedProjects == null) {
                                 throw new UserNotFoundException(id);
                             }
                             if (!ownedProjects.isEmpty()) {
                                 ownedProjects.forEach(project -> {
-                                    projectServiceClient.deleteProject(project.getId());
+                                    projectServiceClient.deleteProject(project.id());
                                 });
                             }
+                            projectServiceClient.handleUserDeletion(id);
+                            taskServiceClient.handleUserDeletion(id);
                             return user;
                         })
                         .subscribeOn(Schedulers.boundedElastic())

@@ -1,20 +1,21 @@
 package com.example.colaba.task.service;
 
-import com.example.colaba.shared.client.ProjectServiceClient;
-import com.example.colaba.shared.client.UserServiceClient;
 import com.example.colaba.shared.dto.tag.TagResponse;
-import com.example.colaba.shared.dto.task.CreateTaskRequest;
-import com.example.colaba.shared.dto.task.TaskResponse;
-import com.example.colaba.shared.dto.task.UpdateTaskRequest;
-import com.example.colaba.shared.entity.task.Task;
-import com.example.colaba.shared.entity.task.TaskPriority;
-import com.example.colaba.shared.entity.task.TaskStatus;
-import com.example.colaba.shared.entity.tasktag.TaskTag;
 import com.example.colaba.shared.exception.project.ProjectNotFoundException;
 import com.example.colaba.shared.exception.tag.TagNotFoundException;
 import com.example.colaba.shared.exception.task.TaskNotFoundException;
 import com.example.colaba.shared.exception.user.UserNotFoundException;
+import com.example.colaba.task.client.ProjectServiceClient;
+import com.example.colaba.task.client.UserServiceClient;
+import com.example.colaba.task.dto.task.CreateTaskRequest;
+import com.example.colaba.task.dto.task.TaskResponse;
+import com.example.colaba.task.dto.task.UpdateTaskRequest;
+import com.example.colaba.task.entity.task.TaskJpa;
+import com.example.colaba.task.entity.task.TaskPriority;
+import com.example.colaba.task.entity.task.TaskStatus;
+import com.example.colaba.task.entity.tasktag.TaskTagJpa;
 import com.example.colaba.task.mapper.TaskMapper;
+import com.example.colaba.task.repository.CommentRepository;
 import com.example.colaba.task.repository.TaskRepository;
 import com.example.colaba.task.repository.TaskTagRepository;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ import java.util.List;
 public class TaskService {
     private final TaskRepository taskRepository;
     private final TaskTagRepository taskTagRepository;
+    private final CommentRepository commentRepository;
     private final ProjectServiceClient projectServiceClient;
     private final UserServiceClient userServiceClient;
     private final TaskMapper taskMapper;
@@ -39,7 +41,7 @@ public class TaskService {
     }
 
     public TaskResponse getTaskById(Long id) {
-        Task task = taskRepository.findById(id)
+        TaskJpa task = taskRepository.findById(id)
                 .orElseThrow(() -> new TaskNotFoundException(id));
         return taskMapper.toTaskResponse(task);
     }
@@ -73,7 +75,7 @@ public class TaskService {
 
         TaskPriority priority = (request.priority() != null) ? request.priority() : null;
 
-        Task task = Task.builder()
+        TaskJpa task = TaskJpa.builder()
                 .title(request.title())
                 .description(request.description())
                 .status(request.status())
@@ -84,13 +86,13 @@ public class TaskService {
                 .dueDate(request.dueDate())
                 .build();
 
-        Task savedTask = taskRepository.save(task);
+        TaskJpa savedTask = taskRepository.save(task);
         return taskMapper.toTaskResponse(savedTask);
     }
 
     @Transactional
     public TaskResponse updateTask(Long id, UpdateTaskRequest request) {
-        Task task = taskRepository.findById(id)
+        TaskJpa task = taskRepository.findById(id)
                 .orElseThrow(() -> new TaskNotFoundException(id));
 
         boolean hasChanges = false;
@@ -126,7 +128,7 @@ public class TaskService {
             hasChanges = true;
         }
 
-        Task updatedTask = hasChanges ? taskRepository.save(task) : task;
+        TaskJpa updatedTask = hasChanges ? taskRepository.save(task) : task;
         return taskMapper.toTaskResponse(updatedTask);
     }
 
@@ -136,6 +138,7 @@ public class TaskService {
             throw new TaskNotFoundException(id);
         }
         taskTagRepository.deleteByTaskId(id);
+        commentRepository.deleteByTaskId(id);
         taskRepository.deleteById(id);
     }
 
@@ -160,7 +163,7 @@ public class TaskService {
 
     @Transactional
     public void assignTagToTask(Long taskId, Long tagId) {
-        Task task = taskRepository.findById(taskId)
+        TaskJpa task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new TaskNotFoundException(taskId));
         TagResponse tag = projectServiceClient.getTagById(tagId);
         if (tag == null) {
@@ -175,7 +178,7 @@ public class TaskService {
         if (taskTagRepository.existsByTaskIdAndTagId(taskId, tagId)) {
             return;
         }
-        TaskTag taskTag = TaskTag.builder()
+        TaskTagJpa taskTag = TaskTagJpa.builder()
                 .taskId(taskId)
                 .tagId(tagId)
                 .build();
@@ -188,5 +191,23 @@ public class TaskService {
             throw new TaskNotFoundException(taskId);
         }
         taskTagRepository.deleteByTaskIdAndTagId(taskId, tagId);
+    }
+
+    @Transactional
+    public void deleteTasksByProject(Long projectId) {
+        List<TaskJpa> tasks = taskRepository.findAllByProjectId(projectId);
+        tasks.forEach(task -> deleteTask(task.getId()));
+    }
+
+    @Transactional
+    public void handleUserDeletion(Long userId) {
+        taskRepository.setReporterIdToNullByReporterId(userId);
+        taskRepository.setAssigneeIdToNullByAssigneeId(userId);
+        commentRepository.deleteByUserId(userId);
+    }
+
+    @Transactional
+    public void deleteTaskTagsByTagId(Long tagId) {
+        taskTagRepository.deleteByTagId(tagId);
     }
 }
