@@ -1,105 +1,97 @@
 package com.example.colaba.task.service;
 
-import com.example.colaba.shared.circuit.ProjectClientWrapper;
-import com.example.colaba.shared.circuit.UserClientWrapper;
-import com.example.colaba.shared.dto.task.CreateTaskRequest;
-import com.example.colaba.shared.dto.task.TaskResponse;
-import com.example.colaba.shared.dto.task.UpdateTaskRequest;
-import com.example.colaba.shared.entity.Project;
-import com.example.colaba.shared.entity.User;
-import com.example.colaba.shared.entity.UserJpa;
-import com.example.colaba.shared.entity.task.Task;
-import com.example.colaba.shared.entity.task.TaskPriority;
+import com.example.colaba.shared.dto.tag.TagResponse;
 import com.example.colaba.shared.exception.project.ProjectNotFoundException;
+import com.example.colaba.shared.exception.tag.TagNotFoundException;
 import com.example.colaba.shared.exception.task.TaskNotFoundException;
 import com.example.colaba.shared.exception.user.UserNotFoundException;
-import com.example.colaba.shared.mapper.TaskMapper;
-import com.example.colaba.shared.mapper.UserMapper;
+import com.example.colaba.task.circuit.ProjectServiceClientWrapper;
+import com.example.colaba.task.circuit.UserServiceClientWrapper;
+import com.example.colaba.task.dto.task.CreateTaskRequest;
+import com.example.colaba.task.dto.task.TaskResponse;
+import com.example.colaba.task.dto.task.UpdateTaskRequest;
+import com.example.colaba.task.entity.task.TaskJpa;
+import com.example.colaba.task.entity.task.TaskPriority;
+import com.example.colaba.task.entity.tasktag.TaskTagJpa;
+import com.example.colaba.task.mapper.TaskMapper;
+import com.example.colaba.task.repository.CommentRepository;
 import com.example.colaba.task.repository.TaskRepository;
-import feign.FeignException;
+import com.example.colaba.task.repository.TaskTagRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class TaskService {
-
     private final TaskRepository taskRepository;
-    private final ProjectClientWrapper projectClientWrapper;  // Через обёртку
-    private final UserClientWrapper userClientWrapper;        // Через обёртку
+    private final TaskTagRepository taskTagRepository;
+    private final CommentRepository commentRepository;
+    private final ProjectServiceClientWrapper projectServiceClient;
+    private final UserServiceClientWrapper userServiceClient;
     private final TaskMapper taskMapper;
-    private final UserMapper userMapper;
 
     public Page<TaskResponse> getAllTasks(Pageable pageable) {
         return taskMapper.toTaskResponsePage(taskRepository.findAll(pageable));
     }
 
     public TaskResponse getTaskById(Long id) {
-        Task task = taskRepository.findById(id)
+        TaskJpa task = taskRepository.findById(id)
                 .orElseThrow(() -> new TaskNotFoundException(id));
         return taskMapper.toTaskResponse(task);
     }
 
     public Page<TaskResponse> getTasksByProject(Long projectId, Pageable pageable) {
-        Project project;
-        try {
-            project = projectClientWrapper.getProjectEntityById(projectId);
-        } catch (FeignException.NotFound e) {
+        boolean projectExists = projectServiceClient.projectExists(projectId);
+        if (!projectExists) {
             throw new ProjectNotFoundException(projectId);
         }
-        return taskMapper.toTaskResponsePage(taskRepository.findByProject(project, pageable));
+        return taskMapper.toTaskResponsePage(taskRepository.findByProjectId(projectId, pageable));
     }
 
     @Transactional
     public TaskResponse createTask(CreateTaskRequest request) {
-        Project project;
-        try {
-            project = projectClientWrapper.getProjectEntityById(request.projectId());
-        } catch (FeignException.NotFound e) {
+        boolean projectExists = projectServiceClient.projectExists(request.projectId());
+        if (!projectExists) {
             throw new ProjectNotFoundException(request.projectId());
         }
 
-        UserJpa assignee = null;
         if (request.assigneeId() != null) {
-            try {
-                User user = userClientWrapper.getUserEntityById(request.assigneeId());
-                assignee = userMapper.toUserJpa(user);
-            } catch (FeignException.NotFound e) {
+            boolean assigneeExists = userServiceClient.userExists(request.assigneeId());
+            if (!assigneeExists) {
                 throw new UserNotFoundException(request.assigneeId());
             }
         }
 
-        UserJpa reporter;
-        try {
-            User reporterUser = userClientWrapper.getUserEntityById(request.reporterId());
-            reporter = userMapper.toUserJpa(reporterUser);
-        } catch (FeignException.NotFound e) {
+        boolean reporterExists = userServiceClient.userExists(request.reporterId());
+        if (!reporterExists) {
             throw new UserNotFoundException(request.reporterId());
         }
 
-        TaskPriority priority = request.priority() != null ? request.priority() : null;
+        TaskPriority priority = (request.priority() != null) ? request.priority() : null;
 
-        Task task = Task.builder()
+        TaskJpa task = TaskJpa.builder()
                 .title(request.title())
                 .description(request.description())
                 .status(request.status())
                 .priority(priority)
-                .project(project)
-                .assignee(assignee)
-                .reporter(reporter)
+                .projectId(request.projectId())
+                .assigneeId(request.assigneeId())
+                .reporterId(request.reporterId())
                 .dueDate(request.dueDate())
                 .build();
 
-        Task savedTask = taskRepository.save(task);
+        TaskJpa savedTask = taskRepository.save(task);
         return taskMapper.toTaskResponse(savedTask);
     }
 
     @Transactional
     public TaskResponse updateTask(Long id, UpdateTaskRequest request) {
-        Task task = taskRepository.findById(id)
+        TaskJpa task = taskRepository.findById(id)
                 .orElseThrow(() -> new TaskNotFoundException(id));
 
         boolean hasChanges = false;
@@ -120,22 +112,20 @@ public class TaskService {
             task.setPriority(request.priority());
             hasChanges = true;
         }
-        if (request.assigneeId() != null &&
-                (task.getAssignee() == null || !request.assigneeId().equals(task.getAssignee().getId()))) {
-            try {
-                User user = userClientWrapper.getUserEntityById(request.assigneeId());
-                task.setAssignee(userMapper.toUserJpa(user));
-                hasChanges = true;
-            } catch (FeignException.NotFound e) {
+        if (request.assigneeId() != null && !request.assigneeId().equals(task.getAssigneeId())) {
+            boolean assigneeExists = userServiceClient.userExists(request.assigneeId());
+            if (!assigneeExists) {
                 throw new UserNotFoundException(request.assigneeId());
             }
+            task.setAssigneeId(request.assigneeId());
+            hasChanges = true;
         }
         if (request.dueDate() != null && !request.dueDate().equals(task.getDueDate())) {
             task.setDueDate(request.dueDate());
             hasChanges = true;
         }
 
-        Task updatedTask = hasChanges ? taskRepository.save(task) : task;
+        TaskJpa updatedTask = hasChanges ? taskRepository.save(task) : task;
         return taskMapper.toTaskResponse(updatedTask);
     }
 
@@ -144,17 +134,77 @@ public class TaskService {
         if (!taskRepository.existsById(id)) {
             throw new TaskNotFoundException(id);
         }
+        taskTagRepository.deleteByTaskId(id);
+        commentRepository.deleteByTaskId(id);
         taskRepository.deleteById(id);
     }
 
     public Page<TaskResponse> getTasksByAssignee(Long userId, Pageable pageable) {
-        User user;
-        try {
-            user = userClientWrapper.getUserEntityById(userId);
-        } catch (FeignException.NotFound e) {
+        boolean userExists = userServiceClient.userExists(userId);
+        if (!userExists) {
             throw new UserNotFoundException(userId);
         }
-        UserJpa assignee = userMapper.toUserJpa(user);
-        return taskMapper.toTaskResponsePage(taskRepository.findByAssignee(assignee, pageable));
+        return taskMapper.toTaskResponsePage(taskRepository.findByAssigneeId(userId, pageable));
+    }
+
+    public List<TagResponse> getTagsByTask(Long taskId) {
+        if (!taskRepository.existsById(taskId)) {
+            throw new TaskNotFoundException(taskId);
+        }
+        List<Long> tagIds = taskTagRepository.findTagIdsByTaskId(taskId);
+        if (tagIds.isEmpty()) {
+            return List.of();
+        }
+        return projectServiceClient.getTagsByIds(tagIds);
+    }
+
+    @Transactional
+    public void assignTagToTask(Long taskId, Long tagId) {
+        TaskJpa task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new TaskNotFoundException(taskId));
+        TagResponse tag = projectServiceClient.getTagById(tagId);
+        if (tag == null) {
+            throw new TagNotFoundException(tagId);
+        }
+        if (!tag.projectId().equals(task.getProjectId())) {
+            throw new IllegalArgumentException(
+                    String.format("Tag %d does not belong to project %d",
+                            tagId, task.getProjectId())
+            );
+        }
+        if (taskTagRepository.existsByTaskIdAndTagId(taskId, tagId)) {
+            return;
+        }
+        TaskTagJpa taskTag = TaskTagJpa.builder()
+                .taskId(taskId)
+                .tagId(tagId)
+                .build();
+        taskTagRepository.save(taskTag);
+    }
+
+    @Transactional
+    public void removeTagFromTask(Long taskId, Long tagId) {
+        if (!taskRepository.existsById(taskId)) {
+            throw new TaskNotFoundException(taskId);
+        }
+        taskTagRepository.deleteByTaskIdAndTagId(taskId, tagId);
+    }
+
+    @Transactional
+    public void deleteTasksByProject(Long projectId) {
+        List<TaskJpa> tasks = taskRepository.findAllByProjectId(projectId);
+        tasks.forEach(task -> deleteTask(task.getId()));
+    }
+
+    @Transactional
+    public void handleUserDeletion(Long userId) {
+        taskRepository.setReporterIdToNullByReporterId(userId);
+        taskRepository.setAssigneeIdToNullByAssigneeId(userId);
+        commentRepository.deleteByUserId(userId);
+    }
+
+    @Transactional
+    public void deleteTaskTagsByTagId(Long tagId) {
+        taskTagRepository.deleteByTagId(tagId);
     }
 }

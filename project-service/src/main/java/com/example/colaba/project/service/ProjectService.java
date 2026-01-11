@@ -1,20 +1,21 @@
 package com.example.colaba.project.service;
 
+import com.example.colaba.project.circuit.TaskServiceClientWrapper;
+import com.example.colaba.project.circuit.UserServiceClientWrapper;
+import com.example.colaba.project.dto.project.CreateProjectRequest;
+import com.example.colaba.project.dto.project.ProjectScrollResponse;
+import com.example.colaba.project.dto.project.UpdateProjectRequest;
+import com.example.colaba.project.entity.ProjectJpa;
+import com.example.colaba.project.entity.projectmember.ProjectMemberJpa;
+import com.example.colaba.project.entity.projectmember.ProjectRole;
+import com.example.colaba.project.mapper.ProjectMapper;
+import com.example.colaba.project.repository.ProjectMemberRepository;
 import com.example.colaba.project.repository.ProjectRepository;
-import com.example.colaba.shared.circuit.UserClientWrapper;
-import com.example.colaba.shared.dto.project.CreateProjectRequest;
+import com.example.colaba.project.repository.TagRepository;
 import com.example.colaba.shared.dto.project.ProjectResponse;
-import com.example.colaba.shared.dto.project.ProjectScrollResponse;
-import com.example.colaba.shared.dto.project.UpdateProjectRequest;
-import com.example.colaba.shared.entity.Project;
-import com.example.colaba.shared.entity.User;
-import com.example.colaba.shared.entity.UserJpa;
 import com.example.colaba.shared.exception.project.DuplicateProjectNameException;
 import com.example.colaba.shared.exception.project.ProjectNotFoundException;
 import com.example.colaba.shared.exception.user.UserNotFoundException;
-import com.example.colaba.shared.mapper.ProjectMapper;
-import com.example.colaba.shared.mapper.UserMapper;
-import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -31,9 +32,11 @@ import java.util.List;
 public class ProjectService {
 
     private final ProjectRepository projectRepository;
-    private final UserClientWrapper userClientWrapper;
+    private final ProjectMemberRepository projectMemberRepository;
+    private final TagRepository tagRepository;
+    private final UserServiceClientWrapper userServiceClient;
+    private final TaskServiceClientWrapper taskServiceClient;
     private final ProjectMapper projectMapper;
-    private final UserMapper userMapper;
 
     @Transactional
     public Mono<ProjectResponse> createProject(CreateProjectRequest request) {
@@ -42,21 +45,25 @@ public class ProjectService {
                 throw new DuplicateProjectNameException(request.name());
             }
 
-            User owner;
-            try {
-                owner = userClientWrapper.getUserEntityById(request.ownerId());
-            } catch (FeignException.NotFound e) {
+            boolean userExists = userServiceClient.userExists(request.ownerId());
+            if (!userExists) {
                 throw new UserNotFoundException(request.ownerId());
             }
 
-            UserJpa ownerJpa = userMapper.toUserJpa(owner);
-            Project project = Project.builder()
+            ProjectJpa project = ProjectJpa.builder()
                     .name(request.name())
                     .description(request.description())
-                    .owner(ownerJpa)
+                    .ownerId(request.ownerId())
                     .build();
+            ProjectJpa saved = projectRepository.save(project);
 
-            Project saved = projectRepository.save(project);
+            ProjectMemberJpa ownerMember = ProjectMemberJpa.builder()
+                    .projectId(saved.getId())
+                    .userId(request.ownerId())
+                    .role(ProjectRole.OWNER)
+                    .build();
+            projectMemberRepository.save(ownerMember);
+
             return projectMapper.toProjectResponse(saved);
         }).subscribeOn(Schedulers.boundedElastic());
     }
@@ -68,26 +75,24 @@ public class ProjectService {
                 .subscribeOn(Schedulers.boundedElastic());
     }
 
-    public Mono<Project> getProjectEntityById(Long id) {
+    public Mono<ProjectJpa> getProjectEntityById(Long id) {
         return Mono.fromCallable(() -> projectRepository.findById(id)
                         .orElseThrow(() -> new ProjectNotFoundException(id)))
                 .subscribeOn(Schedulers.boundedElastic());
     }
 
-    public Mono<List<ProjectResponse>> getAllProjects() {
-        return Mono.fromCallable(projectRepository::findAll)
-                .map(projectMapper::toProjectResponseList)
+    public Mono<Page<ProjectResponse>> getAllProjects(Pageable pageable) {
+        return Mono.fromCallable(() -> projectMapper.toProjectResponsePage(projectRepository.findAll(pageable)))
                 .subscribeOn(Schedulers.boundedElastic());
     }
 
     @Transactional
     public Mono<ProjectResponse> updateProject(Long id, UpdateProjectRequest request) {
         return Mono.fromCallable(() -> {
-            Project project = projectRepository.findById(id)
+            ProjectJpa project = projectRepository.findById(id)
                     .orElseThrow(() -> new ProjectNotFoundException(id));
 
             boolean hasChanges = false;
-
             if (request.name() != null && !request.name().isBlank() && !request.name().equals(project.getName())) {
                 if (projectRepository.existsByNameAndIdNot(request.name(), id)) {
                     throw new DuplicateProjectNameException(request.name());
@@ -101,71 +106,81 @@ public class ProjectService {
                 hasChanges = true;
             }
 
-            if (request.ownerId() != null && !request.ownerId().equals(project.getOwner().getId())) {
-                User newOwner;
-                try {
-                    newOwner = userClientWrapper.getUserEntityById(request.ownerId());
-                } catch (FeignException.NotFound e) {
+            if (request.ownerId() != null && !request.ownerId().equals(project.getOwnerId())) {
+                boolean userExists = userServiceClient.userExists(request.ownerId());
+                if (!userExists) {
                     throw new UserNotFoundException(request.ownerId());
                 }
-                project.setOwner(userMapper.toUserJpa(newOwner));
+                project.setOwnerId(request.ownerId());
                 hasChanges = true;
             }
 
-            Project saved = hasChanges ? projectRepository.save(project) : project;
+            ProjectJpa saved = hasChanges ? projectRepository.save(project) : project;
             return projectMapper.toProjectResponse(saved);
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
     @Transactional
     public Mono<ProjectResponse> changeProjectOwner(Long projectId, Long newOwnerId) {
-        return getProjectEntityById(projectId)
-                .zipWhen(project -> Mono.fromCallable(() -> userClientWrapper.getUserEntityById(newOwnerId))
-                        .subscribeOn(Schedulers.boundedElastic())
-                        .onErrorMap(FeignException.NotFound.class, ex -> new UserNotFoundException(newOwnerId))
-                )
-                .flatMap(tuple -> {
-                    Project project = tuple.getT1();
-                    User user = tuple.getT2();
-                    project.setOwner(userMapper.toUserJpa(user));
-
-                    return Mono.fromCallable(() -> projectRepository.save(project))
-                            .map(projectMapper::toProjectResponse)
-                            .subscribeOn(Schedulers.boundedElastic());
-                });
+        return Mono.fromCallable(() -> {
+            ProjectJpa project = projectRepository.findById(projectId)
+                    .orElseThrow(() -> new ProjectNotFoundException(projectId));
+            if (newOwnerId.equals(project.getOwnerId())) {
+                return projectMapper.toProjectResponse(project);
+            }
+            boolean userExists = userServiceClient.userExists(newOwnerId);
+            if (!userExists) {
+                throw new UserNotFoundException(newOwnerId);
+            }
+            project.setOwnerId(newOwnerId);
+            ProjectJpa saved = projectRepository.save(project);
+            return projectMapper.toProjectResponse(saved);
+        }).subscribeOn(Schedulers.boundedElastic());
     }
 
     @Transactional
-    public Mono<Void> deleteProject(Long id) {
-        return Mono.fromRunnable(() -> {
-            if (!projectRepository.existsById(id)) {
-                throw new ProjectNotFoundException(id);
-            }
-            projectRepository.deleteById(id);
-        }).subscribeOn(Schedulers.boundedElastic()).then();
+    public void deleteProject(Long id) {
+        if (!projectRepository.existsById(id)) {
+            throw new ProjectNotFoundException(id);
+        }
+        projectMemberRepository.deleteByProjectId(id);
+        tagRepository.deleteByProjectId(id);
+        taskServiceClient.deleteTasksByProject(id);
+        projectRepository.deleteById(id);
     }
 
     public Mono<List<ProjectResponse>> getProjectByOwnerId(Long ownerId) {
         return Mono.fromCallable(() -> {
-                    User user;
-                    try {
-                        user = userClientWrapper.getUserEntityById(ownerId);
-                    } catch (FeignException.NotFound e) {
-                        throw new UserNotFoundException(ownerId);
-                    }
-                    UserJpa userJpa = userMapper.toUserJpa(user);
-                    return projectRepository.findByOwner(userJpa);
-                })
-                .subscribeOn(Schedulers.boundedElastic())
-                .map(projectMapper::toProjectResponseList);
+            boolean userExists = userServiceClient.userExists(ownerId);
+            if (!userExists) {
+                throw new UserNotFoundException(ownerId);
+            }
+            List<ProjectJpa> projects = projectRepository.findByOwnerId(ownerId);
+            return projectMapper.toProjectResponseList(projects);
+        }).subscribeOn(Schedulers.boundedElastic());
     }
 
     public Mono<ProjectScrollResponse> scroll(int page, int size) {
         return Mono.fromCallable(() -> {
             Pageable pageable = PageRequest.of(page, size);
-            Page<Project> projectPage = projectRepository.findAll(pageable);
+            Page<ProjectJpa> projectPage = projectRepository.findAll(pageable);
+
             List<ProjectResponse> projects = projectMapper.toProjectResponseList(projectPage.getContent());
-            return new ProjectScrollResponse(projects, projectPage.hasNext(), projectPage.getTotalElements());
+            boolean hasNext = projectPage.hasNext();
+            long total = projectPage.getTotalElements();
+
+            return new ProjectScrollResponse(projects, hasNext, total);
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @Transactional
+    public void handleUserDeletion(Long userId) {
+        projectMemberRepository.deleteByUserId(userId);
+    }
+
+    public Mono<Boolean> isMember(Long projectId, Long userId) {
+        return Mono.fromCallable(() -> {
+            return projectMemberRepository.existsByProjectIdAndUserId(projectId, userId);
         }).subscribeOn(Schedulers.boundedElastic());
     }
 }

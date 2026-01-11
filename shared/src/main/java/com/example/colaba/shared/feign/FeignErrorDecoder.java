@@ -10,6 +10,7 @@ import feign.codec.ErrorDecoder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import javax.naming.ServiceUnavailableException;
 import java.nio.charset.StandardCharsets;
 
 @Slf4j
@@ -36,6 +37,11 @@ public class FeignErrorDecoder implements ErrorDecoder {
         if (response.status() == 400) {
             String message = extractErrorMessage(response);
             return new IllegalArgumentException(message != null ? message : "Bad request");
+        }
+
+        if (response.status() == 503) {
+            String message = extractErrorMessage(response);
+            return new ServiceUnavailableException(message != null ? message : "Service temporarily unavailable");
         }
 
         return defaultErrorDecoder.decode(methodKey, response);

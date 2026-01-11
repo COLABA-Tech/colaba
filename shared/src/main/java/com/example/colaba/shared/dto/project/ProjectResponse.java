@@ -7,7 +7,6 @@ public record ProjectResponse(
         String name,
         String description,
         Long ownerId,
-        String ownerName,
         OffsetDateTime createdAt
 ) {
 }

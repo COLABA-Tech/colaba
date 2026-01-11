@@ -1,8 +1,7 @@
 package com.example.colaba.task.controller;
 
-import com.example.colaba.shared.entity.task.Task;
-import com.example.colaba.shared.exception.task.TaskNotFoundException;
 import com.example.colaba.task.repository.TaskRepository;
+import com.example.colaba.task.service.TaskService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,20 +9,26 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/tasks/internal")
 @RequiredArgsConstructor
 public class TaskInternalController {
-
     private final TaskRepository taskRepository;
+    private final TaskService taskService;
 
-    @GetMapping("/entity/{id}")
-    public Task getTaskEntityById(@PathVariable Long id) {
-        return taskRepository.findById(id)
-                .orElseThrow(() -> new TaskNotFoundException(id));
+    @DeleteMapping("/project/{projectId}")
+    public void deleteTasksByProject(@PathVariable Long projectId) {
+        taskService.deleteTasksByProject(projectId);
     }
 
-    @PutMapping("/{id}")
-    public Task updateTask(@PathVariable Long id, @RequestBody Task task) {
-        if (!task.getId().equals(id)) {
-            throw new IllegalArgumentException("Task ID mismatch");
-        }
-        return taskRepository.save(task);
+    @PostMapping("/user/{userId}/deletion")
+    public void handleUserDeletion(@PathVariable Long userId) {
+        taskService.handleUserDeletion(userId);
+    }
+
+    @GetMapping("/{id}/exists")
+    public boolean taskExists(@PathVariable Long id) {
+        return taskRepository.existsById(id);
+    }
+
+    @DeleteMapping("/task-tags/tag/{tagId}")
+    void deleteTaskTagsByTagId(@PathVariable Long tagId) {
+        taskService.deleteTaskTagsByTagId(tagId);
     }
 }

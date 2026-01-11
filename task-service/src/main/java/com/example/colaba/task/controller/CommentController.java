@@ -1,10 +1,10 @@
 package com.example.colaba.task.controller;
 
 import com.example.colaba.shared.controller.BaseController;
-import com.example.colaba.shared.dto.comment.CommentResponse;
-import com.example.colaba.shared.dto.comment.CommentScrollResponse;
-import com.example.colaba.shared.dto.comment.CreateCommentRequest;
-import com.example.colaba.shared.dto.comment.UpdateCommentRequest;
+import com.example.colaba.task.dto.comment.CommentResponse;
+import com.example.colaba.task.dto.comment.CommentScrollResponse;
+import com.example.colaba.task.dto.comment.CreateCommentRequest;
+import com.example.colaba.task.dto.comment.UpdateCommentRequest;
 import com.example.colaba.task.service.CommentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

@@ -1,25 +1,23 @@
 package com.example.colaba.user.service;
 
-import com.example.colaba.shared.circuit.ProjectClientWrapper;
-import com.example.colaba.shared.dto.user.CreateUserRequest;
-import com.example.colaba.shared.dto.user.UpdateUserRequest;
-import com.example.colaba.shared.dto.user.UserResponse;
-import com.example.colaba.shared.dto.user.UserScrollResponse;
-import com.example.colaba.shared.entity.Project;
-import com.example.colaba.shared.entity.User;
-import com.example.colaba.shared.entity.UserJpa;
+import com.example.colaba.shared.dto.project.ProjectResponse;
 import com.example.colaba.shared.exception.user.DuplicateUserEntityEmailException;
 import com.example.colaba.shared.exception.user.DuplicateUserEntityUsernameException;
 import com.example.colaba.shared.exception.user.UserNotFoundException;
-import com.example.colaba.shared.mapper.UserMapper;
+import com.example.colaba.user.circuit.ProjectServiceClientWrapper;
+import com.example.colaba.user.circuit.TaskServiceClientWrapper;
+import com.example.colaba.user.dto.user.CreateUserRequest;
+import com.example.colaba.user.dto.user.UpdateUserRequest;
+import com.example.colaba.user.dto.user.UserResponse;
+import com.example.colaba.user.dto.user.UserScrollResponse;
+import com.example.colaba.user.entity.User;
+import com.example.colaba.user.mapper.UserMapper;
 import com.example.colaba.user.repository.UserRepository;
-import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.reactive.TransactionalOperator;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -29,7 +27,8 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class UserService {
-    private final ProjectClientWrapper projectClientWrapper;
+    private final ProjectServiceClientWrapper projectServiceClient;
+    private final TaskServiceClientWrapper taskServiceClient;
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final TransactionalOperator transactionalOperator;
@@ -68,9 +67,7 @@ public class UserService {
         return userRepository.findById(id)
                 .switchIfEmpty(Mono.error(new UserNotFoundException(id)))
                 .flatMap(existingUser -> {
-                    boolean needsSave = false;
 
-                    // Проверка и обновление username
                     if (request.username() != null && !request.username().isBlank()
                             && !request.username().equals(existingUser.getUsername())) {
                         return userRepository.existsByUsernameAndIdNot(request.username(), id)
@@ -80,7 +77,6 @@ public class UserService {
                                     }
                                     existingUser.setUsername(request.username());
 
-                                    // Проверка и обновление email
                                     if (request.email() != null && !request.email().isBlank()
                                             && !request.email().equals(existingUser.getEmail())) {
                                         return userRepository.existsByEmailAndIdNot(request.email(), id)
@@ -97,7 +93,6 @@ public class UserService {
                                 });
                     }
 
-                    // Только email меняется
                     if (request.email() != null && !request.email().isBlank()
                             && !request.email().equals(existingUser.getEmail())) {
                         return userRepository.existsByEmailAndIdNot(request.email(), id)
@@ -109,36 +104,28 @@ public class UserService {
                                     return userRepository.save(existingUser);
                                 });
                     }
-
-                    // Ничего не меняется
                     return Mono.just(existingUser);
                 })
                 .map(userMapper::toUserResponse)
                 .as(transactionalOperator::transactional);
     }
 
-    @Transactional
     public Mono<Void> deleteUser(Long id) {
         return userRepository.findById(id)
                 .switchIfEmpty(Mono.error(new UserNotFoundException(id)))
                 .flatMap(user -> Mono.fromCallable(() -> {
-                            try {
-                                UserJpa userJpa = userMapper.toUserJpa(user);
-                                List<Project> ownedProjects = projectClientWrapper.findByOwner(userJpa);
-                                if (!ownedProjects.isEmpty()) {
-                                    ownedProjects.forEach(project -> {
-                                        try {
-                                            projectClientWrapper.deleteProject(project.getId());
-                                        } catch (FeignException e) {
-                                            System.err.println("Failed to delete project " + project.getId() + ": " + e.getMessage());
-                                        }
-                                    });
-                                }
-                                return user;
-                            } catch (FeignException e) {
-                                System.err.println("Failed get projects: " + e.getMessage());
-                                return user;
+                            List<ProjectResponse> ownedProjects = projectServiceClient.findByOwnerId(user.getId());
+                            if (ownedProjects == null) {
+                                throw new UserNotFoundException(id);
                             }
+                            if (!ownedProjects.isEmpty()) {
+                                ownedProjects.forEach(project -> {
+                                    projectServiceClient.deleteProject(project.id());
+                                });
+                            }
+                            projectServiceClient.handleUserDeletion(id);
+                            taskServiceClient.handleUserDeletion(id);
+                            return user;
                         })
                         .subscribeOn(Schedulers.boundedElastic())
                         .then(userRepository.deleteById(id)))

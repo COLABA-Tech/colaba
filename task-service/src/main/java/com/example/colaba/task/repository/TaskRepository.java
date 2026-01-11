@@ -1,14 +1,27 @@
 package com.example.colaba.task.repository;
 
-import com.example.colaba.shared.entity.Project;
-import com.example.colaba.shared.entity.UserJpa;
-import com.example.colaba.shared.entity.task.Task;
+import com.example.colaba.task.entity.task.TaskJpa;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
-public interface TaskRepository extends JpaRepository<Task, Long> {
-    Page<Task> findByProject(Project project, Pageable pageable);
+import java.util.List;
 
-    Page<Task> findByAssignee(UserJpa assignee, Pageable pageable);
+public interface TaskRepository extends JpaRepository<TaskJpa, Long> {
+    Page<TaskJpa> findByProjectId(Long projectId, Pageable pageable);
+
+    Page<TaskJpa> findByAssigneeId(Long assigneeId, Pageable pageable);
+
+    List<TaskJpa> findAllByProjectId(Long projectId);
+
+    @Modifying
+    @Query("UPDATE TaskJpa t SET t.reporterId = null WHERE t.reporterId = :userId")
+    void setReporterIdToNullByReporterId(@Param("userId") Long userId);
+
+    @Modifying
+    @Query("UPDATE TaskJpa t SET t.assigneeId = null WHERE t.assigneeId = :userId")
+    void setAssigneeIdToNullByAssigneeId(@Param("userId") Long userId);
 }

@@ -1,24 +1,23 @@
 package com.example.colaba.task.unit;
 
-import com.example.colaba.shared.circuit.ProjectClientWrapper;
-import com.example.colaba.shared.circuit.UserClientWrapper;
-import com.example.colaba.shared.dto.task.CreateTaskRequest;
-import com.example.colaba.shared.dto.task.TaskResponse;
-import com.example.colaba.shared.dto.task.UpdateTaskRequest;
-import com.example.colaba.shared.entity.Project;
-import com.example.colaba.shared.entity.User;
-import com.example.colaba.shared.entity.UserJpa;
-import com.example.colaba.shared.entity.task.Task;
-import com.example.colaba.shared.entity.task.TaskPriority;
-import com.example.colaba.shared.entity.task.TaskStatus;
+import com.example.colaba.shared.dto.tag.TagResponse;
 import com.example.colaba.shared.exception.project.ProjectNotFoundException;
+import com.example.colaba.shared.exception.tag.TagNotFoundException;
 import com.example.colaba.shared.exception.task.TaskNotFoundException;
 import com.example.colaba.shared.exception.user.UserNotFoundException;
-import com.example.colaba.shared.mapper.TaskMapper;
-import com.example.colaba.shared.mapper.UserMapper;
+import com.example.colaba.task.circuit.ProjectServiceClientWrapper;
+import com.example.colaba.task.circuit.UserServiceClientWrapper;
+import com.example.colaba.task.dto.task.CreateTaskRequest;
+import com.example.colaba.task.dto.task.TaskResponse;
+import com.example.colaba.task.dto.task.UpdateTaskRequest;
+import com.example.colaba.task.entity.task.TaskJpa;
+import com.example.colaba.task.entity.task.TaskPriority;
+import com.example.colaba.task.entity.task.TaskStatus;
+import com.example.colaba.task.mapper.TaskMapper;
+import com.example.colaba.task.repository.CommentRepository;
 import com.example.colaba.task.repository.TaskRepository;
+import com.example.colaba.task.repository.TaskTagRepository;
 import com.example.colaba.task.service.TaskService;
-import feign.FeignException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,23 +46,26 @@ class TaskServiceTest {
     private TaskRepository taskRepository;
 
     @Mock
-    private ProjectClientWrapper projectClientWrapper;
+    private TaskTagRepository taskTagRepository;
 
     @Mock
-    private UserClientWrapper userClientWrapper;
+    private CommentRepository commentRepository;
+
+    @Mock
+    private ProjectServiceClientWrapper projectServiceClient;
+
+    @Mock
+    private UserServiceClientWrapper userServiceClient;
 
     @Mock
     private TaskMapper taskMapper;
-
-    @Mock
-    private UserMapper userMapper;
 
     @InjectMocks
     private TaskService taskService;
 
     private CreateTaskRequest request;
     private UpdateTaskRequest updateRequest;
-    private Task savedTask;
+    private TaskJpa savedTask;
     private TaskResponse taskResponse;
 
     private final Long testId = 1L;
@@ -76,36 +78,17 @@ class TaskServiceTest {
     private final Long testReporterId = 1L;
     private final LocalDate testDueDate = LocalDate.now();
 
-    private Project testProject;
-    private User testAssignee;
-    private User testReporter;
-    private UserJpa testAssigneeJpa;
-    private UserJpa testReporterJpa;
-
     @BeforeEach
     void setUp() {
-        testAssignee = User.builder().id(testAssigneeId).username("assignee").build();
-        testReporter = User.builder().id(testReporterId).username("reporter").build();
-
-        testAssigneeJpa = UserJpa.builder().id(testAssigneeId).username("assignee").build();
-        testReporterJpa = UserJpa.builder().id(testReporterId).username("reporter").build();
-
-        testProject = Project.builder()
-                .id(testProjectId)
-                .name("Test Project")
-                .description("Test Project Description")
-                .owner(testReporterJpa)
-                .build();
-
-        savedTask = Task.builder()
+        savedTask = TaskJpa.builder()
                 .id(testId)
                 .title(testTitle)
                 .description(testDescription)
                 .status(testStatus)
                 .priority(testPriority)
-                .project(testProject)
-                .assignee(testAssigneeJpa)
-                .reporter(testReporterJpa)
+                .projectId(testProjectId)
+                .assigneeId(testAssigneeId)
+                .reporterId(testReporterId)
                 .dueDate(testDueDate)
                 .createdAt(OffsetDateTime.now())
                 .updatedAt(OffsetDateTime.now())
@@ -113,8 +96,8 @@ class TaskServiceTest {
 
         taskResponse = new TaskResponse(
                 testId, testTitle, testDescription, testStatus.name(), testPriority.name(),
-                testProjectId, testProject.getName(), testAssigneeId, testAssignee.getUsername(),
-                testReporterId, testReporter.getUsername(), testDueDate,
+                testProjectId, testAssigneeId,
+                testReporterId, testDueDate,
                 OffsetDateTime.now(), OffsetDateTime.now()
         );
 
@@ -132,12 +115,10 @@ class TaskServiceTest {
     @Test
     void createTask_success() {
         // Given (arrange)
-        when(projectClientWrapper.getProjectEntityById(testProjectId)).thenReturn(testProject);
-        when(userClientWrapper.getUserEntityById(testReporterId)).thenReturn(testReporter);
-        when(userClientWrapper.getUserEntityById(testAssigneeId)).thenReturn(testAssignee);
-        when(userMapper.toUserJpa(testReporter)).thenReturn(testReporterJpa);
-        when(userMapper.toUserJpa(testAssignee)).thenReturn(testAssigneeJpa);
-        when(taskRepository.save(any(Task.class))).thenReturn(savedTask);
+        when(projectServiceClient.projectExists(testProjectId)).thenReturn(true);
+        when(userServiceClient.userExists(testAssigneeId)).thenReturn(true);
+        when(userServiceClient.userExists(testReporterId)).thenReturn(true);
+        when(taskRepository.save(any(TaskJpa.class))).thenReturn(savedTask);
         when(taskMapper.toTaskResponse(savedTask)).thenReturn(taskResponse);
 
         // When (act)
@@ -150,42 +131,39 @@ class TaskServiceTest {
         assertEquals(testProjectId, result.projectId());
         assertEquals(testAssigneeId, result.assigneeId());
         assertEquals(testReporterId, result.reporterId());
-        verify(projectClientWrapper).getProjectEntityById(testProjectId);
-        verify(userClientWrapper).getUserEntityById(testReporterId);
-        verify(userClientWrapper).getUserEntityById(testAssigneeId);
-        verify(taskRepository).save(any(Task.class));
+        verify(projectServiceClient).projectExists(testProjectId);
+        verify(userServiceClient).userExists(testReporterId);
+        verify(userServiceClient).userExists(testAssigneeId);
+        verify(taskRepository).save(any(TaskJpa.class));
         verify(taskMapper).toTaskResponse(savedTask);
     }
 
     @Test
     void createTask_projectNotFound_throwsException() {
         // Given
-        FeignException.NotFound feignException = mock(FeignException.NotFound.class);
-        when(projectClientWrapper.getProjectEntityById(testProjectId)).thenThrow(feignException);
+        when(projectServiceClient.projectExists(testProjectId)).thenReturn(false);
 
         // When & Then
         ProjectNotFoundException exception = assertThrows(ProjectNotFoundException.class,
                 () -> taskService.createTask(request));
         assertEquals("Project not found: ID " + testProjectId, exception.getMessage());
-        verify(userClientWrapper, never()).getUserEntityById(anyLong());
-        verify(taskRepository, never()).save(any(Task.class));
+        verify(userServiceClient, never()).userExists(anyLong());
+        verify(taskRepository, never()).save(any(TaskJpa.class));
     }
 
     @Test
     void createTask_reporterNotFound_throwsException() {
         // Given
-        FeignException.NotFound feignException = mock(FeignException.NotFound.class);
-        when(projectClientWrapper.getProjectEntityById(testProjectId)).thenReturn(testProject);
-        when(userClientWrapper.getUserEntityById(testAssigneeId)).thenReturn(testAssignee);
-        when(userClientWrapper.getUserEntityById(testReporterId)).thenThrow(feignException);
-        when(userMapper.toUserJpa(testAssignee)).thenReturn(testAssigneeJpa);
+        when(projectServiceClient.projectExists(testProjectId)).thenReturn(true);
+        when(userServiceClient.userExists(testAssigneeId)).thenReturn(true);
+        when(userServiceClient.userExists(testReporterId)).thenReturn(false);
 
         // When & Then
         UserNotFoundException exception = assertThrows(UserNotFoundException.class,
                 () -> taskService.createTask(request));
         assertEquals("User not found: ID " + testReporterId, exception.getMessage());
-        verify(userClientWrapper).getUserEntityById(testReporterId);
-        verify(taskRepository, never()).save(any(Task.class));
+        verify(userServiceClient).userExists(testReporterId);
+        verify(taskRepository, never()).save(any(TaskJpa.class));
     }
 
     @Test
@@ -196,22 +174,21 @@ class TaskServiceTest {
                 testProjectId, null, testReporterId, testDueDate
         );
 
-        Task nullAssigneeTask = Task.builder()
+        TaskJpa nullAssigneeTask = TaskJpa.builder()
                 .id(testId)
                 .title(testTitle)
                 .description(testDescription)
                 .status(testStatus)
                 .priority(testPriority)
-                .project(testProject)
-                .assignee(null)
-                .reporter(testReporterJpa)
+                .projectId(testProjectId)
+                .assigneeId(null)
+                .reporterId(testReporterId)
                 .dueDate(testDueDate)
                 .build();
 
-        when(projectClientWrapper.getProjectEntityById(testProjectId)).thenReturn(testProject);
-        when(userClientWrapper.getUserEntityById(testReporterId)).thenReturn(testReporter);
-        when(userMapper.toUserJpa(testReporter)).thenReturn(testReporterJpa);
-        when(taskRepository.save(any(Task.class))).thenReturn(nullAssigneeTask);
+        when(projectServiceClient.projectExists(testProjectId)).thenReturn(true);
+        when(userServiceClient.userExists(testReporterId)).thenReturn(true);
+        when(taskRepository.save(any(TaskJpa.class))).thenReturn(nullAssigneeTask);
         when(taskMapper.toTaskResponse(nullAssigneeTask)).thenReturn(taskResponse);
 
         // When
@@ -219,9 +196,23 @@ class TaskServiceTest {
 
         // Then
         assertEquals(testId, result.id());
-        verify(userClientWrapper).getUserEntityById(testReporterId);
-        verify(userClientWrapper, never()).getUserEntityById(testAssigneeId);
-        verify(taskRepository).save(any(Task.class));
+        verify(userServiceClient).userExists(testReporterId);
+        verify(userServiceClient, never()).userExists(testAssigneeId);
+        verify(taskRepository).save(any(TaskJpa.class));
+    }
+
+    @Test
+    void createTask_assigneeNotFound_throwsException() {
+        // Given
+        when(projectServiceClient.projectExists(testProjectId)).thenReturn(true);
+        when(userServiceClient.userExists(testAssigneeId)).thenReturn(false);
+
+        // When & Then
+        UserNotFoundException exception = assertThrows(UserNotFoundException.class,
+                () -> taskService.createTask(request));
+        assertEquals("User not found: ID " + testAssigneeId, exception.getMessage());
+        verify(userServiceClient).userExists(testAssigneeId);
+        verify(taskRepository, never()).save(any(TaskJpa.class));
     }
 
     @Test
@@ -232,15 +223,15 @@ class TaskServiceTest {
                 testProjectId, testAssigneeId, testReporterId, testDueDate
         );
 
-        Task nullPriorityTask = Task.builder()
+        TaskJpa nullPriorityTask = TaskJpa.builder()
                 .id(testId)
                 .title(testTitle)
                 .description(testDescription)
                 .status(testStatus)
                 .priority(null)
-                .project(testProject)
-                .assignee(testAssigneeJpa)
-                .reporter(testReporterJpa)
+                .projectId(testProjectId)
+                .assigneeId(testAssigneeId)
+                .reporterId(testReporterId)
                 .dueDate(testDueDate)
                 .createdAt(OffsetDateTime.now())
                 .updatedAt(OffsetDateTime.now())
@@ -248,17 +239,15 @@ class TaskServiceTest {
 
         TaskResponse nullPriorityResponse = new TaskResponse(
                 testId, testTitle, testDescription, testStatus.name(), null,
-                testProjectId, testProject.getName(), testAssigneeId, testAssignee.getUsername(),
-                testReporterId, testReporter.getUsername(), testDueDate,
+                testProjectId, testAssigneeId,
+                testReporterId, testDueDate,
                 OffsetDateTime.now(), OffsetDateTime.now()
         );
 
-        when(projectClientWrapper.getProjectEntityById(testProjectId)).thenReturn(testProject);
-        when(userClientWrapper.getUserEntityById(testReporterId)).thenReturn(testReporter);
-        when(userClientWrapper.getUserEntityById(testAssigneeId)).thenReturn(testAssignee);
-        when(userMapper.toUserJpa(testReporter)).thenReturn(testReporterJpa);
-        when(userMapper.toUserJpa(testAssignee)).thenReturn(testAssigneeJpa);
-        when(taskRepository.save(any(Task.class))).thenReturn(nullPriorityTask);
+        when(projectServiceClient.projectExists(testProjectId)).thenReturn(true);
+        when(userServiceClient.userExists(testAssigneeId)).thenReturn(true);
+        when(userServiceClient.userExists(testReporterId)).thenReturn(true);
+        when(taskRepository.save(any(TaskJpa.class))).thenReturn(nullPriorityTask);
         when(taskMapper.toTaskResponse(nullPriorityTask)).thenReturn(nullPriorityResponse);
 
         // When
@@ -268,9 +257,9 @@ class TaskServiceTest {
         assertEquals(testId, result.id());
         assertEquals(testTitle, result.title());
         assertNull(result.priority());
-        verify(projectClientWrapper).getProjectEntityById(testProjectId);
-        verify(userClientWrapper).getUserEntityById(testReporterId);
-        verify(userClientWrapper).getUserEntityById(testAssigneeId);
+        verify(projectServiceClient).projectExists(testProjectId);
+        verify(userServiceClient).userExists(testReporterId);
+        verify(userServiceClient).userExists(testAssigneeId);
         verify(taskRepository).save(argThat(task -> task.getPriority() == null));
         verify(taskMapper).toTaskResponse(nullPriorityTask);
     }
@@ -283,15 +272,15 @@ class TaskServiceTest {
                 testProjectId, testAssigneeId, testReporterId, testDueDate
         );
 
-        Task defaultStatusTask = Task.builder()
+        TaskJpa defaultStatusTask = TaskJpa.builder()
                 .id(testId)
                 .title(testTitle)
                 .description(testDescription)
                 .status(TaskStatus.getDefault())
                 .priority(testPriority)
-                .project(testProject)
-                .assignee(testAssigneeJpa)
-                .reporter(testReporterJpa)
+                .projectId(testProjectId)
+                .assigneeId(testAssigneeId)
+                .reporterId(testReporterId)
                 .dueDate(testDueDate)
                 .createdAt(OffsetDateTime.now())
                 .updatedAt(OffsetDateTime.now())
@@ -299,17 +288,15 @@ class TaskServiceTest {
 
         TaskResponse defaultStatusResponse = new TaskResponse(
                 testId, testTitle, testDescription, TaskStatus.getDefault().name(), testPriority.name(),
-                testProjectId, testProject.getName(), testAssigneeId, testAssignee.getUsername(),
-                testReporterId, testReporter.getUsername(), testDueDate,
+                testProjectId, testAssigneeId,
+                testReporterId, testDueDate,
                 OffsetDateTime.now(), OffsetDateTime.now()
         );
 
-        when(projectClientWrapper.getProjectEntityById(testProjectId)).thenReturn(testProject);
-        when(userClientWrapper.getUserEntityById(testReporterId)).thenReturn(testReporter);
-        when(userClientWrapper.getUserEntityById(testAssigneeId)).thenReturn(testAssignee);
-        when(userMapper.toUserJpa(testReporter)).thenReturn(testReporterJpa);
-        when(userMapper.toUserJpa(testAssignee)).thenReturn(testAssigneeJpa);
-        when(taskRepository.save(any(Task.class))).thenReturn(defaultStatusTask);
+        when(projectServiceClient.projectExists(testProjectId)).thenReturn(true);
+        when(userServiceClient.userExists(testAssigneeId)).thenReturn(true);
+        when(userServiceClient.userExists(testReporterId)).thenReturn(true);
+        when(taskRepository.save(any(TaskJpa.class))).thenReturn(defaultStatusTask);
         when(taskMapper.toTaskResponse(defaultStatusTask)).thenReturn(defaultStatusResponse);
 
         // When
@@ -331,15 +318,15 @@ class TaskServiceTest {
                 testProjectId, testAssigneeId, testReporterId, null
         );
 
-        Task nullDueDateTask = Task.builder()
+        TaskJpa nullDueDateTask = TaskJpa.builder()
                 .id(testId)
                 .title(testTitle)
                 .description(testDescription)
                 .status(testStatus)
                 .priority(testPriority)
-                .project(testProject)
-                .assignee(testAssigneeJpa)
-                .reporter(testReporterJpa)
+                .projectId(testProjectId)
+                .assigneeId(testAssigneeId)
+                .reporterId(testReporterId)
                 .dueDate(null)
                 .createdAt(OffsetDateTime.now())
                 .updatedAt(OffsetDateTime.now())
@@ -347,17 +334,15 @@ class TaskServiceTest {
 
         TaskResponse nullDueDateResponse = new TaskResponse(
                 testId, testTitle, testDescription, testStatus.name(), testPriority.name(),
-                testProjectId, testProject.getName(), testAssigneeId, testAssignee.getUsername(),
-                testReporterId, testReporter.getUsername(), null,
+                testProjectId, testAssigneeId,
+                testReporterId, null,
                 OffsetDateTime.now(), OffsetDateTime.now()
         );
 
-        when(projectClientWrapper.getProjectEntityById(testProjectId)).thenReturn(testProject);
-        when(userClientWrapper.getUserEntityById(testReporterId)).thenReturn(testReporter);
-        when(userClientWrapper.getUserEntityById(testAssigneeId)).thenReturn(testAssignee);
-        when(userMapper.toUserJpa(testReporter)).thenReturn(testReporterJpa);
-        when(userMapper.toUserJpa(testAssignee)).thenReturn(testAssigneeJpa);
-        when(taskRepository.save(any(Task.class))).thenReturn(nullDueDateTask);
+        when(projectServiceClient.projectExists(testProjectId)).thenReturn(true);
+        when(userServiceClient.userExists(testAssigneeId)).thenReturn(true);
+        when(userServiceClient.userExists(testReporterId)).thenReturn(true);
+        when(taskRepository.save(any(TaskJpa.class))).thenReturn(nullDueDateTask);
         when(taskMapper.toTaskResponse(nullDueDateTask)).thenReturn(nullDueDateResponse);
 
         // When
@@ -379,15 +364,15 @@ class TaskServiceTest {
                 testProjectId, testAssigneeId, testReporterId, testDueDate
         );
 
-        Task nullDescriptionTask = Task.builder()
+        TaskJpa nullDescriptionTask = TaskJpa.builder()
                 .id(testId)
                 .title(testTitle)
                 .description(null)
                 .status(testStatus)
                 .priority(testPriority)
-                .project(testProject)
-                .assignee(testAssigneeJpa)
-                .reporter(testReporterJpa)
+                .projectId(testProjectId)
+                .assigneeId(testAssigneeId)
+                .reporterId(testReporterId)
                 .dueDate(testDueDate)
                 .createdAt(OffsetDateTime.now())
                 .updatedAt(OffsetDateTime.now())
@@ -395,17 +380,15 @@ class TaskServiceTest {
 
         TaskResponse nullDescriptionResponse = new TaskResponse(
                 testId, testTitle, null, testStatus.name(), testPriority.name(),
-                testProjectId, testProject.getName(), testAssigneeId, testAssignee.getUsername(),
-                testReporterId, testReporter.getUsername(), testDueDate,
+                testProjectId, testAssigneeId,
+                testReporterId, testDueDate,
                 OffsetDateTime.now(), OffsetDateTime.now()
         );
 
-        when(projectClientWrapper.getProjectEntityById(testProjectId)).thenReturn(testProject);
-        when(userClientWrapper.getUserEntityById(testReporterId)).thenReturn(testReporter);
-        when(userClientWrapper.getUserEntityById(testAssigneeId)).thenReturn(testAssignee);
-        when(userMapper.toUserJpa(testReporter)).thenReturn(testReporterJpa);
-        when(userMapper.toUserJpa(testAssignee)).thenReturn(testAssigneeJpa);
-        when(taskRepository.save(any(Task.class))).thenReturn(nullDescriptionTask);
+        when(projectServiceClient.projectExists(testProjectId)).thenReturn(true);
+        when(userServiceClient.userExists(testAssigneeId)).thenReturn(true);
+        when(userServiceClient.userExists(testReporterId)).thenReturn(true);
+        when(taskRepository.save(any(TaskJpa.class))).thenReturn(nullDescriptionTask);
         when(taskMapper.toTaskResponse(nullDescriptionTask)).thenReturn(nullDescriptionResponse);
 
         // When
@@ -428,15 +411,15 @@ class TaskServiceTest {
                 testProjectId, sameUserId, sameUserId, testDueDate
         );
 
-        Task sameUserTask = Task.builder()
+        TaskJpa sameUserTask = TaskJpa.builder()
                 .id(testId)
                 .title(testTitle)
                 .description(testDescription)
                 .status(testStatus)
                 .priority(testPriority)
-                .project(testProject)
-                .assignee(testReporterJpa)
-                .reporter(testReporterJpa)
+                .projectId(testProjectId)
+                .assigneeId(sameUserId)
+                .reporterId(sameUserId)
                 .dueDate(testDueDate)
                 .createdAt(OffsetDateTime.now())
                 .updatedAt(OffsetDateTime.now())
@@ -444,15 +427,14 @@ class TaskServiceTest {
 
         TaskResponse sameUserResponse = new TaskResponse(
                 testId, testTitle, testDescription, testStatus.name(), testPriority.name(),
-                testProjectId, testProject.getName(), sameUserId, testReporter.getUsername(),
-                sameUserId, testReporter.getUsername(), testDueDate,
+                testProjectId, sameUserId,
+                sameUserId, testDueDate,
                 OffsetDateTime.now(), OffsetDateTime.now()
         );
 
-        when(projectClientWrapper.getProjectEntityById(testProjectId)).thenReturn(testProject);
-        when(userClientWrapper.getUserEntityById(sameUserId)).thenReturn(testReporter);
-        when(userMapper.toUserJpa(testReporter)).thenReturn(testReporterJpa);
-        when(taskRepository.save(any(Task.class))).thenReturn(sameUserTask);
+        when(projectServiceClient.projectExists(testProjectId)).thenReturn(true);
+        when(userServiceClient.userExists(sameUserId)).thenReturn(true);
+        when(taskRepository.save(any(TaskJpa.class))).thenReturn(sameUserTask);
         when(taskMapper.toTaskResponse(sameUserTask)).thenReturn(sameUserResponse);
 
         // When
@@ -462,9 +444,8 @@ class TaskServiceTest {
         assertEquals(testId, result.id());
         assertEquals(sameUserId, result.assigneeId());
         assertEquals(sameUserId, result.reporterId());
-        verify(userClientWrapper, times(2)).getUserEntityById(sameUserId);
-        verify(userMapper, times(2)).toUserJpa(testReporter);
-        verify(taskRepository).save(any(Task.class));
+        verify(userServiceClient, times(2)).userExists(sameUserId);
+        verify(taskRepository).save(any(TaskJpa.class));
     }
 
     @Test
@@ -475,30 +456,17 @@ class TaskServiceTest {
                 testProjectId, testAssigneeId, testReporterId, LocalDate.now().plusDays(7)
         );
 
-        Task expectedTask = Task.builder()
-                .title("Special Title")
-                .description("Detailed Description")
-                .status(TaskStatus.IN_PROGRESS)
-                .priority(TaskPriority.HIGH)
-                .project(testProject)
-                .assignee(testAssigneeJpa)
-                .reporter(testReporterJpa)
-                .dueDate(LocalDate.now().plusDays(7))
-                .build();
-
-        when(projectClientWrapper.getProjectEntityById(testProjectId)).thenReturn(testProject);
-        when(userClientWrapper.getUserEntityById(testReporterId)).thenReturn(testReporter);
-        when(userClientWrapper.getUserEntityById(testAssigneeId)).thenReturn(testAssignee);
-        when(userMapper.toUserJpa(testReporter)).thenReturn(testReporterJpa);
-        when(userMapper.toUserJpa(testAssignee)).thenReturn(testAssigneeJpa);
+        when(projectServiceClient.projectExists(testProjectId)).thenReturn(true);
+        when(userServiceClient.userExists(testAssigneeId)).thenReturn(true);
+        when(userServiceClient.userExists(testReporterId)).thenReturn(true);
         when(taskRepository.save(argThat(task ->
                 "Special Title".equals(task.getTitle()) &&
                         "Detailed Description".equals(task.getDescription()) &&
                         TaskStatus.IN_PROGRESS.equals(task.getStatus()) &&
                         TaskPriority.HIGH.equals(task.getPriority()) &&
-                        testProject.equals(task.getProject()) &&
-                        testAssigneeJpa.equals(task.getAssignee()) &&
-                        testReporterJpa.equals(task.getReporter()) &&
+                        testProjectId.equals(task.getProjectId()) &&
+                        testAssigneeId.equals(task.getAssigneeId()) &&
+                        testReporterId.equals(task.getReporterId()) &&
                         LocalDate.now().plusDays(7).equals(task.getDueDate())
         ))).thenReturn(savedTask);
         when(taskMapper.toTaskResponse(savedTask)).thenReturn(taskResponse);
@@ -508,7 +476,7 @@ class TaskServiceTest {
 
         // Then
         assertEquals(testId, result.id());
-        verify(taskRepository).save(any(Task.class));
+        verify(taskRepository).save(any(TaskJpa.class));
     }
 
     @Test
@@ -537,18 +505,18 @@ class TaskServiceTest {
         TaskNotFoundException exception = assertThrows(TaskNotFoundException.class,
                 () -> taskService.getTaskById(testId));
         assertEquals("Task not found: ID " + testId, exception.getMessage());
-        verify(taskMapper, never()).toTaskResponse(any(Task.class));
+        verify(taskMapper, never()).toTaskResponse(any(TaskJpa.class));
     }
 
     @Test
     void getTasksByProject_success() {
         // Given
         Pageable pageable = PageRequest.of(0, 10);
-        Page<Task> mockPage = new PageImpl<>(List.of(savedTask));
+        Page<TaskJpa> mockPage = new PageImpl<>(List.of(savedTask));
         Page<TaskResponse> mockResponsePage = new PageImpl<>(List.of(taskResponse));
 
-        when(projectClientWrapper.getProjectEntityById(testProjectId)).thenReturn(testProject);
-        when(taskRepository.findByProject(testProject, pageable)).thenReturn(mockPage);
+        when(projectServiceClient.projectExists(testProjectId)).thenReturn(true);
+        when(taskRepository.findByProjectId(testProjectId, pageable)).thenReturn(mockPage);
         when(taskMapper.toTaskResponsePage(mockPage)).thenReturn(mockResponsePage);
 
         // When
@@ -556,8 +524,8 @@ class TaskServiceTest {
 
         // Then
         assertEquals(1, result.getContent().size());
-        verify(projectClientWrapper).getProjectEntityById(testProjectId);
-        verify(taskRepository).findByProject(testProject, pageable);
+        verify(projectServiceClient).projectExists(testProjectId);
+        verify(taskRepository).findByProjectId(testProjectId, pageable);
         verify(taskMapper).toTaskResponsePage(mockPage);
     }
 
@@ -565,26 +533,24 @@ class TaskServiceTest {
     void getTasksByProject_projectNotFound_throwsException() {
         // Given
         Pageable pageable = PageRequest.of(0, 10);
-        FeignException.NotFound feignException = mock(FeignException.NotFound.class);
-        when(projectClientWrapper.getProjectEntityById(testProjectId)).thenThrow(feignException);
+        when(projectServiceClient.projectExists(testProjectId)).thenReturn(false);
 
         // When & Then
         ProjectNotFoundException exception = assertThrows(ProjectNotFoundException.class,
                 () -> taskService.getTasksByProject(testProjectId, pageable));
         assertEquals("Project not found: ID " + testProjectId, exception.getMessage());
-        verify(taskRepository, never()).findByProject(any(Project.class), any(Pageable.class));
+        verify(taskRepository, never()).findByProjectId(anyLong(), any(Pageable.class));
     }
 
     @Test
     void getTasksByAssignee_success() {
         // Given
         Pageable pageable = PageRequest.of(0, 10);
-        Page<Task> mockPage = new PageImpl<>(List.of(savedTask));
+        Page<TaskJpa> mockPage = new PageImpl<>(List.of(savedTask));
         Page<TaskResponse> mockResponsePage = new PageImpl<>(List.of(taskResponse));
 
-        when(userClientWrapper.getUserEntityById(testAssigneeId)).thenReturn(testAssignee);
-        when(userMapper.toUserJpa(testAssignee)).thenReturn(testAssigneeJpa);
-        when(taskRepository.findByAssignee(testAssigneeJpa, pageable)).thenReturn(mockPage);
+        when(userServiceClient.userExists(testAssigneeId)).thenReturn(true);
+        when(taskRepository.findByAssigneeId(testAssigneeId, pageable)).thenReturn(mockPage);
         when(taskMapper.toTaskResponsePage(mockPage)).thenReturn(mockResponsePage);
 
         // When
@@ -592,9 +558,8 @@ class TaskServiceTest {
 
         // Then
         assertEquals(1, result.getContent().size());
-        verify(userClientWrapper).getUserEntityById(testAssigneeId);
-        verify(userMapper).toUserJpa(testAssignee);
-        verify(taskRepository).findByAssignee(testAssigneeJpa, pageable);
+        verify(userServiceClient).userExists(testAssigneeId);
+        verify(taskRepository).findByAssigneeId(testAssigneeId, pageable);
         verify(taskMapper).toTaskResponsePage(mockPage);
     }
 
@@ -602,47 +567,46 @@ class TaskServiceTest {
     void getTasksByAssignee_userNotFound_throwsException() {
         // Given
         Pageable pageable = PageRequest.of(0, 10);
-        FeignException.NotFound feignException = mock(FeignException.NotFound.class);
-        when(userClientWrapper.getUserEntityById(testAssigneeId)).thenThrow(feignException);
+        when(userServiceClient.userExists(testAssigneeId)).thenReturn(false);
 
         // When & Then
         UserNotFoundException exception = assertThrows(UserNotFoundException.class,
                 () -> taskService.getTasksByAssignee(testAssigneeId, pageable));
         assertEquals("User not found: ID " + testAssigneeId, exception.getMessage());
-        verify(taskRepository, never()).findByAssignee(any(UserJpa.class), any(Pageable.class));
+        verify(taskRepository, never()).findByAssigneeId(anyLong(), any(Pageable.class));
     }
 
     @Test
     void updateTask_success() {
         // Given
         Long newAssigneeId = 3L;
-        User newAssignee = User.builder().id(newAssigneeId).username("newassignee").build();
-        UserJpa newAssigneeJpa = UserJpa.builder().id(newAssigneeId).username("newassignee").build();
-
         UpdateTaskRequest updateRequest = new UpdateTaskRequest(
                 "Updated Title", null, TaskStatus.IN_PROGRESS, null,
-                newAssigneeId, testDueDate.plusDays(1)  // Используем нового assignee
+                newAssigneeId, testDueDate.plusDays(1)
         );
 
-        Task updatedTask = Task.builder()
+        TaskJpa updatedTask = TaskJpa.builder()
                 .id(testId)
-                .title(updateRequest.title())
-                .status(updateRequest.status())
-                .assignee(newAssigneeJpa)
-                .dueDate(updateRequest.dueDate())
+                .title("Updated Title")
+                .description(testDescription)
+                .status(TaskStatus.IN_PROGRESS)
+                .priority(testPriority)
+                .projectId(testProjectId)
+                .assigneeId(newAssigneeId)
+                .reporterId(testReporterId)
+                .dueDate(testDueDate.plusDays(1))
                 .build();
 
         TaskResponse updatedResponse = new TaskResponse(
-                testId, updateRequest.title(), testDescription, updateRequest.status().name(), testPriority.name(),
-                testProjectId, testProject.getName(), newAssigneeId, "newassignee",
-                testReporterId, testReporter.getUsername(), updateRequest.dueDate(),
+                testId, "Updated Title", testDescription, TaskStatus.IN_PROGRESS.name(), testPriority.name(),
+                testProjectId, newAssigneeId,
+                testReporterId, testDueDate.plusDays(1),
                 OffsetDateTime.now(), OffsetDateTime.now()
         );
 
         when(taskRepository.findById(testId)).thenReturn(Optional.of(savedTask));
-        when(userClientWrapper.getUserEntityById(newAssigneeId)).thenReturn(newAssignee);
-        when(userMapper.toUserJpa(newAssignee)).thenReturn(newAssigneeJpa);
-        when(taskRepository.save(any(Task.class))).thenReturn(updatedTask);
+        when(userServiceClient.userExists(newAssigneeId)).thenReturn(true);
+        when(taskRepository.save(any(TaskJpa.class))).thenReturn(updatedTask);
         when(taskMapper.toTaskResponse(updatedTask)).thenReturn(updatedResponse);
 
         // When
@@ -650,11 +614,11 @@ class TaskServiceTest {
 
         // Then
         assertEquals(testId, result.id());
-        assertEquals(updateRequest.title(), result.title());
-        assertEquals(updateRequest.status().name(), result.status());
+        assertEquals("Updated Title", result.title());
+        assertEquals(TaskStatus.IN_PROGRESS.name(), result.status());
         verify(taskRepository).findById(testId);
-        verify(userClientWrapper).getUserEntityById(newAssigneeId);
-        verify(taskRepository).save(any(Task.class));
+        verify(userServiceClient).userExists(newAssigneeId);
+        verify(taskRepository).save(any(TaskJpa.class));
         verify(taskMapper).toTaskResponse(updatedTask);
     }
 
@@ -662,7 +626,7 @@ class TaskServiceTest {
     void updateTask_noChanges_returnsUnchangedTask() {
         // Given
         UpdateTaskRequest noChangeRequest = new UpdateTaskRequest(
-                testTitle, testDescription, testStatus, testPriority, null, testDueDate
+                testTitle, testDescription, testStatus, testPriority, testAssigneeId, testDueDate
         );
 
         when(taskRepository.findById(testId)).thenReturn(Optional.of(savedTask));
@@ -675,7 +639,7 @@ class TaskServiceTest {
         assertEquals(testId, result.id());
         assertEquals(testTitle, result.title());
         verify(taskRepository).findById(testId);
-        verify(taskRepository, never()).save(any(Task.class));
+        verify(taskRepository, never()).save(any(TaskJpa.class));
         verify(taskMapper).toTaskResponse(savedTask);
     }
 
@@ -685,26 +649,26 @@ class TaskServiceTest {
         UpdateTaskRequest partialRequest = new UpdateTaskRequest(
                 "Partial Title", null, null, null, null, null
         );
-        Task partialUpdatedTask = Task.builder()
+        TaskJpa partialUpdatedTask = TaskJpa.builder()
                 .id(testId)
                 .title("Partial Title")
                 .description(testDescription)
                 .status(testStatus)
                 .priority(testPriority)
-                .project(testProject)
-                .assignee(testAssigneeJpa)
-                .reporter(testReporterJpa)
+                .projectId(testProjectId)
+                .assigneeId(testAssigneeId)
+                .reporterId(testReporterId)
                 .dueDate(testDueDate)
                 .build();
         TaskResponse partialResponse = new TaskResponse(
                 testId, "Partial Title", testDescription, testStatus.name(), testPriority.name(),
-                testProjectId, testProject.getName(), testAssigneeId, testAssignee.getUsername(),
-                testReporterId, testReporter.getUsername(), testDueDate,
+                testProjectId, testAssigneeId,
+                testReporterId, testDueDate,
                 OffsetDateTime.now(), OffsetDateTime.now()
         );
 
         when(taskRepository.findById(testId)).thenReturn(Optional.of(savedTask));
-        when(taskRepository.save(any(Task.class))).thenReturn(partialUpdatedTask);
+        when(taskRepository.save(any(TaskJpa.class))).thenReturn(partialUpdatedTask);
         when(taskMapper.toTaskResponse(partialUpdatedTask)).thenReturn(partialResponse);
 
         // When
@@ -713,7 +677,7 @@ class TaskServiceTest {
         // Then
         assertEquals("Partial Title", result.title());
         assertEquals(testStatus.name(), result.status());
-        verify(taskRepository).save(any(Task.class));
+        verify(taskRepository).save(any(TaskJpa.class));
     }
 
     @Test
@@ -725,162 +689,39 @@ class TaskServiceTest {
         TaskNotFoundException exception = assertThrows(TaskNotFoundException.class,
                 () -> taskService.updateTask(testId, updateRequest));
         assertEquals("Task not found: ID " + testId, exception.getMessage());
-        verify(taskRepository, never()).save(any(Task.class));
-        verify(userClientWrapper, never()).getUserEntityById(anyLong());
-        verify(taskMapper, never()).toTaskResponse(any(Task.class));
-    }
-
-    @Test
-    void updateTask_changeTitle_updatesTitleAndSetsHasChanges() {
-        // Given
-        UpdateTaskRequest titleChangeRequest = new UpdateTaskRequest(
-                "New Title", null, null, null, null, null
-        );
-        Task updatedTask = Task.builder()
-                .id(testId)
-                .title("New Title")
-                .description(testDescription)
-                .status(testStatus)
-                .priority(testPriority)
-                .project(testProject)
-                .assignee(testAssigneeJpa)
-                .reporter(testReporterJpa)
-                .dueDate(testDueDate)
-                .createdAt(savedTask.getCreatedAt())
-                .updatedAt(OffsetDateTime.now().plusSeconds(1))
-                .build();
-        TaskResponse updatedResponse = new TaskResponse(
-                testId, "New Title", testDescription, testStatus.name(), testPriority.name(),
-                testProjectId, testProject.getName(), testAssigneeId, testAssignee.getUsername(),
-                testReporterId, testReporter.getUsername(), testDueDate,
-                savedTask.getCreatedAt(), updatedTask.getUpdatedAt()
-        );
-
-        when(taskRepository.findById(testId)).thenReturn(Optional.of(savedTask));
-        when(taskRepository.save(any(Task.class))).thenReturn(updatedTask);
-        when(taskMapper.toTaskResponse(updatedTask)).thenReturn(updatedResponse);
-
-        // When
-        TaskResponse result = taskService.updateTask(testId, titleChangeRequest);
-
-        // Then
-        assertEquals("New Title", result.title());
-        verify(taskRepository).save(argThat(task -> "New Title".equals(task.getTitle())));
-        verify(taskMapper).toTaskResponse(updatedTask);
-    }
-
-    @Test
-    void updateTask_changeDescription_updatesDescriptionAndSetsHasChanges() {
-        // Given
-        UpdateTaskRequest descriptionChangeRequest = new UpdateTaskRequest(
-                null, "New Description", null, null, null, null
-        );
-        Task updatedTask = Task.builder()
-                .id(testId)
-                .title(testTitle)
-                .description("New Description")
-                .status(testStatus)
-                .priority(testPriority)
-                .project(testProject)
-                .assignee(testAssigneeJpa)
-                .reporter(testReporterJpa)
-                .dueDate(testDueDate)
-                .createdAt(savedTask.getCreatedAt())
-                .updatedAt(OffsetDateTime.now().plusSeconds(1))
-                .build();
-        TaskResponse updatedResponse = new TaskResponse(
-                testId, testTitle, "New Description", testStatus.name(), testPriority.name(),
-                testProjectId, testProject.getName(), testAssigneeId, testAssignee.getUsername(),
-                testReporterId, testReporter.getUsername(), testDueDate,
-                savedTask.getCreatedAt(), updatedTask.getUpdatedAt()
-        );
-
-        when(taskRepository.findById(testId)).thenReturn(Optional.of(savedTask));
-        when(taskRepository.save(any(Task.class))).thenReturn(updatedTask);
-        when(taskMapper.toTaskResponse(updatedTask)).thenReturn(updatedResponse);
-
-        // When
-        TaskResponse result = taskService.updateTask(testId, descriptionChangeRequest);
-
-        // Then
-        assertEquals("New Description", result.description());
-        verify(taskRepository).save(argThat(task -> "New Description".equals(task.getDescription())));
-        verify(taskMapper).toTaskResponse(updatedTask);
-    }
-
-    @Test
-    void updateTask_changePriority_updatesPriorityAndSetsHasChanges() {
-        // Given
-        TaskPriority newPriority = TaskPriority.MEDIUM;
-        UpdateTaskRequest priorityChangeRequest = new UpdateTaskRequest(
-                null, null, null, newPriority, null, null
-        );
-        Task updatedTask = Task.builder()
-                .id(testId)
-                .title(testTitle)
-                .description(testDescription)
-                .status(testStatus)
-                .priority(newPriority)
-                .project(testProject)
-                .assignee(testAssigneeJpa)
-                .reporter(testReporterJpa)
-                .dueDate(testDueDate)
-                .createdAt(savedTask.getCreatedAt())
-                .updatedAt(OffsetDateTime.now().plusSeconds(1))
-                .build();
-        TaskResponse updatedResponse = new TaskResponse(
-                testId, testTitle, testDescription, testStatus.name(), newPriority.name(),
-                testProjectId, testProject.getName(), testAssigneeId, testAssignee.getUsername(),
-                testReporterId, testReporter.getUsername(), testDueDate,
-                savedTask.getCreatedAt(), updatedTask.getUpdatedAt()
-        );
-
-        when(taskRepository.findById(testId)).thenReturn(Optional.of(savedTask));
-        when(taskRepository.save(any(Task.class))).thenReturn(updatedTask);
-        when(taskMapper.toTaskResponse(updatedTask)).thenReturn(updatedResponse);
-
-        // When
-        TaskResponse result = taskService.updateTask(testId, priorityChangeRequest);
-
-        // Then
-        assertEquals(newPriority.name(), result.priority());
-        verify(taskRepository).save(argThat(task -> newPriority.equals(task.getPriority())));
-        verify(taskMapper).toTaskResponse(updatedTask);
+        verify(taskRepository, never()).save(any(TaskJpa.class));
+        verify(userServiceClient, never()).userExists(anyLong());
+        verify(taskMapper, never()).toTaskResponse(any(TaskJpa.class));
     }
 
     @Test
     void updateTask_changeAssignee_updatesAssigneeAndSetsHasChanges() {
         // Given
         Long newAssigneeId = 40L;
-        User newAssignee = User.builder().id(newAssigneeId).username("newAssignee").build();
-        UserJpa newAssigneeJpa = UserJpa.builder().id(newAssigneeId).username("newAssignee").build();
         UpdateTaskRequest assigneeChangeRequest = new UpdateTaskRequest(
                 null, null, null, null, newAssigneeId, null
         );
-        Task updatedTask = Task.builder()
+        TaskJpa updatedTask = TaskJpa.builder()
                 .id(testId)
                 .title(testTitle)
                 .description(testDescription)
                 .status(testStatus)
                 .priority(testPriority)
-                .project(testProject)
-                .assignee(newAssigneeJpa)
-                .reporter(testReporterJpa)
+                .projectId(testProjectId)
+                .assigneeId(newAssigneeId)
+                .reporterId(testReporterId)
                 .dueDate(testDueDate)
-                .createdAt(savedTask.getCreatedAt())
-                .updatedAt(OffsetDateTime.now().plusSeconds(1))
                 .build();
         TaskResponse updatedResponse = new TaskResponse(
                 testId, testTitle, testDescription, testStatus.name(), testPriority.name(),
-                testProjectId, testProject.getName(), newAssigneeId, newAssignee.getUsername(),
-                testReporterId, testReporter.getUsername(), testDueDate,
-                savedTask.getCreatedAt(), updatedTask.getUpdatedAt()
+                testProjectId, newAssigneeId,
+                testReporterId, testDueDate,
+                OffsetDateTime.now(), OffsetDateTime.now()
         );
 
         when(taskRepository.findById(testId)).thenReturn(Optional.of(savedTask));
-        when(userClientWrapper.getUserEntityById(newAssigneeId)).thenReturn(newAssignee);
-        when(userMapper.toUserJpa(newAssignee)).thenReturn(newAssigneeJpa);
-        when(taskRepository.save(any(Task.class))).thenReturn(updatedTask);
+        when(userServiceClient.userExists(newAssigneeId)).thenReturn(true);
+        when(taskRepository.save(any(TaskJpa.class))).thenReturn(updatedTask);
         when(taskMapper.toTaskResponse(updatedTask)).thenReturn(updatedResponse);
 
         // When
@@ -888,9 +729,8 @@ class TaskServiceTest {
 
         // Then
         assertEquals(newAssigneeId, result.assigneeId());
-        assertEquals("newAssignee", result.assigneeUsername());
-        verify(userClientWrapper).getUserEntityById(newAssigneeId);
-        verify(taskRepository).save(argThat(task -> newAssigneeJpa.equals(task.getAssignee())));
+        verify(userServiceClient).userExists(newAssigneeId);
+        verify(taskRepository).save(argThat(task -> newAssigneeId.equals(task.getAssigneeId())));
         verify(taskMapper).toTaskResponse(updatedTask);
     }
 
@@ -898,13 +738,14 @@ class TaskServiceTest {
     void deleteTask_success() {
         // Given
         when(taskRepository.existsById(testId)).thenReturn(true);
-        doNothing().when(taskRepository).deleteById(testId);
 
         // When
         taskService.deleteTask(testId);
 
         // Then
         verify(taskRepository).existsById(testId);
+        verify(taskTagRepository).deleteByTaskId(testId);
+        verify(commentRepository).deleteByTaskId(testId);
         verify(taskRepository).deleteById(testId);
     }
 
@@ -924,7 +765,7 @@ class TaskServiceTest {
     void getAllTasks_pagination() {
         // Given
         Pageable pageable = PageRequest.of(0, 10);
-        Page<Task> mockPage = new PageImpl<>(List.of(savedTask));
+        Page<TaskJpa> mockPage = new PageImpl<>(List.of(savedTask));
         Page<TaskResponse> mockResponsePage = new PageImpl<>(List.of(taskResponse));
 
         when(taskRepository.findAll(pageable)).thenReturn(mockPage);
@@ -937,5 +778,173 @@ class TaskServiceTest {
         assertEquals(1, result.getContent().size());
         verify(taskRepository).findAll(pageable);
         verify(taskMapper).toTaskResponsePage(mockPage);
+    }
+
+    @Test
+    void assignTagToTask_success() {
+        // Given
+        Long taskId = 1L;
+        Long tagId = 1L;
+        Long projectId = 1L;
+
+        TaskJpa task = TaskJpa.builder()
+                .id(taskId)
+                .projectId(projectId)
+                .build();
+
+        TagResponse tag = new TagResponse(tagId, "Test Tag", projectId);
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(projectServiceClient.getTagById(tagId)).thenReturn(tag);
+        when(taskTagRepository.existsByTaskIdAndTagId(taskId, tagId)).thenReturn(false);
+
+        // When
+        taskService.assignTagToTask(taskId, tagId);
+
+        // Then
+        verify(taskRepository).findById(taskId);
+        verify(projectServiceClient).getTagById(tagId);
+        verify(taskTagRepository).existsByTaskIdAndTagId(taskId, tagId);
+        verify(taskTagRepository).save(any());
+    }
+
+    @Test
+    void assignTagToTask_tagNotFound_throwsException() {
+        // Given
+        Long taskId = 1L;
+        Long tagId = 1L;
+
+        TaskJpa task = TaskJpa.builder()
+                .id(taskId)
+                .projectId(1L)
+                .build();
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(projectServiceClient.getTagById(tagId)).thenReturn(null);
+
+        // When & Then
+        TagNotFoundException exception = assertThrows(TagNotFoundException.class,
+                () -> taskService.assignTagToTask(taskId, tagId));
+        assertEquals("Tag not found: ID " + tagId, exception.getMessage());
+        verify(taskTagRepository, never()).save(any());
+    }
+
+    @Test
+    void removeTagFromTask_success() {
+        // Given
+        Long taskId = 1L;
+        Long tagId = 1L;
+
+        when(taskRepository.existsById(taskId)).thenReturn(true);
+
+        // When
+        taskService.removeTagFromTask(taskId, tagId);
+
+        // Then
+        verify(taskRepository).existsById(taskId);
+        verify(taskTagRepository).deleteByTaskIdAndTagId(taskId, tagId);
+    }
+
+    @Test
+    void removeTagFromTask_taskNotFound_throwsException() {
+        // Given
+        Long taskId = 1L;
+        Long tagId = 1L;
+
+        when(taskRepository.existsById(taskId)).thenReturn(false);
+
+        // When & Then
+        TaskNotFoundException exception = assertThrows(TaskNotFoundException.class,
+                () -> taskService.removeTagFromTask(taskId, tagId));
+        assertEquals("Task not found: ID " + taskId, exception.getMessage());
+        verify(taskTagRepository, never()).deleteByTaskIdAndTagId(anyLong(), anyLong());
+    }
+
+    @Test
+    void handleUserDeletion_success() {
+        // Given
+        Long userId = 1L;
+
+        // When
+        taskService.handleUserDeletion(userId);
+
+        // Then
+        verify(taskRepository).setReporterIdToNullByReporterId(userId);
+        verify(taskRepository).setAssigneeIdToNullByAssigneeId(userId);
+        verify(commentRepository).deleteByUserId(userId);
+    }
+
+    @Test
+    void deleteTasksByProject_success() {
+        // Given
+        Long projectId = 1L;
+        TaskJpa task1 = TaskJpa.builder().id(1L).build();
+        TaskJpa task2 = TaskJpa.builder().id(2L).build();
+
+        when(taskRepository.findAllByProjectId(projectId)).thenReturn(List.of(task1, task2));
+        when(taskRepository.existsById(1L)).thenReturn(true);
+        when(taskRepository.existsById(2L)).thenReturn(true);
+
+        // When
+        taskService.deleteTasksByProject(projectId);
+
+        // Then
+        verify(taskRepository).findAllByProjectId(projectId);
+        verify(taskRepository, times(2)).existsById(anyLong());
+        verify(taskTagRepository, times(2)).deleteByTaskId(anyLong());
+        verify(commentRepository, times(2)).deleteByTaskId(anyLong());
+        verify(taskRepository, times(2)).deleteById(anyLong());
+    }
+
+    @Test
+    void getTagsByTask_success() {
+        // Given
+        Long taskId = 1L;
+        List<Long> tagIds = List.of(1L, 2L);
+        TagResponse tag1 = new TagResponse(1L, "Tag 1", 1L);
+        TagResponse tag2 = new TagResponse(2L, "Tag 2", 1L);
+
+        when(taskRepository.existsById(taskId)).thenReturn(true);
+        when(taskTagRepository.findTagIdsByTaskId(taskId)).thenReturn(tagIds);
+        when(projectServiceClient.getTagsByIds(tagIds)).thenReturn(List.of(tag1, tag2));
+
+        // When
+        List<TagResponse> result = taskService.getTagsByTask(taskId);
+
+        // Then
+        assertEquals(2, result.size());
+        verify(taskRepository).existsById(taskId);
+        verify(taskTagRepository).findTagIdsByTaskId(taskId);
+        verify(projectServiceClient).getTagsByIds(tagIds);
+    }
+
+    @Test
+    void getTagsByTask_noTags_returnsEmptyList() {
+        // Given
+        Long taskId = 1L;
+
+        when(taskRepository.existsById(taskId)).thenReturn(true);
+        when(taskTagRepository.findTagIdsByTaskId(taskId)).thenReturn(List.of());
+
+        // When
+        List<TagResponse> result = taskService.getTagsByTask(taskId);
+
+        // Then
+        assertTrue(result.isEmpty());
+        verify(projectServiceClient, never()).getTagsByIds(any());
+    }
+
+    @Test
+    void getTagsByTask_taskNotFound_throwsException() {
+        // Given
+        Long taskId = 1L;
+
+        when(taskRepository.existsById(taskId)).thenReturn(false);
+
+        // When & Then
+        TaskNotFoundException exception = assertThrows(TaskNotFoundException.class,
+                () -> taskService.getTagsByTask(taskId));
+        assertEquals("Task not found: ID " + taskId, exception.getMessage());
+        verify(taskTagRepository, never()).findTagIdsByTaskId(anyLong());
     }
 }

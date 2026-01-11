@@ -9,12 +9,10 @@ import org.springframework.context.annotation.Import;
 
 @SpringBootApplication(scanBasePackages = {
         "com.example.colaba.user",
-        "com.example.colaba.shared.mapper",
-        "com.example.colaba.shared.exception",
-        "com.example.colaba.shared.circuit"
+        "com.example.colaba.shared.exception"
 })
 @EnableDiscoveryClient
-@EnableFeignClients(basePackages = "com.example.colaba.shared.client")
+@EnableFeignClients(basePackages = "com.example.colaba.user.client")
 @Import(FeignConfig.class)
 public class UserServiceApplication {
     public static void main(String[] args) {
