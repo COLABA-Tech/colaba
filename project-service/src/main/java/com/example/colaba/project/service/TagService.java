@@ -71,7 +71,7 @@ public class TagService {
                     TagJpa tag = optionalTag.get();
                     return Mono.fromCallable(() -> {
                                 boolean hasChanges = false;
-                                if (request.name() != null && !request.name().equals(tag.getName())) {
+                                if (request.name() != null && !request.name().isBlank() && !request.name().equals(tag.getName())) {
                                     if (tagRepository.findByProjectIdAndNameIgnoreCase(
                                             tag.getProjectId(), request.name()).isPresent()) {
                                         throw new DuplicateTagException(request.name(), tag.getProjectId());

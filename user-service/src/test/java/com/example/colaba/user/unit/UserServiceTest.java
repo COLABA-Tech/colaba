@@ -1,9 +1,11 @@
 package com.example.colaba.user.unit;
 
+import com.example.colaba.shared.dto.project.ProjectResponse;
 import com.example.colaba.shared.exception.user.DuplicateUserEntityEmailException;
 import com.example.colaba.shared.exception.user.DuplicateUserEntityUsernameException;
 import com.example.colaba.shared.exception.user.UserNotFoundException;
 import com.example.colaba.user.circuit.ProjectServiceClientWrapper;
+import com.example.colaba.user.circuit.TaskServiceClientWrapper;
 import com.example.colaba.user.dto.user.CreateUserRequest;
 import com.example.colaba.user.dto.user.UpdateUserRequest;
 import com.example.colaba.user.dto.user.UserResponse;
@@ -38,7 +40,10 @@ public class UserServiceTest {
     private UserRepository userRepository;
 
     @Mock
-    private ProjectServiceClientWrapper projectClientWrapper;
+    private ProjectServiceClientWrapper projectServiceClient;
+
+    @Mock
+    private TaskServiceClientWrapper taskServiceClient;
 
     @Mock
     private TransactionalOperator transactionalOperator;
@@ -307,10 +312,8 @@ public class UserServiceTest {
     @Test
     void deleteUser_success() {
         // Given
-        UserJpa userJpa = UserJpa.builder().id(test_id).build();
         when(userRepository.findById(test_id)).thenReturn(Mono.just(savedUser));
-        when(userMapper.toUserJpa(savedUser)).thenReturn(userJpa);
-        when(projectClientWrapper.findByOwner(userJpa)).thenReturn(List.of());
+        when(projectServiceClient.findByOwnerId(test_id)).thenReturn(List.of());
         when(userRepository.deleteById(test_id)).thenReturn(Mono.empty());
         when(transactionalOperator.transactional(any(Mono.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -321,6 +324,9 @@ public class UserServiceTest {
         StepVerifier.create(resultMono)
                 .verifyComplete();
 
+        verify(projectServiceClient).findByOwnerId(test_id);
+        verify(projectServiceClient).handleUserDeletion(test_id);
+        verify(taskServiceClient).handleUserDeletion(test_id);
         verify(userRepository).deleteById(test_id);
     }
 
@@ -338,19 +344,18 @@ public class UserServiceTest {
                 .verify();
 
         verify(userRepository, never()).deleteById(test_id);
+        verify(projectServiceClient, never()).findByOwnerId(anyLong());
     }
 
     @Test
     void deleteUser_success_withProjects() {
         // Given
-        UserJpa userJpa = UserJpa.builder().id(test_id).build();
-        Project project1 = Project.builder().id(1L).name("Project 1").owner(userJpa).build();
-        Project project2 = Project.builder().id(2L).name("Project 2").owner(userJpa).build();
-        List<Project> ownedProjects = List.of(project1, project2);
+        ProjectResponse project1 = new ProjectResponse(1L, "Project 1", null, null, null);
+        ProjectResponse project2 = new ProjectResponse(2L, "Project 2", null, null, null);
+        List<ProjectResponse> ownedProjects = List.of(project1, project2);
 
         when(userRepository.findById(test_id)).thenReturn(Mono.just(savedUser));
-        when(userMapper.toUserJpa(savedUser)).thenReturn(userJpa);
-        when(projectClientWrapper.findByOwner(userJpa)).thenReturn(ownedProjects);
+        when(projectServiceClient.findByOwnerId(test_id)).thenReturn(ownedProjects);
         when(userRepository.deleteById(test_id)).thenReturn(Mono.empty());
         when(transactionalOperator.transactional(any(Mono.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -362,10 +367,11 @@ public class UserServiceTest {
                 .verifyComplete();
 
         verify(userRepository).findById(test_id);
-        verify(userMapper).toUserJpa(savedUser);
-        verify(projectClientWrapper).findByOwner(userJpa);
-        verify(projectClientWrapper).deleteProject(1L);
-        verify(projectClientWrapper).deleteProject(2L);
+        verify(projectServiceClient).findByOwnerId(test_id);
+        verify(projectServiceClient).deleteProject(1L);
+        verify(projectServiceClient).deleteProject(2L);
+        verify(projectServiceClient).handleUserDeletion(test_id);
+        verify(taskServiceClient).handleUserDeletion(test_id);
         verify(userRepository).deleteById(test_id);
     }
 
@@ -387,7 +393,7 @@ public class UserServiceTest {
         StepVerifier.create(resultMono)
                 .expectNextMatches(page ->
                         page.getContent().size() == 1 &&
-                                page.getContent().get(0).id().equals(test_id))
+                                page.getContent().getFirst().id().equals(test_id))
                 .verifyComplete();
     }
 
@@ -399,9 +405,12 @@ public class UserServiceTest {
         List<User> users = List.of(savedUser);
 
         when(userRepository.findAll()).thenReturn(Flux.fromIterable(users));
-        when(userMapper.toUserResponseList(users)).thenReturn(
-                List.of(new UserResponse(test_id, test_username, test_email))
-        );
+        when(userMapper.toUserResponseList(anyList())).thenAnswer(invocation -> {
+            List<User> inputUsers = invocation.getArgument(0);
+            return inputUsers.stream()
+                    .map(user -> new UserResponse(user.getId(), user.getUsername(), user.getEmail()))
+                    .toList();
+        });
 
         // When
         Mono<UserScrollResponse> resultMono = userService.getUsersScroll(cursor, limit);
@@ -501,7 +510,6 @@ public class UserServiceTest {
         List<User> allUsers = List.of(savedUser);
 
         when(userRepository.findAll()).thenReturn(Flux.fromIterable(allUsers));
-        when(userMapper.toUserResponseList(List.of())).thenReturn(List.of());
 
         // When
         Mono<Page<UserResponse>> resultMono = userService.getAllUsers(pageable);
@@ -515,7 +523,6 @@ public class UserServiceTest {
                 .verifyComplete();
 
         verify(userRepository).findAll();
-        verify(userMapper).toUserResponseList(List.of());
     }
 
     @Test
@@ -550,7 +557,6 @@ public class UserServiceTest {
         List<User> allUsers = List.of(savedUser);
 
         when(userRepository.findAll()).thenReturn(Flux.fromIterable(allUsers));
-        when(userMapper.toUserResponseList(List.of())).thenReturn(List.of());
 
         // When
         Mono<UserScrollResponse> resultMono = userService.getUsersScroll(cursor, limit);
@@ -564,7 +570,6 @@ public class UserServiceTest {
                 .verifyComplete();
 
         verify(userRepository).findAll();
-        verify(userMapper).toUserResponseList(List.of());
     }
 
     @Test
@@ -575,7 +580,6 @@ public class UserServiceTest {
         List<User> allUsers = List.of();
 
         when(userRepository.findAll()).thenReturn(Flux.fromIterable(allUsers));
-        when(userMapper.toUserResponseList(List.of())).thenReturn(List.of());
 
         // When
         Mono<UserScrollResponse> resultMono = userService.getUsersScroll(cursor, limit);
@@ -589,7 +593,6 @@ public class UserServiceTest {
                 .verifyComplete();
 
         verify(userRepository).findAll();
-        verify(userMapper).toUserResponseList(List.of());
     }
 
     @Test
@@ -600,7 +603,6 @@ public class UserServiceTest {
         List<User> allUsers = List.of();
 
         when(userRepository.findAll()).thenReturn(Flux.fromIterable(allUsers));
-        when(userMapper.toUserResponseList(List.of())).thenReturn(List.of());
 
         // When
         Mono<UserScrollResponse> resultMono = userService.getUsersScroll(cursor, limit);
@@ -614,7 +616,6 @@ public class UserServiceTest {
                 .verifyComplete();
 
         verify(userRepository).findAll();
-        verify(userMapper).toUserResponseList(List.of());
     }
 
     @Test
