@@ -1,5 +1,8 @@
 package com.example.colaba.user.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
@@ -15,8 +18,8 @@ import java.time.OffsetDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@ToString
-@EqualsAndHashCode
+@ToString(exclude = "password")
+@EqualsAndHashCode(exclude = "password")
 public class User {
     @Id
     private Long id;
@@ -27,6 +30,14 @@ public class User {
     @Column("email")
     private String email;
 
+    @Column("password")
+    @JsonIgnore
+    private String password;
+
+    @Column("role")
+    @Enumerated(EnumType.STRING)
+    private UserRole role;
+
     @Column("created_at")
     @CreatedDate
     private OffsetDateTime createdAt;
@@ -34,4 +45,8 @@ public class User {
     @Column("updated_at")
     @LastModifiedDate
     private OffsetDateTime updatedAt;
+
+    public boolean isAdmin() {
+        return this.role == UserRole.ADMIN;
+    }
 }
