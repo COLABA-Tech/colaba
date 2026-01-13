@@ -2,7 +2,7 @@ package com.example.colaba.project.controller;
 
 import com.example.colaba.project.mapper.TagMapper;
 import com.example.colaba.project.repository.TagRepository;
-import com.example.colaba.shared.dto.tag.TagResponse;
+import com.example.colaba.shared.common.dto.tag.TagResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 

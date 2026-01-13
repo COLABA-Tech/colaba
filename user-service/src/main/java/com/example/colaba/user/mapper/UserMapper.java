@@ -1,6 +1,6 @@
 package com.example.colaba.user.mapper;
 
-import com.example.colaba.user.dto.user.UserResponse;
+import com.example.colaba.shared.common.dto.user.UserResponse;
 import com.example.colaba.user.entity.User;
 import org.mapstruct.Mapper;
 

@@ -1,0 +1,7 @@
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  application:
+    name: auth-service
+  config:
+    import: "optional:configserver:http://config-server:8888"

@@ -1,7 +1,7 @@
 package com.example.colaba.task.circuit;
 
-import com.example.colaba.shared.dto.project.ProjectResponse;
-import com.example.colaba.shared.dto.tag.TagResponse;
+import com.example.colaba.shared.common.dto.project.ProjectResponse;
+import com.example.colaba.shared.common.dto.tag.TagResponse;
 import com.example.colaba.task.client.ProjectServiceClient;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;

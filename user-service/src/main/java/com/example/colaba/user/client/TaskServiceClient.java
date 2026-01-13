@@ -1,6 +1,6 @@
 package com.example.colaba.user.client;
 
-import com.example.colaba.shared.feign.FeignConfig;
+import com.example.colaba.shared.common.feign.FeignConfig;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;

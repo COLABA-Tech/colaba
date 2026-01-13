@@ -1,8 +1,8 @@
 package com.example.colaba.user.client;
 
-import com.example.colaba.shared.dto.project.ProjectResponse;
-import com.example.colaba.shared.dto.tag.TagResponse;
-import com.example.colaba.shared.feign.FeignConfig;
+import com.example.colaba.shared.common.dto.project.ProjectResponse;
+import com.example.colaba.shared.common.dto.tag.TagResponse;
+import com.example.colaba.shared.common.feign.FeignConfig;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 

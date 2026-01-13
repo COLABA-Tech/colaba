@@ -35,10 +35,13 @@
         <module>discovery-server</module>
         <module>config-server</module>
         <module>api-gateway</module>
-        <module>shared</module>
+        <module>shared-common</module>
+        <module>shared-webmvc</module>
+        <module>shared-webflux</module>
         <module>user-service</module>
         <module>project-service</module>
         <module>task-service</module>
+        <module>auth-service</module>
     </modules>
 
     <dependencyManagement>

@@ -1,6 +1,6 @@
 package com.example.colaba.task.controller;
 
-import com.example.colaba.shared.controller.BaseController;
+import com.example.colaba.shared.common.controller.BaseController;
 import com.example.colaba.task.dto.comment.CommentResponse;
 import com.example.colaba.task.dto.comment.CommentScrollResponse;
 import com.example.colaba.task.dto.comment.CreateCommentRequest;

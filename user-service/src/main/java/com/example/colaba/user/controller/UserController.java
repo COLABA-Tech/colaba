@@ -1,9 +1,9 @@
 package com.example.colaba.user.controller;
 
-import com.example.colaba.shared.controller.BaseController;
+import com.example.colaba.shared.common.controller.BaseController;
+import com.example.colaba.shared.common.dto.user.UserResponse;
 import com.example.colaba.user.dto.user.CreateUserRequest;
 import com.example.colaba.user.dto.user.UpdateUserRequest;
-import com.example.colaba.user.dto.user.UserResponse;
 import com.example.colaba.user.dto.user.UserScrollResponse;
 import com.example.colaba.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;

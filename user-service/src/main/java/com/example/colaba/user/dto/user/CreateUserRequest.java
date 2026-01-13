@@ -1,10 +1,7 @@
 package com.example.colaba.user.dto.user;
 
-import com.example.colaba.user.entity.UserRole;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
+import com.example.colaba.shared.common.entity.UserRole;
+import jakarta.validation.constraints.*;
 
 public record CreateUserRequest(
         @NotBlank
@@ -25,6 +22,10 @@ public record CreateUserRequest(
         )
         String password,
 
+        @NotNull(message = "Role cannot be null")
         UserRole role
 ) {
+    public CreateUserRequest {
+        if (role == null) role = UserRole.getDefault();
+    }
 }

@@ -2,7 +2,7 @@ package com.example.colaba.project.controller;
 
 import com.example.colaba.project.repository.ProjectRepository;
 import com.example.colaba.project.service.ProjectService;
-import com.example.colaba.shared.dto.project.ProjectResponse;
+import com.example.colaba.shared.common.dto.project.ProjectResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 

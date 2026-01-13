@@ -1,14 +1,14 @@
 package com.example.colaba.user.service;
 
-import com.example.colaba.shared.dto.project.ProjectResponse;
-import com.example.colaba.shared.exception.user.DuplicateUserEntityEmailException;
-import com.example.colaba.shared.exception.user.DuplicateUserEntityUsernameException;
-import com.example.colaba.shared.exception.user.UserNotFoundException;
+import com.example.colaba.shared.common.dto.project.ProjectResponse;
+import com.example.colaba.shared.common.dto.user.UserResponse;
+import com.example.colaba.shared.common.exception.user.DuplicateUserEntityEmailException;
+import com.example.colaba.shared.common.exception.user.DuplicateUserEntityUsernameException;
+import com.example.colaba.shared.common.exception.user.UserNotFoundException;
 import com.example.colaba.user.circuit.ProjectServiceClientWrapper;
 import com.example.colaba.user.circuit.TaskServiceClientWrapper;
 import com.example.colaba.user.dto.user.CreateUserRequest;
 import com.example.colaba.user.dto.user.UpdateUserRequest;
-import com.example.colaba.user.dto.user.UserResponse;
 import com.example.colaba.user.dto.user.UserScrollResponse;
 import com.example.colaba.user.entity.User;
 import com.example.colaba.user.mapper.UserMapper;
@@ -49,6 +49,8 @@ public class UserService {
                     User user = User.builder()
                             .username(request.username())
                             .email(request.email())
+                            .password(request.password())
+                            .role(request.role())
                             .build();
 
                     return userRepository.save(user)

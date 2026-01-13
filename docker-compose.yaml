@@ -130,6 +130,25 @@ services:
       postgres:
         condition: service_healthy
 
+  auth-service:
+    build:
+      context: .
+      target: auth-service
+    container_name: colaba-auth-service
+    hostname: auth-service
+    env_file: .env
+    ports:
+      - "${AUTH_SERVICE_PORT:-8084}:${AUTH_SERVICE_PORT:-8084}"
+    networks:
+      - colaba-network
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
 volumes:
   postgres_data:
 

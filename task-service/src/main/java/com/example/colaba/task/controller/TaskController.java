@@ -1,6 +1,6 @@
 package com.example.colaba.task.controller;
 
-import com.example.colaba.shared.controller.BaseController;
+import com.example.colaba.shared.common.controller.BaseController;
 import com.example.colaba.task.dto.task.CreateTaskRequest;
 import com.example.colaba.task.dto.task.TaskResponse;
 import com.example.colaba.task.dto.task.UpdateTaskRequest;

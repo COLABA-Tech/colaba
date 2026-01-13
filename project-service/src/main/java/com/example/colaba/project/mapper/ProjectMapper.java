@@ -1,7 +1,7 @@
 package com.example.colaba.project.mapper;
 
 import com.example.colaba.project.entity.ProjectJpa;
-import com.example.colaba.shared.dto.project.ProjectResponse;
+import com.example.colaba.shared.common.dto.project.ProjectResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.springframework.data.domain.Page;

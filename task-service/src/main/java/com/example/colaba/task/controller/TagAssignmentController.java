@@ -1,7 +1,7 @@
 package com.example.colaba.task.controller;
 
-import com.example.colaba.shared.controller.BaseController;
-import com.example.colaba.shared.dto.tag.TagResponse;
+import com.example.colaba.shared.common.controller.BaseController;
+import com.example.colaba.shared.common.dto.tag.TagResponse;
 import com.example.colaba.task.service.TaskService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

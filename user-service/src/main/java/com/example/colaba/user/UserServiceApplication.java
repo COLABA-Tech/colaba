@@ -1,6 +1,6 @@
 package com.example.colaba.user;
 
-import com.example.colaba.shared.feign.FeignConfig;
+import com.example.colaba.shared.common.feign.FeignConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
@@ -9,7 +9,9 @@ import org.springframework.context.annotation.Import;
 
 @SpringBootApplication(scanBasePackages = {
         "com.example.colaba.user",
-        "com.example.colaba.shared.exception"
+        "com.example.colaba.shared.common.exception",
+        "com.example.colaba.shared.common.security",
+        "com.example.colaba.shared.webflux.filter"
 })
 @EnableDiscoveryClient
 @EnableFeignClients(basePackages = "com.example.colaba.user.client")

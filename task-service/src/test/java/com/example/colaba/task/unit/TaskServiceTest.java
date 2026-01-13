@@ -1,10 +1,10 @@
 package com.example.colaba.task.unit;
 
-import com.example.colaba.shared.dto.tag.TagResponse;
-import com.example.colaba.shared.exception.project.ProjectNotFoundException;
-import com.example.colaba.shared.exception.tag.TagNotFoundException;
-import com.example.colaba.shared.exception.task.TaskNotFoundException;
-import com.example.colaba.shared.exception.user.UserNotFoundException;
+import com.example.colaba.shared.common.dto.tag.TagResponse;
+import com.example.colaba.shared.common.exception.project.ProjectNotFoundException;
+import com.example.colaba.shared.common.exception.tag.TagNotFoundException;
+import com.example.colaba.shared.common.exception.task.TaskNotFoundException;
+import com.example.colaba.shared.common.exception.user.UserNotFoundException;
 import com.example.colaba.task.circuit.ProjectServiceClientWrapper;
 import com.example.colaba.task.circuit.UserServiceClientWrapper;
 import com.example.colaba.task.dto.task.CreateTaskRequest;
