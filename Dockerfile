@@ -30,7 +30,7 @@ COPY project-service/src project-service/src
 COPY task-service/src task-service/src
 COPY auth-service/src auth-service/src
 
-RUN ./mvnw clean package -B -DskipTests -Dmaven.test.skip=true
+RUN --mount=type=cache,target=/root/.m2 ./mvnw clean package -B -DskipTests -Dmaven.test.skip=true
 
 FROM eclipse-temurin:25-jre AS base
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
