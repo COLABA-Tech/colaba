@@ -18,8 +18,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
 import java.net.URI;
@@ -44,18 +42,10 @@ public class ProjectController extends BaseController {
             @ApiResponse(responseCode = "404", description = "Owner user not found")
     })
     public Mono<ResponseEntity<ProjectResponse>> create(@Valid @RequestBody CreateProjectRequest request) {
-        String currentRequestUri = ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString();
-
         return projectService.createProject(request)
-                .map(projectResponse -> {
-                    URI location = UriComponentsBuilder
-                            .fromUriString(currentRequestUri)
-                            .path("/{id}")
-                            .buildAndExpand(projectResponse.id())
-                            .toUri();
-
-                    return ResponseEntity.created(location).body(projectResponse);
-                });
+                .map(projectResponse -> ResponseEntity
+                        .created(URI.create("/api/projects/" + projectResponse.id()))
+                        .body(projectResponse));
     }
 
     @PutMapping("/{id}")

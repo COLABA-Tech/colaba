@@ -1,27 +1,51 @@
 package com.example.colaba.project.client;
 
-import com.example.colaba.shared.common.feign.FeignConfig;
-import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.client.loadbalancer.reactive.ReactorLoadBalancerExchangeFilterFunction;
+import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
-@FeignClient(
-        name = "task-service",
-        path = "/api/tasks/internal",
-        configuration = FeignConfig.class
-)
-public interface TaskServiceClient {
-    @DeleteMapping("/project/{projectId}")
-    void deleteTasksByProject(@PathVariable Long projectId);
+@Component
+public class TaskServiceClient {
 
-    @PostMapping("/user/{userId}/deletion")
-    void handleUserDeletion(@PathVariable Long userId);
+    private final WebClient webClient;
 
-    @GetMapping("/{id}/exists")
-    boolean taskExists(@PathVariable Long id);
+    public TaskServiceClient(ReactorLoadBalancerExchangeFilterFunction lbFunction,
+                             @Value("${internal.api-key}") String internalApiKey) {
+        this.webClient = WebClient.builder()
+                .filter(lbFunction)
+                .defaultHeader("X-Internal-Key", internalApiKey)
+                .defaultHeader("Content-Type", "application/json")
+                .defaultHeader("Accept", "application/json")
+                .build();
+    }
 
-    @DeleteMapping("/task-tags/tag/{tagId}")
-    void deleteTaskTagsByTagId(@PathVariable Long tagId);
+    public Mono<Void> deleteTasksByProject(Long projectId) {
+        return webClient.delete()
+                .uri("lb://task-service/api/tasks/internal/project/{projectId}", projectId)
+                .retrieve()
+                .bodyToMono(Void.class);
+    }
+
+    public Mono<Void> handleUserDeletion(Long userId) {
+        return webClient.post()
+                .uri("lb://task-service/api/tasks/internal/user/{userId}/deletion", userId)
+                .retrieve()
+                .bodyToMono(Void.class);
+    }
+
+    public Mono<Boolean> taskExists(Long id) {
+        return webClient.get()
+                .uri("lb://task-service/api/tasks/internal/{id}/exists", id)
+                .retrieve()
+                .bodyToMono(Boolean.class);
+    }
+
+    public Mono<Void> deleteTaskTagsByTagId(Long tagId) {
+        return webClient.delete()
+                .uri("lb://task-service/api/tasks/internal/task-tags/tag/{tagId}", tagId)
+                .retrieve()
+                .bodyToMono(Void.class);
+    }
 }

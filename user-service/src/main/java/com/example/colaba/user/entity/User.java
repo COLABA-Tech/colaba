@@ -2,8 +2,6 @@ package com.example.colaba.user.entity;
 
 import com.example.colaba.shared.common.entity.UserRole;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
@@ -36,7 +34,6 @@ public class User {
     private String password;
 
     @Column("role")
-    @Enumerated(EnumType.STRING)
     private UserRole role;
 
     @Column("created_at")

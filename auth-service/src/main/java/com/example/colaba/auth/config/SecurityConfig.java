@@ -44,13 +44,6 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of("*"));
-//        configuration.setAllowedOrigins(List.of(
-//                "http://api-gateway:8080",
-//                "http://user-service:8081",
-//                "http://project-service:8082",
-//                "http://task-service:8083",
-//                "http://auth-service:8084"
-//        ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("Authorization"));
@@ -64,9 +57,14 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
+                .httpBasic(AbstractHttpConfigurer::disable)
+                .formLogin(AbstractHttpConfigurer::disable)
+                .logout(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/**", "/health", "/v3/api-docs**", "/swagger-ui**").permitAll()
                         .requestMatchers("/auth/register").authenticated()

@@ -30,13 +30,6 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of("*"));
-//        configuration.setAllowedOrigins(List.of(
-//                "http://api-gateway:8080",
-//                "http://user-service:8081",
-//                "http://project-service:8082",
-//                "http://task-service:8083",
-//                "http://auth-service:8084"
-//        ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("Authorization"));
@@ -50,18 +43,19 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
+                .httpBasic(AbstractHttpConfigurer::disable)
+                .formLogin(AbstractHttpConfigurer::disable)
+                .logout(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
                 .authorizeHttpRequests(auth -> auth
-                                .requestMatchers("/actuator/**", "/health", "/v3/api-docs**", "/swagger-ui**").permitAll()
-//                        .requestMatchers("/api/tasks/internal/**").access((_, obj) -> {
-//                            String key = obj.getRequest().getHeader("X-Internal-Key");
-//                            return new org.springframework.security.authorization.AuthorizationDecision(key != null && key.equals(internalApiKey));
-//                        })
-                                .requestMatchers("/api/tasks/internal/**").permitAll()
-                                .requestMatchers("/api/tasks/**", "/api/comments/**", "/api/task-tags/**").authenticated()
-                                .anyRequest().denyAll()
+                        .requestMatchers("/actuator/**", "/health", "/v3/api-docs**", "/swagger-ui**").permitAll()
+                        .requestMatchers("/api/tasks/internal/**").permitAll()
+                        .requestMatchers("/api/tasks/**", "/api/comments/**", "/api/task-tags/**").authenticated()
+                        .anyRequest().denyAll()
                 )
                 .addFilterBefore(new JwtAuthenticationFilter(jwtService),
                         UsernamePasswordAuthenticationFilter.class);

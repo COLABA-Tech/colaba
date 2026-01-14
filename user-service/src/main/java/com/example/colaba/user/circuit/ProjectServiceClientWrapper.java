@@ -22,34 +22,34 @@ public class ProjectServiceClientWrapper {
     }
 
     public List<ProjectResponse> findByOwnerId(Long ownerId) {
-        return cb().executeSupplier(() -> client.findByOwnerId(ownerId));
+        return cb().executeSupplier(() -> client.findByOwnerId(ownerId).collectList().block());
     }
 
     public void deleteProject(Long projectId) {
-        cb().executeRunnable(() -> client.deleteProject(projectId));
+        cb().executeRunnable(() -> client.deleteProject(projectId).block());
     }
 
     public boolean projectExists(Long projectId) {
-        return cb().executeSupplier(() -> client.projectExists(projectId));
+        return cb().executeSupplier(() -> client.projectExists(projectId).block());
     }
 
     public void handleUserDeletion(Long userId) {
-        cb().executeRunnable(() -> client.handleUserDeletion(userId));
+        cb().executeRunnable(() -> client.handleUserDeletion(userId).block());
     }
 
     public boolean isMember(Long projectId, Long userId) {
-        return cb().executeSupplier(() -> client.isMember(projectId, userId));
+        return cb().executeSupplier(() -> client.isMember(projectId, userId).block());
     }
 
     public TagResponse getTagById(Long tagId) {
-        return cb().executeSupplier(() -> client.getTagById(tagId));
+        return cb().executeSupplier(() -> client.getTagById(tagId).block());
     }
 
     public List<TagResponse> getTagsByIds(List<Long> tagIds) {
-        return cb().executeSupplier(() -> client.getTagsByIds(tagIds));
+        return cb().executeSupplier(() -> client.getTagsByIds(tagIds).collectList().block());
     }
 
     public boolean tagExists(Long tagId) {
-        return cb().executeSupplier(() -> client.tagExists(tagId));
+        return cb().executeSupplier(() -> client.tagExists(tagId).block());
     }
 }

@@ -18,18 +18,18 @@ public class TaskServiceClientWrapper {
     }
 
     public void deleteTasksByProject(Long projectId) {
-        cb().executeRunnable(() -> client.deleteTasksByProject(projectId));
+        cb().executeRunnable(() -> client.deleteTasksByProject(projectId).block());
     }
 
     public void handleUserDeletion(Long userId) {
-        cb().executeRunnable(() -> client.handleUserDeletion(userId));
+        cb().executeRunnable(() -> client.handleUserDeletion(userId).block());
     }
 
     public boolean taskExists(Long taskId) {
-        return cb().executeSupplier(() -> client.taskExists(taskId));
+        return cb().executeSupplier(() -> client.taskExists(taskId).block());
     }
 
     public void deleteTaskTagsByTagId(Long tagId) {
-        cb().executeRunnable(() -> client.deleteTaskTagsByTagId(tagId));
+        cb().executeRunnable(() -> client.deleteTaskTagsByTagId(tagId).block());
     }
 }

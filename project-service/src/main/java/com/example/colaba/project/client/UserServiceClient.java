@@ -1,16 +1,29 @@
 package com.example.colaba.project.client;
 
-import com.example.colaba.shared.common.feign.FeignConfig;
-import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.client.loadbalancer.reactive.ReactorLoadBalancerExchangeFilterFunction;
+import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
-@FeignClient(
-        name = "user-service",
-        path = "/api/users/internal",
-        configuration = FeignConfig.class
-)
-public interface UserServiceClient {
-    @GetMapping("/{id}/exists")
-    boolean userExists(@PathVariable Long id);
+@Component
+public class UserServiceClient {
+    private final WebClient webClient;
+
+    public UserServiceClient(ReactorLoadBalancerExchangeFilterFunction lbFunction,
+                             @Value("${internal.api-key}") String internalApiKey) {
+        this.webClient = WebClient.builder()
+                .filter(lbFunction)
+                .defaultHeader("X-Internal-Key", internalApiKey)
+                .defaultHeader("Content-Type", "application/json")
+                .defaultHeader("Accept", "application/json")
+                .build();
+    }
+
+    public Mono<Boolean> userExists(Long id) {
+        return webClient.get()
+                .uri("lb://user-service/api/users/internal/{id}/exists", id)
+                .retrieve()
+                .bodyToMono(Boolean.class);
+    }
 }

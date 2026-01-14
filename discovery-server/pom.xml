@@ -21,13 +21,14 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
+            <version>3.5.9</version>
         </dependency>
 
         <!-- С версией — фиксит missing version -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
-            <version>3.5.6</version>
+            <version>3.5.9</version>
         </dependency>
 
         <dependency>
@@ -38,6 +39,7 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <version>3.5.9</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

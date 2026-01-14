@@ -9,9 +9,8 @@ import org.springframework.context.annotation.Import;
 
 @SpringBootApplication(scanBasePackages = {
         "com.example.colaba.user",
-        "com.example.colaba.shared.common.exception",
-        "com.example.colaba.shared.common.security",
-        "com.example.colaba.shared.webflux.filter"
+        "com.example.colaba.shared.common",
+        "com.example.colaba.shared.webflux"
 })
 @EnableDiscoveryClient
 @EnableFeignClients(basePackages = "com.example.colaba.user.client")

@@ -19,8 +19,8 @@ public class UserInternalController {
     private final UserService userService;
 
     @GetMapping("/{id}/exists")
-    public boolean projectExists(@PathVariable Long id) {
-        return Boolean.TRUE.equals(userRepository.existsById(id).block());
+    public Mono<Boolean> userExists(@PathVariable Long id) {
+        return userRepository.existsById(id);
     }
 
     @GetMapping("/auth-by-username/{username}")

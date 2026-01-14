@@ -18,6 +18,6 @@ public class UserServiceClientWrapper {
     }
 
     public boolean userExists(Long userId) {
-        return cb().executeSupplier(() -> client.userExists(userId));
+        return cb().executeSupplier(() -> client.userExists(userId).block());
     }
 }

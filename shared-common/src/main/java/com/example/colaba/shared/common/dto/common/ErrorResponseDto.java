@@ -1,12 +1,10 @@
 package com.example.colaba.shared.common.dto.common;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 
 import java.time.OffsetDateTime;
 
 @Builder
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public record ErrorResponseDto(
         String error,
         int status,
