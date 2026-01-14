@@ -1,7 +1,7 @@
 package com.example.colaba.auth.client;
 
 import com.example.colaba.shared.common.dto.user.UserAuthDto;
-import com.example.colaba.shared.common.feign.FeignConfig;
+import com.example.colaba.shared.webmvc.feign.FeignConfig;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

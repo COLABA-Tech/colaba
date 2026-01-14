@@ -1,6 +1,6 @@
 package com.example.colaba.auth;
 
-import com.example.colaba.shared.common.feign.FeignConfig;
+import com.example.colaba.shared.webmvc.feign.FeignConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;

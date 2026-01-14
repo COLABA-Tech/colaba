@@ -1,4 +1,4 @@
-package com.example.colaba.shared.common.feign;
+package com.example.colaba.shared.webmvc.feign;
 
 import feign.Logger;
 import feign.RequestInterceptor;
