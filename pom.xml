@@ -50,7 +50,7 @@
         <!-- Testing -->
         <testcontainers.version>1.21.4</testcontainers.version>
         <jacoco.version>0.8.14</jacoco.version>
-        <junit5.version>5.14.2</junit5.version>
+        <junit5.version>5.12.2</junit5.version>
         <mockito.version>5.20.0</mockito.version>
         <reactor.version>3.8.2</reactor.version>
     </properties>
