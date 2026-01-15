@@ -14,7 +14,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/task-tags")
 @RequiredArgsConstructor
-@Tag(name = "Task Tags", description = "API for managing task-tag associations")
+@Tag(name = "Task Assignment Public", description = "API for managing task-tag associations")
 public class TagAssignmentController extends BaseController {
     private final TaskService taskService;
 

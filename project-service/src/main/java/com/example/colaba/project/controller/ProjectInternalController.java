@@ -3,6 +3,7 @@ package com.example.colaba.project.controller;
 import com.example.colaba.project.repository.ProjectRepository;
 import com.example.colaba.project.service.ProjectService;
 import com.example.colaba.shared.common.dto.project.ProjectResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,6 +12,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/projects/internal")
 @RequiredArgsConstructor
+@Tag(name = "Projects Internal", description = "Internal Projects API")
 public class ProjectInternalController {
 
     private final ProjectRepository projectRepository;
