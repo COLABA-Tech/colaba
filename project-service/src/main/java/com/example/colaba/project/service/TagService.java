@@ -1,17 +1,14 @@
 package com.example.colaba.project.service;
 
+import com.example.colaba.project.circuit.TaskServiceClientWrapper;
+import com.example.colaba.project.dto.tag.CreateTagRequest;
+import com.example.colaba.project.dto.tag.UpdateTagRequest;
+import com.example.colaba.project.entity.TagJpa;
+import com.example.colaba.project.mapper.TagMapper;
 import com.example.colaba.project.repository.TagRepository;
-import com.example.colaba.shared.client.TaskServiceClient;
-import com.example.colaba.shared.dto.tag.CreateTagRequest;
-import com.example.colaba.shared.dto.tag.TagResponse;
-import com.example.colaba.shared.dto.tag.UpdateTagRequest;
-import com.example.colaba.shared.entity.Tag;
-import com.example.colaba.shared.entity.task.Task;
-import com.example.colaba.shared.exception.tag.DuplicateTagException;
-import com.example.colaba.shared.exception.tag.TagNotFoundException;
-import com.example.colaba.shared.exception.task.TaskNotFoundException;
-import com.example.colaba.shared.mapper.TagMapper;
-import feign.FeignException;
+import com.example.colaba.shared.common.dto.tag.TagResponse;
+import com.example.colaba.shared.common.exception.tag.DuplicateTagException;
+import com.example.colaba.shared.common.exception.tag.TagNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,14 +17,12 @@ import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 public class TagService {
     private final TagRepository tagRepository;
     private final ProjectService projectService;
-    private final TaskServiceClient taskServiceClient;
+    private final TaskServiceClientWrapper taskServiceClient;
     private final TagMapper tagMapper;
 
     public Mono<Page<TagResponse>> getAllTags(Pageable pageable) {
@@ -44,36 +39,28 @@ public class TagService {
 
     public Mono<Page<TagResponse>> getTagsByProject(Long projectId, Pageable pageable) {
         return projectService.getProjectEntityById(projectId)
-                .flatMap(project -> Mono.fromCallable(() ->
-                                tagMapper.toTagResponsePage(tagRepository.findByProject(project, pageable)))
+                .flatMap(_ -> Mono.fromCallable(() ->
+                                tagMapper.toTagResponsePage(tagRepository.findByProjectId(projectId, pageable)))
                         .subscribeOn(Schedulers.boundedElastic()));
     }
 
-    public Mono<List<TagResponse>> getTagsByTask(Long taskId) {
-        return Mono.fromCallable(() -> tagRepository.findByTaskId(taskId))
-                .subscribeOn(Schedulers.boundedElastic())
-                .map(tags -> tags.stream()
-                        .map(tagMapper::toTagResponse)
-                        .toList());
-    }
-
+    @Transactional
     public Mono<TagResponse> createTag(CreateTagRequest request) {
         return projectService.getProjectEntityById(request.projectId())
                 .flatMap(project -> Mono.fromCallable(() -> {
                     if (tagRepository.findByProjectIdAndNameIgnoreCase(project.getId(), request.name()).isPresent()) {
                         throw new DuplicateTagException(request.name(), project.getId());
                     }
-
-                    Tag tag = Tag.builder()
+                    TagJpa tag = TagJpa.builder()
                             .name(request.name())
-                            .project(project)
+                            .projectId(project.getId())
                             .build();
-
-                    Tag savedTag = tagRepository.save(tag);
+                    TagJpa savedTag = tagRepository.save(tag);
                     return tagMapper.toTagResponse(savedTag);
                 }).subscribeOn(Schedulers.boundedElastic()));
     }
 
+    @Transactional
     public Mono<TagResponse> updateTag(Long id, UpdateTagRequest request) {
         return Mono.fromCallable(() -> tagRepository.findById(id))
                 .subscribeOn(Schedulers.boundedElastic())
@@ -81,25 +68,24 @@ public class TagService {
                     if (optionalTag.isEmpty()) {
                         return Mono.error(new TagNotFoundException(id));
                     }
-                    Tag tag = optionalTag.get();
-
+                    TagJpa tag = optionalTag.get();
                     return Mono.fromCallable(() -> {
                                 boolean hasChanges = false;
-                                if (request.name() != null && !request.name().equals(tag.getName())) {
-                                    if (tagRepository.findByProjectIdAndNameIgnoreCase(tag.getProject().getId(), request.name()).isPresent()) {
-                                        throw new DuplicateTagException(request.name(), tag.getProject().getId());
+                                if (request.name() != null && !request.name().isBlank() && !request.name().equals(tag.getName())) {
+                                    if (tagRepository.findByProjectIdAndNameIgnoreCase(
+                                            tag.getProjectId(), request.name()).isPresent()) {
+                                        throw new DuplicateTagException(request.name(), tag.getProjectId());
                                     }
                                     tag.setName(request.name());
                                     hasChanges = true;
                                 }
-
                                 return hasChanges ? tagRepository.save(tag) : tag;
-                            })
-                            .subscribeOn(Schedulers.boundedElastic())
+                            }).subscribeOn(Schedulers.boundedElastic())
                             .map(tagMapper::toTagResponse);
                 });
     }
 
+    @Transactional
     public Mono<Void> deleteTag(Long id) {
         return Mono.fromCallable(() -> tagRepository.existsById(id))
                 .subscribeOn(Schedulers.boundedElastic())
@@ -107,81 +93,12 @@ public class TagService {
                     if (!exists) {
                         return Mono.error(new TagNotFoundException(id));
                     }
-                    return Mono.fromRunnable(() -> tagRepository.deleteById(id))
+                    return Mono.fromRunnable(() -> {
+                                taskServiceClient.deleteTaskTagsByTagId(id);
+                                tagRepository.deleteById(id);
+                            })
                             .subscribeOn(Schedulers.boundedElastic());
                 })
                 .then();
-    }
-
-    @Transactional
-    public Mono<Void> assignTagToTask(Long taskId, Long tagId) {
-        return Mono.zip(
-                Mono.fromCallable(() -> {
-                    try {
-                        return taskServiceClient.getTaskEntityById(taskId);
-                    } catch (FeignException.NotFound e) {
-                        throw new TaskNotFoundException(taskId);
-                    }
-                }).subscribeOn(Schedulers.boundedElastic()),
-                Mono.fromCallable(() -> tagRepository.findById(tagId))
-                        .subscribeOn(Schedulers.boundedElastic())
-                        .flatMap(optionalTag -> {
-                            if (optionalTag.isEmpty()) {
-                                return Mono.error(new TagNotFoundException(tagId));
-                            }
-                            return Mono.just(optionalTag.get());
-                        })
-        ).flatMap(tuple -> {
-            Task task = tuple.getT1();
-            Tag tag = tuple.getT2();
-
-            if (!tag.getProject().getId().equals(task.getProject().getId())) {
-                return Mono.error(new IllegalArgumentException("Tag does not belong to task's project"));
-            }
-
-            return Mono.fromRunnable(() -> {
-                boolean added = task.getTags().add(tag);
-                if (added) {
-                    tag.getTasks().add(task);
-                    try {
-                        taskServiceClient.updateTask(taskId, task);
-                    } catch (FeignException.NotFound e) {
-                        throw new TaskNotFoundException(taskId);
-                    }
-                }
-            }).subscribeOn(Schedulers.boundedElastic());
-        }).then();
-    }
-
-    public Mono<Void> removeTagFromTask(Long taskId, Long tagId) {
-        return Mono.zip(
-                Mono.fromCallable(() -> {
-                    try {
-                        return taskServiceClient.getTaskEntityById(taskId);
-                    } catch (FeignException.NotFound e) {
-                        throw new TaskNotFoundException(taskId);
-                    }
-                }).subscribeOn(Schedulers.boundedElastic()),
-                Mono.fromCallable(() -> tagRepository.findById(tagId))
-                        .subscribeOn(Schedulers.boundedElastic())
-                        .flatMap(optionalTag -> {
-                            if (optionalTag.isEmpty()) {
-                                return Mono.error(new TagNotFoundException(tagId));
-                            }
-                            return Mono.just(optionalTag.get());
-                        })
-        ).flatMap(tuple -> {
-            Task task = tuple.getT1();
-            Tag tag = tuple.getT2();
-
-            return Mono.fromRunnable(() -> {
-                task.getTags().remove(tag);
-                try {
-                    taskServiceClient.updateTask(taskId, task);
-                } catch (FeignException.NotFound e) {
-                    throw new TaskNotFoundException(taskId);
-                }
-            }).subscribeOn(Schedulers.boundedElastic());
-        }).then();
     }
 }

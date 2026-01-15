@@ -1,9 +1,8 @@
 package com.example.colaba.project.controller;
 
 import com.example.colaba.project.repository.ProjectRepository;
-import com.example.colaba.shared.entity.Project;
-import com.example.colaba.shared.entity.UserJpa;
-import com.example.colaba.shared.exception.project.ProjectNotFoundException;
+import com.example.colaba.project.service.ProjectService;
+import com.example.colaba.shared.common.dto.project.ProjectResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,25 +14,30 @@ import java.util.List;
 public class ProjectInternalController {
 
     private final ProjectRepository projectRepository;
+    private final ProjectService projectService;
 
-    @PostMapping("/owner")
-    public List<Project> findByOwner(@RequestBody UserJpa owner) {
-        return projectRepository.findByOwner(owner);
-    }
-
-    @DeleteMapping("/all")
-    public void deleteAll() {
-        projectRepository.deleteAll();
+    @GetMapping("/owner/{ownerId}")
+    public List<ProjectResponse> findByOwnerId(@PathVariable Long ownerId) {
+        return projectService.getProjectByOwnerId(ownerId).block();
     }
 
     @DeleteMapping("/{id}")
     public void deleteProject(@PathVariable Long id) {
-        projectRepository.deleteById(id);
+        projectService.deleteProject(id);
     }
 
-    @GetMapping("/entity/{id}")
-    public Project getProjectEntityById(@PathVariable Long id) {
-        return projectRepository.findById(id)
-                .orElseThrow(() -> new ProjectNotFoundException(id));
+    @GetMapping("/{id}/exists")
+    public boolean projectExists(@PathVariable Long id) {
+        return projectRepository.existsById(id);
+    }
+
+    @DeleteMapping("/user/{userId}/memberships")
+    public void handleUserDeletion(@PathVariable Long userId) {
+        projectService.handleUserDeletion(userId);
+    }
+
+    @GetMapping("/{projectId}/membership/{userId}")
+    public boolean isMember(@PathVariable Long projectId, @PathVariable Long userId) {
+        return Boolean.TRUE.equals(projectService.isMember(projectId, userId).block());
     }
 }

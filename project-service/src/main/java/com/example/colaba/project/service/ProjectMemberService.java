@@ -1,25 +1,22 @@
 package com.example.colaba.project.service;
 
+import com.example.colaba.project.circuit.UserServiceClientWrapper;
+import com.example.colaba.project.dto.projectmember.CreateProjectMemberRequest;
+import com.example.colaba.project.dto.projectmember.ProjectMemberResponse;
+import com.example.colaba.project.dto.projectmember.UpdateProjectMemberRequest;
+import com.example.colaba.project.entity.projectmember.ProjectMemberId;
+import com.example.colaba.project.entity.projectmember.ProjectMemberJpa;
+import com.example.colaba.project.entity.projectmember.ProjectRole;
+import com.example.colaba.project.mapper.ProjectMemberMapper;
 import com.example.colaba.project.repository.ProjectMemberRepository;
-import com.example.colaba.shared.client.UserServiceClient;
-import com.example.colaba.shared.dto.projectmember.CreateProjectMemberRequest;
-import com.example.colaba.shared.dto.projectmember.ProjectMemberResponse;
-import com.example.colaba.shared.dto.projectmember.UpdateProjectMemberRequest;
-import com.example.colaba.shared.entity.Project;
-import com.example.colaba.shared.entity.UserJpa;
-import com.example.colaba.shared.entity.projectmember.ProjectMember;
-import com.example.colaba.shared.entity.projectmember.ProjectMemberId;
-import com.example.colaba.shared.entity.projectmember.ProjectRole;
-import com.example.colaba.shared.exception.projectmember.DuplicateProjectMemberException;
-import com.example.colaba.shared.exception.projectmember.ProjectMemberNotFoundException;
-import com.example.colaba.shared.exception.user.UserNotFoundException;
-import com.example.colaba.shared.mapper.ProjectMemberMapper;
-import com.example.colaba.shared.mapper.UserMapper;
-import feign.FeignException;
+import com.example.colaba.shared.common.exception.projectmember.DuplicateProjectMemberException;
+import com.example.colaba.shared.common.exception.projectmember.ProjectMemberNotFoundException;
+import com.example.colaba.shared.common.exception.user.UserNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -28,9 +25,8 @@ import reactor.core.scheduler.Schedulers;
 public class ProjectMemberService {
     private final ProjectMemberRepository projectMemberRepository;
     private final ProjectService projectService;
-    private final UserServiceClient userServiceClient;
+    private final UserServiceClientWrapper userServiceClient;
     private final ProjectMemberMapper projectMemberMapper;
-    private final UserMapper userMapper;
 
     public Mono<Page<ProjectMemberResponse>> getMembersByProject(Long projectId, Pageable pageable) {
         return projectService.getProjectEntityById(projectId)
@@ -41,43 +37,32 @@ public class ProjectMemberService {
                 ).subscribeOn(Schedulers.boundedElastic()));
     }
 
+    @Transactional
     public Mono<ProjectMemberResponse> createMembership(Long projectId, CreateProjectMemberRequest request) {
-        return Mono.zip(
-                projectService.getProjectEntityById(projectId),
-                Mono.fromCallable(() -> {
-                            try {
-                                return userServiceClient.getUserEntityById(request.userId());
-                            } catch (FeignException.NotFound e) {
-                                throw new UserNotFoundException(request.userId());
-                            }
-                        })
+        return projectService.getProjectEntityById(projectId)
+                .flatMap(_ -> Mono.fromCallable(() -> userServiceClient.userExists(request.userId()))
                         .subscribeOn(Schedulers.boundedElastic())
-                        .flatMap(user -> Mono.just(userMapper.toUserJpa(user)))
-        ).flatMap(tuple -> {
-            Project project = tuple.getT1();
-            UserJpa user = tuple.getT2();
-
-            return Mono.fromCallable(() -> {
-                ProjectMemberId id = new ProjectMemberId(projectId, user.getId());
-
-                if (projectMemberRepository.existsById(id)) {
-                    throw new DuplicateProjectMemberException(user.getUsername(), projectId);
-                }
-
-                ProjectMember member = ProjectMember.builder()
-                        .projectId(project.getId())
-                        .userId(user.getId())
-                        .project(project)
-                        .user(user)
-                        .role(request.role() != null ? request.role() : ProjectRole.getDefault())
-                        .build();
-
-                ProjectMember saved = projectMemberRepository.save(member);
-                return projectMemberMapper.toProjectMemberResponse(saved);
-            }).subscribeOn(Schedulers.boundedElastic());
-        });
+                        .flatMap(userExists -> {
+                            if (!userExists) {
+                                return Mono.error(new UserNotFoundException(request.userId()));
+                            }
+                            return Mono.fromCallable(() -> {
+                                ProjectMemberId id = new ProjectMemberId(projectId, request.userId());
+                                if (projectMemberRepository.existsById(id)) {
+                                    throw new DuplicateProjectMemberException(request.userId(), projectId);
+                                }
+                                ProjectMemberJpa member = ProjectMemberJpa.builder()
+                                        .projectId(projectId)
+                                        .userId(request.userId())
+                                        .role(request.role() != null ? request.role() : ProjectRole.getDefault())
+                                        .build();
+                                ProjectMemberJpa saved = projectMemberRepository.save(member);
+                                return projectMemberMapper.toProjectMemberResponse(saved);
+                            }).subscribeOn(Schedulers.boundedElastic());
+                        }));
     }
 
+    @Transactional
     public Mono<ProjectMemberResponse> updateMembership(Long projectId, Long userId, UpdateProjectMemberRequest request) {
         return Mono.fromCallable(() -> {
                     ProjectMemberId id = new ProjectMemberId(projectId, userId);
@@ -88,7 +73,7 @@ public class ProjectMemberService {
                         return Mono.error(new ProjectMemberNotFoundException(projectId, userId));
                     }
 
-                    ProjectMember member = optionalMember.get();
+                    ProjectMemberJpa member = optionalMember.get();
                     boolean hasChanges = false;
 
                     if (request.role() != null && !request.role().equals(member.getRole())) {
@@ -106,6 +91,7 @@ public class ProjectMemberService {
                 });
     }
 
+    @Transactional
     public Mono<Void> deleteMembership(Long projectId, Long userId) {
         return Mono.fromCallable(() -> {
                     ProjectMemberId id = new ProjectMemberId(projectId, userId);

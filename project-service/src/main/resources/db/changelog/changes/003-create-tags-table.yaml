@@ -9,7 +9,8 @@ databaseChangeLog:
               - column: { name: id, type: BIGSERIAL, constraints: { primaryKey: true, nullable: false } }
               - column: { name: name, type: VARCHAR(50), constraints: { nullable: false } }
               - column: { name: project_id, type: BIGINT, constraints: { nullable: false } }
-              - column: { name: created_at, type: TIMESTAMPTZ, defaultValueComputed: CURRENT_TIMESTAMP }
+              - column: { name: created_at, type: TIMESTAMPTZ, constraints: { nullable: false }, defaultValueComputed: CURRENT_TIMESTAMP }
+              - column: { name: updated_at, type: TIMESTAMPTZ, constraints: { nullable: false }, defaultValueComputed: CURRENT_TIMESTAMP }
 
         - addForeignKeyConstraint:
             baseTableName: tags

@@ -1,22 +1,17 @@
 package com.example.colaba.task.service;
 
-import com.example.colaba.shared.client.UserServiceClient;
-import com.example.colaba.shared.dto.comment.CommentResponse;
-import com.example.colaba.shared.dto.comment.CommentScrollResponse;
-import com.example.colaba.shared.dto.comment.CreateCommentRequest;
-import com.example.colaba.shared.dto.comment.UpdateCommentRequest;
-import com.example.colaba.shared.entity.Comment;
-import com.example.colaba.shared.entity.User;
-import com.example.colaba.shared.entity.UserJpa;
-import com.example.colaba.shared.entity.task.Task;
-import com.example.colaba.shared.exception.comment.CommentNotFoundException;
-import com.example.colaba.shared.exception.task.TaskNotFoundException;
-import com.example.colaba.shared.exception.user.UserNotFoundException;
-import com.example.colaba.shared.mapper.CommentMapper;
-import com.example.colaba.shared.mapper.UserMapper;
+import com.example.colaba.shared.common.exception.comment.CommentNotFoundException;
+import com.example.colaba.shared.common.exception.task.TaskNotFoundException;
+import com.example.colaba.shared.common.exception.user.UserNotFoundException;
+import com.example.colaba.task.circuit.UserServiceClientWrapper;
+import com.example.colaba.task.dto.comment.CommentResponse;
+import com.example.colaba.task.dto.comment.CommentScrollResponse;
+import com.example.colaba.task.dto.comment.CreateCommentRequest;
+import com.example.colaba.task.dto.comment.UpdateCommentRequest;
+import com.example.colaba.task.entity.CommentJpa;
+import com.example.colaba.task.mapper.CommentMapper;
 import com.example.colaba.task.repository.CommentRepository;
 import com.example.colaba.task.repository.TaskRepository;
-import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
@@ -30,52 +25,55 @@ import java.util.List;
 public class CommentService {
 
     private final CommentRepository commentRepository;
-    private final UserServiceClient userServiceClient;
+    private final UserServiceClientWrapper userServiceClient;
     private final TaskRepository taskRepository;
     private final CommentMapper commentMapper;
-    private final UserMapper userMapper;
 
     @Transactional
     public CommentResponse createComment(CreateCommentRequest request) {
-        User user;
-        try {
-            user = userServiceClient.getUserEntityById(request.userId());
-        } catch (FeignException.NotFound e) {
+        boolean userExists = userServiceClient.userExists(request.userId());
+        if (!userExists) {
             throw new UserNotFoundException(request.userId());
         }
-        UserJpa userJpa = userMapper.toUserJpa(user);
 
-        Task task = taskRepository.findById(request.taskId())
-                .orElseThrow(() -> new TaskNotFoundException(request.taskId()));
+        if (!taskRepository.existsById(request.taskId())) {
+            throw new TaskNotFoundException(request.taskId());
+        }
 
-        Comment comment = Comment.builder()
-                .task(task)
-                .user(userJpa)
+        CommentJpa comment = CommentJpa.builder()
+                .taskId(request.taskId())
+                .userId(request.userId())
                 .content(request.content())
                 .build();
 
-        Comment saved = commentRepository.save(comment);
+        CommentJpa saved = commentRepository.save(comment);
         return commentMapper.toResponse(saved);
     }
 
     public CommentResponse getCommentById(Long id) {
-        Comment comment = commentRepository.findById(id)
+        CommentJpa comment = commentRepository.findById(id)
                 .orElseThrow(() -> new CommentNotFoundException(id));
         return commentMapper.toResponse(comment);
     }
 
     public Page<CommentResponse> getCommentsByTask(Long taskId, Pageable pageable) {
-        Page<Comment> comments = commentRepository.findByTaskIdOrderByCreatedAtDesc(taskId, pageable);
+        if (!taskRepository.existsById(taskId)) {
+            throw new TaskNotFoundException(taskId);
+        }
+        Page<CommentJpa> comments = commentRepository.findByTaskIdOrderByCreatedAtDesc(taskId, pageable);
         return commentMapper.toResponsePage(comments);
     }
 
     public CommentScrollResponse getCommentsByTaskScroll(Long taskId, String cursor, int limit) {
+        if (!taskRepository.existsById(taskId)) {
+            throw new TaskNotFoundException(taskId);
+        }
         OffsetDateTime cursorTime = (cursor == null || cursor.isBlank())
                 ? OffsetDateTime.now()
                 : OffsetDateTime.parse(cursor);
         Pageable pageable = PageRequest.of(
                 0, limit, Sort.by("createdAt").descending());
-        Slice<Comment> slice = commentRepository
+        Slice<CommentJpa> slice = commentRepository
                 .findByTaskIdAndCreatedAtBeforeOrderByCreatedAtDesc(taskId, cursorTime, pageable);
         List<CommentResponse> responses = commentMapper
                 .toResponseList(slice.getContent());
@@ -89,7 +87,7 @@ public class CommentService {
 
     @Transactional
     public CommentResponse updateComment(Long id, UpdateCommentRequest request) {
-        Comment comment = commentRepository.findById(id)
+        CommentJpa comment = commentRepository.findById(id)
                 .orElseThrow(() -> new CommentNotFoundException(id));
 
         boolean hasChanges = false;
@@ -100,7 +98,7 @@ public class CommentService {
             hasChanges = true;
         }
 
-        Comment saved = hasChanges ? commentRepository.save(comment) : comment;
+        CommentJpa saved = hasChanges ? commentRepository.save(comment) : comment;
         return commentMapper.toResponse(saved);
     }
 

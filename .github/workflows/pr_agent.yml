@@ -1,0 +1,30 @@
+name: PR Agent
+
+on:
+  pull_request:
+    types: [ opened, synchronize, reopened ]
+
+jobs:
+  pr_agent:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: PR Agent action step
+        uses: qodo-ai/pr-agent@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          config.model: "openrouter/meta-llama/llama-3.1-8b-instruct:free"
+          config.fallback_models: '["openrouter/google/gemini-flash-1.5-exp:free", "openrouter/mistralai/mistral-7b-instruct:free"]'
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          config.custom_model_max_tokens: "128000"
+          github_action_config.auto_review: "true"
+          github_action_config.auto_describe: "true"
+          github_action_config.auto_improve: "true"

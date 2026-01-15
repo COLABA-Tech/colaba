@@ -13,34 +13,10 @@ databaseChangeLog:
               - column: { name: priority, type: VARCHAR(20) }
               - column: { name: project_id, type: BIGINT, constraints: { nullable: false } }
               - column: { name: assignee_id, type: BIGINT }
-              - column: { name: reporter_id, type: BIGINT, constraints: { nullable: false } }
+              - column: { name: reporter_id, type: BIGINT }
               - column: { name: due_date, type: DATE }
-              - column: { name: created_at, type: TIMESTAMPTZ, defaultValue: "now()" }
-              - column: { name: updated_at, type: TIMESTAMPTZ, defaultValue: "now()" }
-
-        - addForeignKeyConstraint:
-            baseTableName: tasks
-            baseColumnNames: project_id
-            referencedTableName: projects
-            referencedColumnNames: id
-            constraintName: fk_tasks_project
-            onDelete: CASCADE
-
-        - addForeignKeyConstraint:
-            baseTableName: tasks
-            baseColumnNames: assignee_id
-            referencedTableName: users
-            referencedColumnNames: id
-            constraintName: fk_tasks_assignee
-            onDelete: SET NULL
-
-        - addForeignKeyConstraint:
-            baseTableName: tasks
-            baseColumnNames: reporter_id
-            referencedTableName: users
-            referencedColumnNames: id
-            constraintName: fk_tasks_reporter
-            onDelete: SET NULL
+              - column: { name: created_at, type: TIMESTAMPTZ, constraints: { nullable: false }, defaultValueComputed: CURRENT_TIMESTAMP }
+              - column: { name: updated_at, type: TIMESTAMPTZ, constraints: { nullable: false }, defaultValueComputed: CURRENT_TIMESTAMP }
 
         - createIndex:
             tableName: tasks
@@ -53,15 +29,3 @@ databaseChangeLog:
             indexName: idx_tasks_assignee_id
             columns:
               - column: { name: assignee_id }
-
-        - sql:
-            sql: >
-              ALTER TABLE tasks
-              ADD CONSTRAINT chk_tasks_status
-              CHECK (status IN ('TODO', 'IN_PROGRESS', 'IN_REVIEW', 'BLOCKED', 'DONE', 'CANCELLED'))
-
-        - sql:
-            sql: >
-              ALTER TABLE tasks
-              ADD CONSTRAINT chk_tasks_priority
-              CHECK (priority IN ('LOW', 'MEDIUM', 'HIGH', 'URGENT') OR priority IS NULL)

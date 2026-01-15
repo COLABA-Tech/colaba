@@ -1,13 +1,13 @@
 package com.example.colaba.project.controller;
 
+import com.example.colaba.project.dto.project.CreateProjectRequest;
+import com.example.colaba.project.dto.project.ProjectScrollResponse;
+import com.example.colaba.project.dto.project.UpdateProjectRequest;
 import com.example.colaba.project.service.ProjectService;
 import com.example.colaba.project.service.TagService;
-import com.example.colaba.shared.controller.BaseController;
-import com.example.colaba.shared.dto.project.CreateProjectRequest;
-import com.example.colaba.shared.dto.project.ProjectResponse;
-import com.example.colaba.shared.dto.project.ProjectScrollResponse;
-import com.example.colaba.shared.dto.project.UpdateProjectRequest;
-import com.example.colaba.shared.dto.tag.TagResponse;
+import com.example.colaba.shared.common.controller.BaseController;
+import com.example.colaba.shared.common.dto.project.ProjectResponse;
+import com.example.colaba.shared.common.dto.tag.TagResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -18,9 +18,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
@@ -43,14 +43,9 @@ public class ProjectController extends BaseController {
     })
     public Mono<ResponseEntity<ProjectResponse>> create(@Valid @RequestBody CreateProjectRequest request) {
         return projectService.createProject(request)
-                .map(projectResponse ->
-                        ResponseEntity.created(
-                                ServletUriComponentsBuilder.fromCurrentRequestUri()
-                                        .path("/{id}")
-                                        .buildAndExpand(projectResponse.id())
-                                        .toUri()
-                        ).body(projectResponse)
-                );
+                .map(projectResponse -> ResponseEntity
+                        .created(URI.create("/api/projects/" + projectResponse.id()))
+                        .body(projectResponse));
     }
 
     @PutMapping("/{id}")
@@ -102,8 +97,9 @@ public class ProjectController extends BaseController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "List of all projects")
     })
-    public Mono<ResponseEntity<List<ProjectResponse>>> getAll() {
-        return projectService.getAllProjects()
+    public Mono<ResponseEntity<Page<ProjectResponse>>> getAll(Pageable pageable) {
+        pageable = validatePageable(pageable);
+        return projectService.getAllProjects(pageable)
                 .map(ResponseEntity::ok);
     }
 
@@ -138,9 +134,9 @@ public class ProjectController extends BaseController {
             @ApiResponse(responseCode = "204", description = "Project deleted successfully"),
             @ApiResponse(responseCode = "404", description = "Project not found")
     })
-    public Mono<ResponseEntity<Void>> delete(@PathVariable("id") Long id) {
-        return projectService.deleteProject(id)
-                .then(Mono.just(ResponseEntity.noContent().build()));
+    public ResponseEntity<Void> delete(@PathVariable("id") Long id) {
+        projectService.deleteProject(id);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{id}/tags")

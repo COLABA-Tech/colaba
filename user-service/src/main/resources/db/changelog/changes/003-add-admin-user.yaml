@@ -1,0 +1,18 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-admin-user
+      author: whatever125
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - sqlCheck:
+                expectedResult: 1
+                sql: SELECT COUNT(*) FROM users WHERE username = 'admin'
+      changes:
+        - insert:
+            tableName: users
+            columns:
+              - column: { name: username, value: 'admin' }
+              - column: { name: email, value: '${adminEmail}' }
+              - column: { name: password, value: '${adminPasswordHash}' }
+              - column: { name: role, value: 'ADMIN' }

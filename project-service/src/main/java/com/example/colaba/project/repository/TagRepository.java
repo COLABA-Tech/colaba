@@ -1,21 +1,21 @@
 package com.example.colaba.project.repository;
 
-import com.example.colaba.shared.entity.Project;
-import com.example.colaba.shared.entity.Tag;
+import com.example.colaba.project.entity.TagJpa;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
 import java.util.Optional;
 
-public interface TagRepository extends JpaRepository<Tag, Long> {
-    Page<Tag> findByProject(Project project, Pageable pageable);
+public interface TagRepository extends JpaRepository<TagJpa, Long> {
+    Page<TagJpa> findByProjectId(Long projectId, Pageable pageable);
 
-    @Query("SELECT t FROM Tag t JOIN t.tasks ts WHERE ts.id = :taskId")
-    List<Tag> findByTaskId(@Param("taskId") Long taskId);
+    Optional<TagJpa> findByProjectIdAndNameIgnoreCase(Long projectId, String name);
 
-    Optional<Tag> findByProjectIdAndNameIgnoreCase(Long projectId, String name);
+    @Modifying
+    @Query("DELETE FROM TagJpa t WHERE t.projectId = :projectId")
+    void deleteByProjectId(@Param("projectId") Long projectId);
 }

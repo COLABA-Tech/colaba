@@ -1,6 +1,6 @@
 package com.example.colaba.user.repository;
 
-import com.example.colaba.shared.entity.User;
+import com.example.colaba.user.entity.User;
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.r2dbc.repository.R2dbcRepository;
 import org.springframework.data.repository.query.Param;
@@ -10,6 +10,8 @@ import reactor.core.publisher.Mono;
 @Repository
 public interface UserRepository extends R2dbcRepository<User, Long> {
     Mono<User> findByUsername(String username);
+
+    Mono<User> findByEmail(String email);
 
     Mono<Boolean> existsByUsername(String username);
 

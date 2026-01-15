@@ -1,10 +1,10 @@
 package com.example.colaba.project.controller;
 
+import com.example.colaba.project.dto.projectmember.CreateProjectMemberRequest;
+import com.example.colaba.project.dto.projectmember.ProjectMemberResponse;
+import com.example.colaba.project.dto.projectmember.UpdateProjectMemberRequest;
 import com.example.colaba.project.service.ProjectMemberService;
-import com.example.colaba.shared.controller.BaseController;
-import com.example.colaba.shared.dto.projectmember.CreateProjectMemberRequest;
-import com.example.colaba.shared.dto.projectmember.ProjectMemberResponse;
-import com.example.colaba.shared.dto.projectmember.UpdateProjectMemberRequest;
+import com.example.colaba.shared.common.controller.BaseController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;

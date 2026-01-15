@@ -1,85 +1,26 @@
 databaseChangeLog:
   - changeSet:
-      id: create-comments
+      id: create-comments-table
       author: bozhena
       changes:
         - createTable:
             tableName: comments
             columns:
-              - column:
-                  name: id
-                  type: bigserial
-                  autoIncrement: true
-                  constraints:
-                    primaryKey: true
-                    nullable: false
-              - column:
-                  name: task_id
-                  type: bigint
-                  constraints:
-                    nullable: false
-                    foreignKeyName: fk_comment_task
-                    references: tasks(id)
-                    deleteCascade: true
-              - column:
-                  name: user_id
-                  type: bigint
-                  constraints:
-                    nullable: false
-                    foreignKeyName: fk_comment_user
-                    references: users(id)
-                    deleteCascade: true
-              - column:
-                  name: content
-                  type: text
-                  constraints:
-                    nullable: false
-              - column:
-                  name: created_at
-                  type: timestamptz
-                  defaultValueComputed: now()
-                  constraints:
-                    nullable: false
-      rollback:
-        - dropTable:
-            tableName: comments
-  - changeSet:
-      id: add-indexes-comments
-      author: bozhena
-      changes:
+              - column: { name: id, type: BIGSERIAL, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: task_id, type: BIGINT, constraints: { nullable: false } }
+              - column: { name: user_id, type: BIGINT, constraints: { nullable: false } }
+              - column: { name: content, type: TEXT, constraints: { nullable: false } }
+              - column: { name: created_at, type: TIMESTAMPTZ, constraints: { nullable: false }, defaultValueComputed: CURRENT_TIMESTAMP }
+              - column: { name: updated_at, type: TIMESTAMPTZ, constraints: { nullable: false }, defaultValueComputed: CURRENT_TIMESTAMP }
+
         - createIndex:
-            indexName: idx_comments_task_id
             tableName: comments
+            indexName: idx_comments_task_id
             columns:
-              - column:
-                  name: task_id
+              - column: { name: task_id }
+
         - createIndex:
+            tableName: comments
             indexName: idx_comments_user_id
-            tableName: comments
             columns:
-              - column:
-                  name: user_id
-      rollback:
-        - dropIndex:
-            indexName: idx_comments_task_id
-            tableName: comments
-        - dropIndex:
-            indexName: idx_comments_user_id
-            tableName: comments
-  - changeSet:
-      id: 004.1-add-updated-at
-      author: bozhena
-      changes:
-        - addColumn:
-            tableName: comments
-            columns:
-              - column:
-                  name: updated_at
-                  type: timestamptz
-                  defaultValueComputed: now()
-                  constraints:
-                    nullable: false
-      rollback:
-        - dropColumn:
-            tableName: comments
-            columnName: updated_at
+              - column: { name: user_id }

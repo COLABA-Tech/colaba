@@ -1,10 +1,10 @@
 package com.example.colaba.project.controller;
 
+import com.example.colaba.project.dto.tag.CreateTagRequest;
+import com.example.colaba.project.dto.tag.UpdateTagRequest;
 import com.example.colaba.project.service.TagService;
-import com.example.colaba.shared.controller.BaseController;
-import com.example.colaba.shared.dto.tag.CreateTagRequest;
-import com.example.colaba.shared.dto.tag.TagResponse;
-import com.example.colaba.shared.dto.tag.UpdateTagRequest;
+import com.example.colaba.shared.common.controller.BaseController;
+import com.example.colaba.shared.common.dto.tag.TagResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;

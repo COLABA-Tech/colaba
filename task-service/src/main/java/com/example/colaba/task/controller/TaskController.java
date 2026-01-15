@@ -1,9 +1,9 @@
 package com.example.colaba.task.controller;
 
-import com.example.colaba.shared.controller.BaseController;
-import com.example.colaba.shared.dto.task.CreateTaskRequest;
-import com.example.colaba.shared.dto.task.TaskResponse;
-import com.example.colaba.shared.dto.task.UpdateTaskRequest;
+import com.example.colaba.shared.common.controller.BaseController;
+import com.example.colaba.task.dto.task.CreateTaskRequest;
+import com.example.colaba.task.dto.task.TaskResponse;
+import com.example.colaba.task.dto.task.UpdateTaskRequest;
 import com.example.colaba.task.service.TaskService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
