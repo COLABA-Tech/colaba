@@ -231,7 +231,8 @@ class ProjectServiceTest {
         StepVerifier.create(resultMono)
                 .expectNextMatches(page ->
                         page.getContent().size() == 1 &&
-                                page.getContent().getFirst().id().equals(testId))
+                                page.getContent().get(0).id().equals(testId)
+                )
                 .verifyComplete();
 
         verify(projectRepository).findAll(pageable);
@@ -516,7 +517,7 @@ class ProjectServiceTest {
         StepVerifier.create(resultMono)
                 .expectNextMatches(list ->
                         list.size() == 1 &&
-                                list.getFirst().id().equals(testId))
+                                list.get(0).id().equals(testId))
                 .verifyComplete();
 
         verify(userServiceClient).userExists(testUserId);

@@ -96,7 +96,7 @@ class TagServiceTest {
         StepVerifier.create(resultMono)
                 .expectNextMatches(page ->
                         page.getContent().size() == 1 &&
-                                page.getContent().getFirst().id().equals(testTagId))
+                                page.getContent().get(0).id().equals(testTagId))
                 .verifyComplete();
 
         verify(tagRepository).findAll(pageable);
@@ -165,7 +165,7 @@ class TagServiceTest {
         StepVerifier.create(resultMono)
                 .expectNextMatches(page ->
                         page.getContent().size() == 1 &&
-                                page.getContent().getFirst().id().equals(testTagId))
+                                page.getContent().get(0).id().equals(testTagId))
                 .verifyComplete();
 
         verify(projectService).getProjectEntityById(testProjectId);
