@@ -28,7 +28,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/projects")
 @RequiredArgsConstructor
-@Tag(name = "Projects", description = "API for managing projects, including creation, updates, owner changes, and retrieval")
+@Tag(name = "Projects Public", description = "API for managing projects")
 public class ProjectController extends BaseController {
 
     private final ProjectService projectService;
