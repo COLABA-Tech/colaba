@@ -3,8 +3,8 @@ package com.example.colaba.project.controller;
 import com.example.colaba.project.dto.project.CreateProjectRequest;
 import com.example.colaba.project.dto.project.ProjectScrollResponse;
 import com.example.colaba.project.dto.project.UpdateProjectRequest;
-import com.example.colaba.project.service.ProjectService;
-import com.example.colaba.project.service.TagService;
+import com.example.colaba.project.service.ProjectServicePublic;
+import com.example.colaba.project.service.TagServicePublic;
 import com.example.colaba.shared.common.controller.BaseController;
 import com.example.colaba.shared.common.dto.project.ProjectResponse;
 import com.example.colaba.shared.common.dto.tag.TagResponse;
@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
@@ -31,8 +32,8 @@ import java.util.Map;
 @Tag(name = "Projects Public", description = "API for managing projects")
 public class ProjectController extends BaseController {
 
-    private final ProjectService projectService;
-    private final TagService tagService;
+    private final ProjectServicePublic projectService;
+    private final TagServicePublic tagService;
 
     @PostMapping
     @Operation(summary = "Create a new project", description = "Creates a new project with the provided name, description, and owner ID. Validates for unique name and existing owner.")
@@ -41,8 +42,10 @@ public class ProjectController extends BaseController {
             @ApiResponse(responseCode = "400", description = "Validation error or duplicate project name"),
             @ApiResponse(responseCode = "404", description = "Owner user not found")
     })
-    public Mono<ResponseEntity<ProjectResponse>> create(@Valid @RequestBody CreateProjectRequest request) {
-        return projectService.createProject(request)
+    public Mono<ResponseEntity<ProjectResponse>> create(
+            @Valid @RequestBody CreateProjectRequest request,
+            @AuthenticationPrincipal Long currentUserId) {
+        return projectService.createProject(request, currentUserId)
                 .map(projectResponse -> ResponseEntity
                         .created(URI.create("/api/projects/" + projectResponse.id()))
                         .body(projectResponse));
@@ -55,9 +58,11 @@ public class ProjectController extends BaseController {
             @ApiResponse(responseCode = "400", description = "Validation error or duplicate project name"),
             @ApiResponse(responseCode = "404", description = "Project not found")
     })
-    public Mono<ResponseEntity<ProjectResponse>> update(@PathVariable("id") Long id,
-                                                        @Valid @RequestBody UpdateProjectRequest request) {
-        return projectService.updateProject(id, request)
+    public Mono<ResponseEntity<ProjectResponse>> update(
+            @PathVariable("id") Long id,
+            @Valid @RequestBody UpdateProjectRequest request,
+            @AuthenticationPrincipal Long currentUserId) {
+        return projectService.updateProject(id, request, currentUserId)
                 .map(ResponseEntity::ok);
     }
 
@@ -70,14 +75,13 @@ public class ProjectController extends BaseController {
     })
     public Mono<ResponseEntity<ProjectResponse>> changeOwner(
             @PathVariable Long id,
-            @RequestBody Map<String, Long> request) {
-
+            @RequestBody Map<String, Long> request,
+            @AuthenticationPrincipal Long currentUserId) {
         Long newOwnerId = request.get("ownerId");
         if (newOwnerId == null) {
             return Mono.error(new IllegalArgumentException("ownerId is required"));
         }
-
-        return projectService.changeProjectOwner(id, newOwnerId)
+        return projectService.changeProjectOwner(id, newOwnerId, currentUserId)
                 .map(ResponseEntity::ok);
     }
 
@@ -87,8 +91,10 @@ public class ProjectController extends BaseController {
             @ApiResponse(responseCode = "200", description = "Project found"),
             @ApiResponse(responseCode = "404", description = "Project not found")
     })
-    public Mono<ResponseEntity<ProjectResponse>> getById(@PathVariable("id") Long id) {
-        return projectService.getProjectById(id)
+    public Mono<ResponseEntity<ProjectResponse>> getById(
+            @PathVariable("id") Long id,
+            @AuthenticationPrincipal Long currentUserId) {
+        return projectService.getProjectById(id, currentUserId)
                 .map(ResponseEntity::ok);
     }
 
@@ -97,9 +103,11 @@ public class ProjectController extends BaseController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "List of all projects")
     })
-    public Mono<ResponseEntity<Page<ProjectResponse>>> getAll(Pageable pageable) {
+    public Mono<ResponseEntity<Page<ProjectResponse>>> getAll(
+            Pageable pageable,
+            @AuthenticationPrincipal Long currentUserId) {
         pageable = validatePageable(pageable);
-        return projectService.getAllProjects(pageable)
+        return projectService.getAllProjects(pageable, currentUserId)
                 .map(ResponseEntity::ok);
     }
 
@@ -109,8 +117,10 @@ public class ProjectController extends BaseController {
             @ApiResponse(responseCode = "200", description = "List of projects for the owner"),
             @ApiResponse(responseCode = "404", description = "Owner user not found")
     })
-    public Mono<ResponseEntity<List<ProjectResponse>>> getByOwner(@PathVariable("ownerId") Long ownerId) {
-        return projectService.getProjectByOwnerId(ownerId)
+    public Mono<ResponseEntity<List<ProjectResponse>>> getByOwner(
+            @PathVariable("ownerId") Long ownerId,
+            @AuthenticationPrincipal Long currentUserId) {
+        return projectService.getProjectByOwnerId(ownerId, currentUserId)
                 .map(ResponseEntity::ok);
     }
 
@@ -122,9 +132,10 @@ public class ProjectController extends BaseController {
     })
     public Mono<ResponseEntity<ProjectScrollResponse>> scroll(
             @RequestParam(value = "page", required = false, defaultValue = "0") int page,
-            @RequestParam(value = "size", required = false, defaultValue = "20") int size) {
+            @RequestParam(value = "size", required = false, defaultValue = "20") int size,
+            @AuthenticationPrincipal Long currentUserId) {
         if (size > 50) size = 50;
-        return projectService.scroll(page, size)
+        return projectService.scroll(page, size, currentUserId)
                 .map(ResponseEntity::ok);
     }
 
@@ -134,8 +145,10 @@ public class ProjectController extends BaseController {
             @ApiResponse(responseCode = "204", description = "Project deleted successfully"),
             @ApiResponse(responseCode = "404", description = "Project not found")
     })
-    public ResponseEntity<Void> delete(@PathVariable("id") Long id) {
-        projectService.deleteProject(id);
+    public ResponseEntity<Void> delete(
+            @PathVariable("id") Long id,
+            @AuthenticationPrincipal Long currentUserId) {
+        projectService.deleteProject(id, currentUserId);
         return ResponseEntity.noContent().build();
     }
 
@@ -147,10 +160,10 @@ public class ProjectController extends BaseController {
     })
     public Mono<ResponseEntity<Page<TagResponse>>> getTagsByProject(
             @PathVariable Long id,
-            Pageable pageable) {
-
+            Pageable pageable,
+            @AuthenticationPrincipal Long currentUserId) {
         pageable = validatePageable(pageable);
-        return tagService.getTagsByProject(id, pageable)
+        return tagService.getTagsByProject(id, pageable, currentUserId)
                 .map(ResponseEntity::ok);
     }
 }

@@ -21,9 +21,9 @@ public class JwtService {
     @Value("${jwt.issuer}")
     private String issuer;
 
-    public String generateToken(String username, String role) {
+    public String generateToken(Long id, String role) {
         return Jwts.builder()
-                .subject(username)
+                .subject(String.valueOf(id))
                 .claim("role", role)
                 .issuer(issuer)
                 .issuedAt(new Date(System.currentTimeMillis()))
@@ -40,8 +40,8 @@ public class JwtService {
                 .getPayload();
     }
 
-    public String extractUsername(String token) {
-        return validateToken(token).getSubject();
+    public Long extractId(String token) {
+        return Long.valueOf(validateToken(token).getSubject());
     }
 
     public String extractRole(String token) {

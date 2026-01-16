@@ -1,6 +1,5 @@
 package com.example.colaba.project.service;
 
-import com.example.colaba.project.circuit.TaskServiceClientWrapper;
 import com.example.colaba.project.dto.tag.CreateTagRequest;
 import com.example.colaba.project.dto.tag.UpdateTagRequest;
 import com.example.colaba.project.entity.TagJpa;
@@ -9,6 +8,7 @@ import com.example.colaba.project.repository.TagRepository;
 import com.example.colaba.shared.common.dto.tag.TagResponse;
 import com.example.colaba.shared.common.exception.tag.DuplicateTagException;
 import com.example.colaba.shared.common.exception.tag.TagNotFoundException;
+import com.example.colaba.shared.webflux.circuit.TaskServiceClientWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -31,8 +31,11 @@ public class TagService {
     }
 
     public Mono<TagResponse> getTagById(Long id) {
+        return getTagEntityById(id).map(tagMapper::toTagResponse);
+    }
+
+    public Mono<TagJpa> getTagEntityById(Long id) {
         return Mono.fromCallable(() -> tagRepository.findById(id)
-                        .map(tagMapper::toTagResponse)
                         .orElseThrow(() -> new TagNotFoundException(id)))
                 .subscribeOn(Schedulers.boundedElastic());
     }

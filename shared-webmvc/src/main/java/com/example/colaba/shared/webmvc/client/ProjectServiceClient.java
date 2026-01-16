@@ -1,4 +1,4 @@
-package com.example.colaba.task.client;
+package com.example.colaba.shared.webmvc.client;
 
 import com.example.colaba.shared.common.dto.project.ProjectResponse;
 import com.example.colaba.shared.common.dto.tag.TagResponse;
@@ -36,4 +36,20 @@ public interface ProjectServiceClient {
 
     @GetMapping("/api/tags/internal/{id}/exists")
     boolean tagExists(@PathVariable Long id);
+
+    @GetMapping("/api/projects/internal/{projectId}/user/{userId}/any-role")
+    boolean hasAnyRole(@PathVariable("projectId") Long projectId,
+                       @PathVariable("userId") Long userId);
+
+    @GetMapping("/api/projects/internal/{projectId}/user/{userId}/at-least-editor")
+    boolean isAtLeastEditor(@PathVariable("projectId") Long projectId,
+                            @PathVariable("userId") Long userId);
+
+    @GetMapping("/api/projects/internal/{projectId}/user/{userId}/owner")
+    boolean isOwner(@PathVariable("projectId") Long projectId,
+                    @PathVariable("userId") Long userId);
+
+    @GetMapping("/api/projects/internal/{projectId}/user/{userId}/role")
+    String getUserProjectRole(@PathVariable("projectId") Long projectId,
+                              @PathVariable("userId") Long userId);
 }

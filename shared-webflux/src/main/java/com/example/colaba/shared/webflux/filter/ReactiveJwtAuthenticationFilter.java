@@ -37,7 +37,7 @@ public class ReactiveJwtAuthenticationFilter implements WebFilter {
                     .map(claims -> {
                         String authority = "ROLE_" + claims.get("role", String.class);
                         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                                claims.getSubject(),
+                                Long.valueOf(claims.getSubject()),
                                 null,
                                 List.of(new SimpleGrantedAuthority(authority))
                         );

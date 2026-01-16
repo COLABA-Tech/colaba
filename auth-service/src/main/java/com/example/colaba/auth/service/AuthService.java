@@ -1,12 +1,12 @@
 package com.example.colaba.auth.service;
 
-import com.example.colaba.auth.client.UserServiceClient;
 import com.example.colaba.auth.dto.AuthResponse;
 import com.example.colaba.auth.dto.LoginRequest;
 import com.example.colaba.auth.dto.RegisterRequest;
 import com.example.colaba.shared.common.dto.user.UserAuthDto;
 import com.example.colaba.shared.common.dto.user.UserResponse;
 import com.example.colaba.shared.common.security.JwtService;
+import com.example.colaba.shared.webmvc.client.UserServiceClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -56,7 +56,7 @@ public class AuthService {
             userAuth = userServiceClient.findForAuthByUsername(request.login());
         }
         String token = jwtService.generateToken(
-                userAuth.username(),
+                userAuth.id(),
                 userDetails.getAuthorities().iterator().next().getAuthority().replace("ROLE_", "")
         );
         return new AuthResponse(token, new UserResponse(

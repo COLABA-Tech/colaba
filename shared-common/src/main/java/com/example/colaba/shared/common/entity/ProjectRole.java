@@ -1,11 +1,11 @@
-package com.example.colaba.project.entity.projectmember;
+package com.example.colaba.shared.common.entity;
 
 import lombok.Getter;
 
 @Getter
 public enum ProjectRole {
     OWNER("OWNER", "Project owner with full permissions"),
-    MEMBER("MEMBER", "Project member with edit permissions"),
+    EDITOR("EDITOR", "Project editor with edit permissions"),
     VIEWER("VIEWER", "Project viewer with read-only permissions");
 
     private final String value;

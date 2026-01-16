@@ -6,9 +6,9 @@ import com.example.colaba.shared.common.dto.tag.TagResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/tags/internal")
@@ -19,17 +19,27 @@ public class TagInternalController {
     private final TagMapper tagMapper;
 
     @GetMapping("/{id}")
-    TagResponse getTagById(@PathVariable Long id) {
-        return tagRepository.findById(id).map(tagMapper::toTagResponse).orElse(null);
+    public Mono<TagResponse> getTagById(@PathVariable Long id) {
+        return Mono.fromCallable(() ->
+                tagRepository.findById(id)
+                        .map(tagMapper::toTagResponse)
+                        .orElse(null)
+        );
     }
 
     @PostMapping("/batch")
-    List<TagResponse> getTagsByIds(@RequestBody List<Long> tagIds) {
-        return tagRepository.findAllById(tagIds).stream().map(tagMapper::toTagResponse).collect(Collectors.toList());
+    public Mono<List<TagResponse>> getTagsByIds(@RequestBody List<Long> tagIds) {
+        return Mono.fromCallable(() ->
+                tagRepository.findAllById(tagIds).stream()
+                        .map(tagMapper::toTagResponse)
+                        .toList()
+        );
     }
 
     @GetMapping("/{id}/exists")
-    boolean tagExists(@PathVariable Long id) {
-        return tagRepository.existsById(id);
+    public Mono<Boolean> tagExists(@PathVariable Long id) {
+        return Mono.fromCallable(() ->
+                tagRepository.existsById(id)
+        );
     }
 }

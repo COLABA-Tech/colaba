@@ -1,25 +1,21 @@
 package com.example.colaba.project.service;
 
-import com.example.colaba.project.circuit.TaskServiceClientWrapper;
-import com.example.colaba.project.circuit.UserServiceClientWrapper;
 import com.example.colaba.project.dto.project.CreateProjectRequest;
-import com.example.colaba.project.dto.project.ProjectScrollResponse;
 import com.example.colaba.project.dto.project.UpdateProjectRequest;
 import com.example.colaba.project.entity.ProjectJpa;
 import com.example.colaba.project.entity.projectmember.ProjectMemberJpa;
-import com.example.colaba.project.entity.projectmember.ProjectRole;
 import com.example.colaba.project.mapper.ProjectMapper;
 import com.example.colaba.project.repository.ProjectMemberRepository;
 import com.example.colaba.project.repository.ProjectRepository;
 import com.example.colaba.project.repository.TagRepository;
 import com.example.colaba.shared.common.dto.project.ProjectResponse;
+import com.example.colaba.shared.common.entity.ProjectRole;
 import com.example.colaba.shared.common.exception.project.DuplicateProjectNameException;
 import com.example.colaba.shared.common.exception.project.ProjectNotFoundException;
 import com.example.colaba.shared.common.exception.user.UserNotFoundException;
+import com.example.colaba.shared.webflux.circuit.TaskServiceClientWrapper;
+import com.example.colaba.shared.webflux.circuit.UserServiceClientWrapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
@@ -81,11 +77,6 @@ public class ProjectService {
                 .subscribeOn(Schedulers.boundedElastic());
     }
 
-    public Mono<Page<ProjectResponse>> getAllProjects(Pageable pageable) {
-        return Mono.fromCallable(() -> projectMapper.toProjectResponsePage(projectRepository.findAll(pageable)))
-                .subscribeOn(Schedulers.boundedElastic());
-    }
-
     @Transactional
     public Mono<ProjectResponse> updateProject(Long id, UpdateProjectRequest request) {
         return Mono.fromCallable(() -> {
@@ -111,7 +102,18 @@ public class ProjectService {
                 if (!userExists) {
                     throw new UserNotFoundException(request.ownerId());
                 }
+                projectMemberRepository.updateRole(id, project.getOwnerId(), ProjectRole.EDITOR);
                 project.setOwnerId(request.ownerId());
+                if (projectMemberRepository.existsByProjectIdAndUserId(id, request.ownerId())) {
+                    projectMemberRepository.updateRole(id, request.ownerId(), ProjectRole.OWNER);
+                } else {
+                    ProjectMemberJpa newOwnerMember = ProjectMemberJpa.builder()
+                            .projectId(id)
+                            .userId(request.ownerId())
+                            .role(ProjectRole.OWNER)
+                            .build();
+                    projectMemberRepository.save(newOwnerMember);
+                }
                 hasChanges = true;
             }
 
@@ -132,8 +134,19 @@ public class ProjectService {
             if (!userExists) {
                 throw new UserNotFoundException(newOwnerId);
             }
+            projectMemberRepository.updateRole(projectId, newOwnerId, ProjectRole.EDITOR);
             project.setOwnerId(newOwnerId);
             ProjectJpa saved = projectRepository.save(project);
+            if (projectMemberRepository.existsByProjectIdAndUserId(projectId, newOwnerId)) {
+                projectMemberRepository.updateRole(projectId, newOwnerId, ProjectRole.OWNER);
+            } else {
+                ProjectMemberJpa newOwnerMember = ProjectMemberJpa.builder()
+                        .projectId(projectId)
+                        .userId(newOwnerId)
+                        .role(ProjectRole.OWNER)
+                        .build();
+                projectMemberRepository.save(newOwnerMember);
+            }
             return projectMapper.toProjectResponse(saved);
         }).subscribeOn(Schedulers.boundedElastic());
     }
@@ -160,27 +173,8 @@ public class ProjectService {
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
-    public Mono<ProjectScrollResponse> scroll(int page, int size) {
-        return Mono.fromCallable(() -> {
-            Pageable pageable = PageRequest.of(page, size);
-            Page<ProjectJpa> projectPage = projectRepository.findAll(pageable);
-
-            List<ProjectResponse> projects = projectMapper.toProjectResponseList(projectPage.getContent());
-            boolean hasNext = projectPage.hasNext();
-            long total = projectPage.getTotalElements();
-
-            return new ProjectScrollResponse(projects, hasNext, total);
-        }).subscribeOn(Schedulers.boundedElastic());
-    }
-
     @Transactional
-    public void handleUserDeletion(Long userId) {
-        projectMemberRepository.deleteByUserId(userId);
-    }
-
-    public Mono<Boolean> isMember(Long projectId, Long userId) {
-        return Mono.fromCallable(() -> {
-            return projectMemberRepository.existsByProjectIdAndUserId(projectId, userId);
-        }).subscribeOn(Schedulers.boundedElastic());
+    public Mono<Void> handleUserDeletion(Long userId) {
+        return Mono.fromRunnable(() -> projectMemberRepository.deleteByUserId(userId));
     }
 }

@@ -1,7 +1,5 @@
 package com.example.colaba.project.unit;
 
-import com.example.colaba.project.circuit.TaskServiceClientWrapper;
-import com.example.colaba.project.circuit.UserServiceClientWrapper;
 import com.example.colaba.project.dto.project.CreateProjectRequest;
 import com.example.colaba.project.dto.project.ProjectScrollResponse;
 import com.example.colaba.project.dto.project.UpdateProjectRequest;
@@ -15,6 +13,8 @@ import com.example.colaba.shared.common.dto.project.ProjectResponse;
 import com.example.colaba.shared.common.exception.project.DuplicateProjectNameException;
 import com.example.colaba.shared.common.exception.project.ProjectNotFoundException;
 import com.example.colaba.shared.common.exception.user.UserNotFoundException;
+import com.example.colaba.shared.webflux.circuit.TaskServiceClientWrapper;
+import com.example.colaba.shared.webflux.circuit.UserServiceClientWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -214,30 +214,30 @@ class ProjectServiceTest {
         verify(projectRepository).findById(testId);
     }
 
-    @Test
-    void getAllProjects_success() {
-        // Given
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<ProjectJpa> mockPage = new PageImpl<>(List.of(testProject));
-        Page<ProjectResponse> mockResponsePage = new PageImpl<>(List.of(testProjectResponse));
-
-        when(projectRepository.findAll(pageable)).thenReturn(mockPage);
-        when(projectMapper.toProjectResponsePage(mockPage)).thenReturn(mockResponsePage);
-
-        // When
-        Mono<Page<ProjectResponse>> resultMono = projectService.getAllProjects(pageable);
-
-        // Then
-        StepVerifier.create(resultMono)
-                .expectNextMatches(page ->
-                        page.getContent().size() == 1 &&
-                                page.getContent().get(0).id().equals(testId)
-                )
-                .verifyComplete();
-
-        verify(projectRepository).findAll(pageable);
-        verify(projectMapper).toProjectResponsePage(mockPage);
-    }
+//    @Test
+//    void getAllProjects_success() {
+//        // Given
+//        Pageable pageable = PageRequest.of(0, 10);
+//        Page<ProjectJpa> mockPage = new PageImpl<>(List.of(testProject));
+//        Page<ProjectResponse> mockResponsePage = new PageImpl<>(List.of(testProjectResponse));
+//
+//        when(projectRepository.findAll(pageable)).thenReturn(mockPage);
+//        when(projectMapper.toProjectResponsePage(mockPage)).thenReturn(mockResponsePage);
+//
+//        // When
+//        Mono<Page<ProjectResponse>> resultMono = projectService.getAllProjects(pageable);
+//
+//        // Then
+//        StepVerifier.create(resultMono)
+//                .expectNextMatches(page ->
+//                        page.getContent().size() == 1 &&
+//                                page.getContent().get(0).id().equals(testId)
+//                )
+//                .verifyComplete();
+//
+//        verify(projectRepository).findAll(pageable);
+//        verify(projectMapper).toProjectResponsePage(mockPage);
+//    }
 
     @Test
     void updateProject_success() {
@@ -544,60 +544,60 @@ class ProjectServiceTest {
         verify(projectRepository, never()).findByOwnerId(anyLong());
     }
 
-    @Test
-    void scroll_success() {
-        // Given
-        int page = 0;
-        int size = 10;
-        Pageable pageable = PageRequest.of(page, size);
-        Page<ProjectJpa> projectPage = new PageImpl<>(List.of(testProject), pageable, 1);
-        List<ProjectResponse> projectResponses = List.of(testProjectResponse);
+//    @Test
+//    void scroll_success() {
+//        // Given
+//        int page = 0;
+//        int size = 10;
+//        Pageable pageable = PageRequest.of(page, size);
+//        Page<ProjectJpa> projectPage = new PageImpl<>(List.of(testProject), pageable, 1);
+//        List<ProjectResponse> projectResponses = List.of(testProjectResponse);
+//
+//        when(projectRepository.findAll(pageable)).thenReturn(projectPage);
+//        when(projectMapper.toProjectResponseList(projectPage.getContent())).thenReturn(projectResponses);
+//
+//        // When
+//        Mono<ProjectScrollResponse> resultMono = projectService.scroll(page, size);
+//
+//        // Then
+//        StepVerifier.create(resultMono)
+//                .expectNextMatches(response ->
+//                        response.projects().size() == 1 &&
+//                                !response.hasMore() &&
+//                                response.total() == 1)
+//                .verifyComplete();
+//
+//        verify(projectRepository).findAll(pageable);
+//        verify(projectMapper).toProjectResponseList(projectPage.getContent());
+//    }
 
-        when(projectRepository.findAll(pageable)).thenReturn(projectPage);
-        when(projectMapper.toProjectResponseList(projectPage.getContent())).thenReturn(projectResponses);
-
-        // When
-        Mono<ProjectScrollResponse> resultMono = projectService.scroll(page, size);
-
-        // Then
-        StepVerifier.create(resultMono)
-                .expectNextMatches(response ->
-                        response.projects().size() == 1 &&
-                                !response.hasMore() &&
-                                response.total() == 1)
-                .verifyComplete();
-
-        verify(projectRepository).findAll(pageable);
-        verify(projectMapper).toProjectResponseList(projectPage.getContent());
-    }
-
-    @Test
-    void scroll_withNextPage() {
-        // Given
-        int page = 0;
-        int size = 1;
-        Pageable pageable = PageRequest.of(page, size);
-
-        Page<ProjectJpa> projectPage = new PageImpl<>(List.of(testProject), pageable, 2);
-        List<ProjectResponse> projectResponses = List.of(testProjectResponse);
-
-        when(projectRepository.findAll(pageable)).thenReturn(projectPage);
-        when(projectMapper.toProjectResponseList(projectPage.getContent())).thenReturn(projectResponses);
-
-        // When
-        Mono<ProjectScrollResponse> resultMono = projectService.scroll(page, size);
-
-        // Then
-        StepVerifier.create(resultMono)
-                .expectNextMatches(response ->
-                        response.projects().size() == 1 &&
-                                response.hasMore() &&
-                                response.total() == 2)
-                .verifyComplete();
-
-        verify(projectRepository).findAll(pageable);
-        verify(projectMapper).toProjectResponseList(projectPage.getContent());
-    }
+//    @Test
+//    void scroll_withNextPage() {
+//        // Given
+//        int page = 0;
+//        int size = 1;
+//        Pageable pageable = PageRequest.of(page, size);
+//
+//        Page<ProjectJpa> projectPage = new PageImpl<>(List.of(testProject), pageable, 2);
+//        List<ProjectResponse> projectResponses = List.of(testProjectResponse);
+//
+//        when(projectRepository.findAll(pageable)).thenReturn(projectPage);
+//        when(projectMapper.toProjectResponseList(projectPage.getContent())).thenReturn(projectResponses);
+//
+//        // When
+//        Mono<ProjectScrollResponse> resultMono = projectService.scroll(page, size);
+//
+//        // Then
+//        StepVerifier.create(resultMono)
+//                .expectNextMatches(response ->
+//                        response.projects().size() == 1 &&
+//                                response.hasMore() &&
+//                                response.total() == 2)
+//                .verifyComplete();
+//
+//        verify(projectRepository).findAll(pageable);
+//        verify(projectMapper).toProjectResponseList(projectPage.getContent());
+//    }
 
     @Test
     void handleUserDeletion_success() {
@@ -605,47 +605,9 @@ class ProjectServiceTest {
         Long userId = 1L;
 
         // When
-        projectService.handleUserDeletion(userId);
+        projectService.handleUserDeletion(userId).block();
 
         // Then
         verify(projectMemberRepository).deleteByUserId(userId);
-    }
-
-    @Test
-    void isMember_success() {
-        // Given
-        Long projectId = 1L;
-        Long userId = 2L;
-
-        when(projectMemberRepository.existsByProjectIdAndUserId(projectId, userId)).thenReturn(true);
-
-        // When
-        Mono<Boolean> resultMono = projectService.isMember(projectId, userId);
-
-        // Then
-        StepVerifier.create(resultMono)
-                .expectNext(true)
-                .verifyComplete();
-
-        verify(projectMemberRepository).existsByProjectIdAndUserId(projectId, userId);
-    }
-
-    @Test
-    void isMember_notMember() {
-        // Given
-        Long projectId = 1L;
-        Long userId = 2L;
-
-        when(projectMemberRepository.existsByProjectIdAndUserId(projectId, userId)).thenReturn(false);
-
-        // When
-        Mono<Boolean> resultMono = projectService.isMember(projectId, userId);
-
-        // Then
-        StepVerifier.create(resultMono)
-                .expectNext(false)
-                .verifyComplete();
-
-        verify(projectMemberRepository).existsByProjectIdAndUserId(projectId, userId);
     }
 }

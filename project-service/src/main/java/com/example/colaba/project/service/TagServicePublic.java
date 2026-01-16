@@ -1,0 +1,60 @@
+package com.example.colaba.project.service;
+
+import com.example.colaba.project.dto.tag.CreateTagRequest;
+import com.example.colaba.project.dto.tag.UpdateTagRequest;
+import com.example.colaba.project.mapper.TagMapper;
+import com.example.colaba.project.security.ProjectAccessCheckerLocal;
+import com.example.colaba.shared.common.dto.tag.TagResponse;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Mono;
+
+@Service
+@RequiredArgsConstructor
+public class TagServicePublic {
+    private final TagService tagService;
+    private final TagMapper tagMapper;
+    private final ProjectAccessCheckerLocal projectAccessCheckerLocal;
+
+    public Mono<Page<TagResponse>> getAllTags(Pageable pageable, Long currentUserId) {
+        // todo
+        return tagService.getAllTags(pageable);
+    }
+
+    public Mono<TagResponse> getTagById(Long id, Long currentUserId) {
+        return tagService.getTagEntityById(id)
+                .flatMap(tag -> projectAccessCheckerLocal.requireAnyRoleMono(tag.getProjectId(), currentUserId)
+                        .thenReturn(tag))
+                .map(tagMapper::toTagResponse);
+    }
+
+    public Mono<Page<TagResponse>> getTagsByProject(Long projectId, Pageable pageable, Long currentUserId) {
+        return projectAccessCheckerLocal.requireAnyRoleMono(projectId, currentUserId)
+                .then(tagService.getTagsByProject(projectId, pageable));
+    }
+
+    @Transactional
+    public Mono<TagResponse> createTag(CreateTagRequest request, Long currentUserId) {
+        return projectAccessCheckerLocal.requireAtLeastEditorMono(request.projectId(), currentUserId)
+                .then(tagService.createTag(request));
+    }
+
+    @Transactional
+    public Mono<TagResponse> updateTag(Long id, UpdateTagRequest request, Long currentUserId) {
+        return tagService.getTagEntityById(id)
+                .flatMap(tag -> projectAccessCheckerLocal.requireAtLeastEditorMono(tag.getProjectId(), currentUserId)
+                        .thenReturn(tag))
+                .flatMap(tag -> tagService.updateTag(id, request));
+    }
+
+    @Transactional
+    public Mono<Void> deleteTag(Long id, Long currentUserId) {
+        return tagService.getTagEntityById(id)
+                .flatMap(tag -> projectAccessCheckerLocal.requireAtLeastEditorMono(tag.getProjectId(), currentUserId)
+                        .thenReturn(tag))
+                .flatMap(tag -> tagService.deleteTag(id));
+    }
+}

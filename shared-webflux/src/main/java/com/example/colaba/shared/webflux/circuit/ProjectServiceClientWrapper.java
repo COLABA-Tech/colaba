@@ -1,8 +1,8 @@
-package com.example.colaba.user.circuit;
+package com.example.colaba.shared.webflux.circuit;
 
 import com.example.colaba.shared.common.dto.project.ProjectResponse;
 import com.example.colaba.shared.common.dto.tag.TagResponse;
-import com.example.colaba.user.client.ProjectServiceClient;
+import com.example.colaba.shared.webflux.client.ProjectServiceClient;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import lombok.RequiredArgsConstructor;
@@ -51,5 +51,21 @@ public class ProjectServiceClientWrapper {
 
     public boolean tagExists(Long tagId) {
         return cb().executeSupplier(() -> client.tagExists(tagId).block());
+    }
+
+    public boolean hasAnyRole(Long projectId, Long userId) {
+        return cb().executeSupplier(() -> client.hasAnyRole(projectId, userId).block());
+    }
+
+    public boolean isAtLeastEditor(Long projectId, Long userId) {
+        return cb().executeSupplier(() -> client.isAtLeastEditor(projectId, userId).block());
+    }
+
+    public boolean isOwner(Long projectId, Long userId) {
+        return cb().executeSupplier(() -> client.isOwner(projectId, userId).block());
+    }
+
+    public String getUserProjectRole(Long projectId, Long userId) {
+        return cb().executeSupplier(() -> client.getUserProjectRole(projectId, userId).block());
     }
 }

@@ -1,4 +1,4 @@
-package com.example.colaba.project.client;
+package com.example.colaba.shared.webflux.client;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.client.loadbalancer.reactive.ReactorLoadBalancerExchangeFilterFunction;

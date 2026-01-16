@@ -1,6 +1,5 @@
 package com.example.colaba.project.unit;
 
-import com.example.colaba.project.circuit.TaskServiceClientWrapper;
 import com.example.colaba.project.dto.tag.CreateTagRequest;
 import com.example.colaba.project.dto.tag.UpdateTagRequest;
 import com.example.colaba.project.entity.TagJpa;
@@ -12,6 +11,7 @@ import com.example.colaba.shared.common.dto.tag.TagResponse;
 import com.example.colaba.shared.common.exception.project.ProjectNotFoundException;
 import com.example.colaba.shared.common.exception.tag.DuplicateTagException;
 import com.example.colaba.shared.common.exception.tag.TagNotFoundException;
+import com.example.colaba.shared.webflux.circuit.TaskServiceClientWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

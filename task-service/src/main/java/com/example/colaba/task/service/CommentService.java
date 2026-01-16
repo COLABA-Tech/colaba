@@ -3,7 +3,7 @@ package com.example.colaba.task.service;
 import com.example.colaba.shared.common.exception.comment.CommentNotFoundException;
 import com.example.colaba.shared.common.exception.task.TaskNotFoundException;
 import com.example.colaba.shared.common.exception.user.UserNotFoundException;
-import com.example.colaba.task.circuit.UserServiceClientWrapper;
+import com.example.colaba.shared.webmvc.circuit.UserServiceClientWrapper;
 import com.example.colaba.task.dto.comment.CommentResponse;
 import com.example.colaba.task.dto.comment.CommentScrollResponse;
 import com.example.colaba.task.dto.comment.CreateCommentRequest;
@@ -54,6 +54,11 @@ public class CommentService {
         CommentJpa comment = commentRepository.findById(id)
                 .orElseThrow(() -> new CommentNotFoundException(id));
         return commentMapper.toResponse(comment);
+    }
+
+    public CommentJpa getCommentEntityById(Long id) {
+        return commentRepository.findById(id)
+                .orElseThrow(() -> new CommentNotFoundException(id));
     }
 
     public Page<CommentResponse> getCommentsByTask(Long taskId, Pageable pageable) {

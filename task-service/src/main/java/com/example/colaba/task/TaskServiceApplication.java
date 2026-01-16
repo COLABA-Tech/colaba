@@ -14,7 +14,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
         "com.example.colaba.shared.webmvc"
 })
 @EnableDiscoveryClient
-@EnableFeignClients(basePackages = "com.example.colaba.task.client")
+@EnableFeignClients(basePackages = "com.example.colaba.shared.webmvc.client")
 @Import(FeignConfig.class)
 @EnableJpaRepositories(basePackages = "com.example.colaba.task.repository")
 public class TaskServiceApplication {

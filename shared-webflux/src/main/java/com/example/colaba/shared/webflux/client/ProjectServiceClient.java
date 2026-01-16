@@ -1,4 +1,4 @@
-package com.example.colaba.user.client;
+package com.example.colaba.shared.webflux.client;
 
 import com.example.colaba.shared.common.dto.project.ProjectResponse;
 import com.example.colaba.shared.common.dto.tag.TagResponse;
@@ -81,5 +81,33 @@ public class ProjectServiceClient {
                 .uri("lb://project-service/api/tags/internal/{id}/exists", id)
                 .retrieve()
                 .bodyToMono(Boolean.class);
+    }
+
+    public Mono<Boolean> hasAnyRole(Long projectId, Long userId) {
+        return webClient.get()
+                .uri("lb://project-service/api/projects/internal/{projectId}/user/{userId}/any-role", projectId, userId)
+                .retrieve()
+                .bodyToMono(Boolean.class);
+    }
+
+    public Mono<Boolean> isAtLeastEditor(Long projectId, Long userId) {
+        return webClient.get()
+                .uri("lb://project-service/api/projects/internal/{projectId}/user/{userId}/at-least-editor", projectId, userId)
+                .retrieve()
+                .bodyToMono(Boolean.class);
+    }
+
+    public Mono<Boolean> isOwner(Long projectId, Long userId) {
+        return webClient.get()
+                .uri("lb://project-service/api/projects/internal/{projectId}/user/{userId}/owner", projectId, userId)
+                .retrieve()
+                .bodyToMono(Boolean.class);
+    }
+
+    public Mono<String> getUserProjectRole(Long projectId, Long userId) {
+        return webClient.get()
+                .uri("lb://project-service/api/projects/internal/{projectId}/user/{userId}/role", projectId, userId)
+                .retrieve()
+                .bodyToMono(String.class);
     }
 }
