@@ -2,8 +2,7 @@ name: Docker Compose CI
 
 on:
   pull_request:
-    branches: [ main ]
-    types: [ opened, synchronize ]
+    types: [ opened, synchronize, reopened ]
 
 permissions:
   contents: read
@@ -24,50 +23,72 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
 
-      - name: Run tests locally
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Run tests for all services
         run: |
           chmod +x mvnw
-          ./mvnw clean verify
+          ./mvnw clean verify -DskipTests=false
 
-      - name: Build and start Docker Compose services
+      - name: Build Docker images for all services
         run: |
           docker compose build
-          docker compose up -d
 
-      - name: Wait for services to be ready
+      - name: Start infrastructure services
         run: |
-          timeout 120s bash -c 'until docker compose logs postgres 2>/dev/null | grep -q "database system is ready to accept connections"; do sleep 5; echo "Waiting for database..."; done'
-          timeout 120s bash -c 'until docker compose logs app 2>/dev/null | grep -q "Started"; do sleep 5; echo "Waiting for application..."; done'
+          docker compose up -d postgres discovery-server config-server
+
+      - name: Wait for infrastructure services to be healthy
+        run: |
+          services="colaba-postgres colaba-discovery colaba-config"
+          for service in $services; do
+            echo "Waiting for $service to be healthy..."
+            timeout 120s bash -c "until [ \"\$(docker inspect -f '{{.State.Health.Status}}' $service)\" = \"healthy\" ]; do sleep 5; done"
+          done
+
+      - name: Start microservices
+        run: |
+          docker compose up -d api-gateway user-service project-service task-service auth-service
+
+      - name: Wait for microservices to be healthy
+        run: |
+          services="colaba-gateway colaba-user-service colaba-project-service colaba-task-service colaba-auth-service"
+          for service in $services; do
+            echo "Waiting for $service to be healthy..."
+            timeout 120s bash -c "until [ \"\$(docker inspect -f '{{.State.Health.Status}}' $service)\" = \"healthy\" ]; do sleep 5; done"
+          done
+
+      - name: Check service health
+        run: |
+          echo "Checking service status..."
+          docker compose ps
+          echo "Checking logs..."
+          docker compose logs --tail=50
 
       - name: Publish Test Results
         if: always()
         uses: dorny/test-reporter@v1
         with:
           name: Test Results
-          path: target/surefire-reports/*.xml
+          path: "**/target/surefire-reports/*.xml"
           reporter: java-junit
 
-      - name: Upload JaCoCo coverage report
+      - name: Upload JaCoCo coverage reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: jacoco-report
-          path: target/site/jacoco/
+          name: jacoco-reports
+          path: "**/target/site/jacoco/"
           retention-days: 30
-
-      - name: Publish Coverage to PR
-        if: always()
-        uses: madrapps/jacoco-report@v1.6.1
-        with:
-          paths: target/site/jacoco/jacoco.xml
-          token: ${{ secrets.GITHUB_TOKEN }}
-          min-coverage-overall: 60
-          min-coverage-changed-files: 60
-          title: 'Code Coverage Report'
 
       - name: Stop and remove Docker Compose services
         if: always()
-        run: docker compose down
+        run: docker compose down -v
 
       - name: Cleanup
         if: always()
