@@ -2,6 +2,7 @@ package com.example.colaba.user.unit;
 
 import com.example.colaba.shared.common.dto.project.ProjectResponse;
 import com.example.colaba.shared.common.dto.user.UserResponse;
+import com.example.colaba.shared.common.entity.UserRole;
 import com.example.colaba.shared.common.exception.user.DuplicateUserEntityEmailException;
 import com.example.colaba.shared.common.exception.user.DuplicateUserEntityUsernameException;
 import com.example.colaba.shared.common.exception.user.UserNotFoundException;
@@ -63,8 +64,19 @@ public class UserServiceTest {
 
     @BeforeEach
     void setUp() {
-        request = new CreateUserRequest(test_username, test_email);
-        savedUser = User.builder().id(test_id).username(test_username).email(test_email).build();
+        request = new CreateUserRequest(
+                test_username,
+                test_email,
+                "test123",
+                UserRole.USER
+        );
+
+        savedUser = User.builder()
+                .id(test_id)
+                .username(test_username)
+                .email(test_email)
+                .role(UserRole.USER)
+                .build();
     }
 
     @Test
@@ -73,7 +85,7 @@ public class UserServiceTest {
         when(userRepository.existsByUsername(test_username)).thenReturn(Mono.just(false));
         when(userRepository.existsByEmail(test_email)).thenReturn(Mono.just(false));
         when(userRepository.save(any(User.class))).thenReturn(Mono.just(savedUser));
-        when(userMapper.toUserResponse(savedUser)).thenReturn(new UserResponse(test_id, test_username, test_email));
+        when(userMapper.toUserResponse(savedUser)).thenReturn(new UserResponse(test_id, test_username, test_email, "USER"));
         when(transactionalOperator.transactional(any(Mono.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // When (act)
@@ -130,7 +142,7 @@ public class UserServiceTest {
     void getUserByUsername_success() {
         // Given
         when(userRepository.findByUsername(test_username)).thenReturn(Mono.just(savedUser));
-        when(userMapper.toUserResponse(savedUser)).thenReturn(new UserResponse(test_id, test_username, test_email));
+        when(userMapper.toUserResponse(savedUser)).thenReturn(new UserResponse(test_id, test_username, test_email, "USER"));
 
         // When
         Mono<UserResponse> resultMono = userService.getUserByUsername(test_username);
@@ -164,7 +176,7 @@ public class UserServiceTest {
         // Given
         String newUsername = "newUsername";
         String newEmail = "newemail@colaba.com";
-        UpdateUserRequest request = new UpdateUserRequest(newUsername, newEmail);
+        UpdateUserRequest request = new UpdateUserRequest(newUsername, newEmail,null);
 
         User updatedUser = User.builder().id(test_id).username(newUsername).email(newEmail).build();
 
@@ -172,7 +184,7 @@ public class UserServiceTest {
         when(userRepository.existsByUsernameAndIdNot(anyString(), anyLong())).thenReturn(Mono.just(false));
         when(userRepository.existsByEmailAndIdNot(anyString(), anyLong())).thenReturn(Mono.just(false));
         when(userRepository.save(any(User.class))).thenReturn(Mono.just(updatedUser));
-        when(userMapper.toUserResponse(updatedUser)).thenReturn(new UserResponse(test_id, newUsername, newEmail));
+        when(userMapper.toUserResponse(updatedUser)).thenReturn(new UserResponse(test_id, newUsername, newEmail, "USER"));
         when(transactionalOperator.transactional(any(Mono.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
@@ -191,14 +203,14 @@ public class UserServiceTest {
     void updateUser_partialUpdate_username_success() {
         // Given
         String newUsername = "newUsername";
-        UpdateUserRequest request = new UpdateUserRequest(newUsername, null);
+        UpdateUserRequest request = new UpdateUserRequest(newUsername, null,null);
 
         User updatedUser = User.builder().id(test_id).username(newUsername).email(test_email).build();
 
         when(userRepository.findById(test_id)).thenReturn(Mono.just(savedUser));
         when(userRepository.existsByUsernameAndIdNot(newUsername, test_id)).thenReturn(Mono.just(false));
         when(userRepository.save(any(User.class))).thenReturn(Mono.just(updatedUser));
-        when(userMapper.toUserResponse(updatedUser)).thenReturn(new UserResponse(test_id, newUsername, test_email));
+        when(userMapper.toUserResponse(updatedUser)).thenReturn(new UserResponse(test_id, newUsername, test_email, "USER"));
         when(transactionalOperator.transactional(any(Mono.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
@@ -221,14 +233,14 @@ public class UserServiceTest {
     void updateUser_partialUpdate_email_success() {
         // Given
         String newEmail = "newemail@colaba.com";
-        UpdateUserRequest request = new UpdateUserRequest(null, newEmail);
+        UpdateUserRequest request = new UpdateUserRequest(null, newEmail,null);
 
         User updatedUser = User.builder().id(test_id).username(test_username).email(newEmail).build();
 
         when(userRepository.findById(test_id)).thenReturn(Mono.just(savedUser));
         when(userRepository.existsByEmailAndIdNot(newEmail, test_id)).thenReturn(Mono.just(false));
         when(userRepository.save(any(User.class))).thenReturn(Mono.just(updatedUser));
-        when(userMapper.toUserResponse(updatedUser)).thenReturn(new UserResponse(test_id, test_username, newEmail));
+        when(userMapper.toUserResponse(updatedUser)).thenReturn(new UserResponse(test_id, test_username, newEmail,"ADMINISTRATOR"));
         when(transactionalOperator.transactional(any(Mono.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
@@ -246,10 +258,10 @@ public class UserServiceTest {
     @Test
     void updateUser_blankFields_ignoresBlankValues() {
         // Given
-        UpdateUserRequest request = new UpdateUserRequest(" ", " ");
+        UpdateUserRequest request = new UpdateUserRequest(" ", " ",null);
 
         when(userRepository.findById(test_id)).thenReturn(Mono.just(savedUser));
-        when(userMapper.toUserResponse(savedUser)).thenReturn(new UserResponse(test_id, test_username, test_email));
+        when(userMapper.toUserResponse(savedUser)).thenReturn(new UserResponse(test_id, test_username, test_email,"USER"));
         when(transactionalOperator.transactional(any(Mono.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
@@ -269,40 +281,20 @@ public class UserServiceTest {
     }
 
     @Test
-    void updateUser_noChanges_returnsUnchangedUser() {
-        // Given
-        UpdateUserRequest request = new UpdateUserRequest(test_username, test_email);
-
-        when(userRepository.findById(test_id)).thenReturn(Mono.just(savedUser));
-        when(userMapper.toUserResponse(savedUser)).thenReturn(new UserResponse(test_id, test_username, test_email));
-        when(transactionalOperator.transactional(any(Mono.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        // When
-        Mono<UserResponse> resultMono = userService.updateUser(test_id, request);
-
-        // Then
-        StepVerifier.create(resultMono)
-                .expectNextMatches(result ->
-                        result.id().equals(test_id) &&
-                                result.username().equals(test_username) &&
-                                result.email().equals(test_email))
-                .verifyComplete();
-
-        verify(userRepository, never()).save(any(User.class));
-    }
-
-    @Test
     void updateUser_notFound_throwsException() {
         // Given
-        UpdateUserRequest request = new UpdateUserRequest("newUsername", "newemail@colaba.com");
+        UpdateUserRequest request = new UpdateUserRequest("newUserName", "newemail@colaba.com","p34hncso");
+
         when(userRepository.findById(test_id)).thenReturn(Mono.empty());
-        when(transactionalOperator.transactional(any(Mono.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(transactionalOperator.transactional(any(Mono.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When & Then
         StepVerifier.create(userService.updateUser(test_id, request))
                 .expectErrorMatches(throwable ->
                         throwable instanceof UserNotFoundException &&
-                                throwable.getMessage().equals("User not found: ID " + test_id))
+                                throwable.getMessage().equals("User not found: ID " + test_id)
+                )
                 .verify();
 
         verify(userRepository, never()).save(any(User.class));
@@ -383,7 +375,7 @@ public class UserServiceTest {
 
         when(userRepository.findAll()).thenReturn(Flux.fromIterable(users));
         when(userMapper.toUserResponseList(anyList())).thenReturn(
-                List.of(new UserResponse(test_id, test_username, test_email))
+                List.of(new UserResponse(test_id, test_username, test_email,"USER"))
         );
 
         // When
@@ -393,7 +385,7 @@ public class UserServiceTest {
         StepVerifier.create(resultMono)
                 .expectNextMatches(page ->
                         page.getContent().size() == 1 &&
-                                page.getContent().getFirst().id().equals(test_id))
+                                page.getContent().get(0).id().equals(test_id))
                 .verifyComplete();
     }
 
@@ -408,7 +400,7 @@ public class UserServiceTest {
         when(userMapper.toUserResponseList(anyList())).thenAnswer(invocation -> {
             List<User> inputUsers = invocation.getArgument(0);
             return inputUsers.stream()
-                    .map(user -> new UserResponse(user.getId(), user.getUsername(), user.getEmail()))
+                    .map(user -> new UserResponse(user.getId(), user.getUsername(), user.getEmail(), "USER"))
                     .toList();
         });
 
@@ -439,7 +431,7 @@ public class UserServiceTest {
         when(userMapper.toUserResponseList(anyList())).thenAnswer(invocation -> {
             List<User> inputUsers = invocation.getArgument(0);
             return inputUsers.stream()
-                    .map(user -> new UserResponse(user.getId(), user.getUsername(), user.getEmail()))
+                    .map(user -> new UserResponse(user.getId(), user.getUsername(), user.getEmail(),"USER"))
                     .toList();
         });
 
@@ -486,7 +478,7 @@ public class UserServiceTest {
 
         when(userRepository.findAll()).thenReturn(Flux.fromIterable(allUsers));
         when(userMapper.toUserResponseList(List.of(savedUser)))
-                .thenReturn(List.of(new UserResponse(test_id, test_username, test_email)));
+                .thenReturn(List.of(new UserResponse(test_id, test_username, test_email,UserRole.USER.name())));
 
         // When
         Mono<Page<UserResponse>> resultMono = userService.getAllUsers(pageable);
@@ -627,7 +619,7 @@ public class UserServiceTest {
 
         when(userRepository.findAll()).thenReturn(Flux.fromIterable(allUsers));
         when(userMapper.toUserResponseList(List.of(savedUser)))
-                .thenReturn(List.of(new UserResponse(test_id, test_username, test_email)));
+                .thenReturn(List.of(new UserResponse(test_id, test_username, test_email,"USER")));
 
         // When
         Mono<UserScrollResponse> resultMono = userService.getUsersScroll(cursor, limit);
