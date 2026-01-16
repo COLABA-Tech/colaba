@@ -1,6 +1,7 @@
 package com.example.colaba.shared.webmvc.circuit;
 
 import com.example.colaba.shared.common.dto.user.UserAuthDto;
+import com.example.colaba.shared.common.entity.UserRole;
 import com.example.colaba.shared.webmvc.client.UserServiceClient;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
@@ -32,5 +33,17 @@ public class UserServiceClientWrapper {
 
     public UserAuthDto createUser(UserAuthDto userAuthDto) {
         return cb().executeSupplier(() -> client.createUser(userAuthDto));
+    }
+
+    public boolean isAdmin(Long id) {
+        return cb().executeSupplier(() -> client.isAdmin(id));
+    }
+
+    public UserRole getUserRole(Long id) {
+        return cb().executeSupplier(() -> client.getUserRole(id));
+    }
+
+    public boolean canManageUser(Long currentUserId, Long targetUserId) {
+        return cb().executeSupplier(() -> client.canManageUser(currentUserId, targetUserId));
     }
 }

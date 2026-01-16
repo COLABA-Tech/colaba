@@ -172,11 +172,41 @@ public class UserServiceTest {
     }
 
     @Test
+    void getUserEntityById_success() {
+        // Given
+        when(userRepository.findById(test_id)).thenReturn(Mono.just(savedUser));
+
+        // When
+        Mono<User> resultMono = userService.getUserEntityById(test_id);
+
+        // Then
+        StepVerifier.create(resultMono)
+                .expectNextMatches(result ->
+                        result.getId().equals(test_id) &&
+                                result.getUsername().equals(test_username) &&
+                                result.getEmail().equals(test_email))
+                .verifyComplete();
+    }
+
+    @Test
+    void getUserEntityById_notFound_throwsException() {
+        // Given (arrange)
+        when(userRepository.findById(test_id)).thenReturn(Mono.empty());
+
+        // When & Then
+        StepVerifier.create(userService.getUserEntityById(test_id))
+                .expectErrorMatches(throwable ->
+                        throwable instanceof UserNotFoundException &&
+                                throwable.getMessage().equals("User not found: ID " + test_id))
+                .verify();
+    }
+
+    @Test
     void updateUser_success() {
         // Given
         String newUsername = "newUsername";
         String newEmail = "newemail@colaba.com";
-        UpdateUserRequest request = new UpdateUserRequest(newUsername, newEmail,null);
+        UpdateUserRequest request = new UpdateUserRequest(newUsername, newEmail, null);
 
         User updatedUser = User.builder().id(test_id).username(newUsername).email(newEmail).build();
 
@@ -203,7 +233,7 @@ public class UserServiceTest {
     void updateUser_partialUpdate_username_success() {
         // Given
         String newUsername = "newUsername";
-        UpdateUserRequest request = new UpdateUserRequest(newUsername, null,null);
+        UpdateUserRequest request = new UpdateUserRequest(newUsername, null, null);
 
         User updatedUser = User.builder().id(test_id).username(newUsername).email(test_email).build();
 
@@ -233,14 +263,14 @@ public class UserServiceTest {
     void updateUser_partialUpdate_email_success() {
         // Given
         String newEmail = "newemail@colaba.com";
-        UpdateUserRequest request = new UpdateUserRequest(null, newEmail,null);
+        UpdateUserRequest request = new UpdateUserRequest(null, newEmail, null);
 
         User updatedUser = User.builder().id(test_id).username(test_username).email(newEmail).build();
 
         when(userRepository.findById(test_id)).thenReturn(Mono.just(savedUser));
         when(userRepository.existsByEmailAndIdNot(newEmail, test_id)).thenReturn(Mono.just(false));
         when(userRepository.save(any(User.class))).thenReturn(Mono.just(updatedUser));
-        when(userMapper.toUserResponse(updatedUser)).thenReturn(new UserResponse(test_id, test_username, newEmail,"ADMINISTRATOR"));
+        when(userMapper.toUserResponse(updatedUser)).thenReturn(new UserResponse(test_id, test_username, newEmail, "ADMINISTRATOR"));
         when(transactionalOperator.transactional(any(Mono.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
@@ -258,10 +288,10 @@ public class UserServiceTest {
     @Test
     void updateUser_blankFields_ignoresBlankValues() {
         // Given
-        UpdateUserRequest request = new UpdateUserRequest(" ", " ",null);
+        UpdateUserRequest request = new UpdateUserRequest(" ", " ", null);
 
         when(userRepository.findById(test_id)).thenReturn(Mono.just(savedUser));
-        when(userMapper.toUserResponse(savedUser)).thenReturn(new UserResponse(test_id, test_username, test_email,"USER"));
+        when(userMapper.toUserResponse(savedUser)).thenReturn(new UserResponse(test_id, test_username, test_email, "USER"));
         when(transactionalOperator.transactional(any(Mono.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
@@ -283,7 +313,7 @@ public class UserServiceTest {
     @Test
     void updateUser_notFound_throwsException() {
         // Given
-        UpdateUserRequest request = new UpdateUserRequest("newUserName", "newemail@colaba.com","p34hncso");
+        UpdateUserRequest request = new UpdateUserRequest("newUserName", "newemail@colaba.com", "p34hncso");
 
         when(userRepository.findById(test_id)).thenReturn(Mono.empty());
         when(transactionalOperator.transactional(any(Mono.class)))
@@ -375,7 +405,7 @@ public class UserServiceTest {
 
         when(userRepository.findAll()).thenReturn(Flux.fromIterable(users));
         when(userMapper.toUserResponseList(anyList())).thenReturn(
-                List.of(new UserResponse(test_id, test_username, test_email,"USER"))
+                List.of(new UserResponse(test_id, test_username, test_email, "USER"))
         );
 
         // When
@@ -431,7 +461,7 @@ public class UserServiceTest {
         when(userMapper.toUserResponseList(anyList())).thenAnswer(invocation -> {
             List<User> inputUsers = invocation.getArgument(0);
             return inputUsers.stream()
-                    .map(user -> new UserResponse(user.getId(), user.getUsername(), user.getEmail(),"USER"))
+                    .map(user -> new UserResponse(user.getId(), user.getUsername(), user.getEmail(), "USER"))
                     .toList();
         });
 
@@ -478,7 +508,7 @@ public class UserServiceTest {
 
         when(userRepository.findAll()).thenReturn(Flux.fromIterable(allUsers));
         when(userMapper.toUserResponseList(List.of(savedUser)))
-                .thenReturn(List.of(new UserResponse(test_id, test_username, test_email,UserRole.USER.name())));
+                .thenReturn(List.of(new UserResponse(test_id, test_username, test_email, UserRole.USER.name())));
 
         // When
         Mono<Page<UserResponse>> resultMono = userService.getAllUsers(pageable);
@@ -619,7 +649,7 @@ public class UserServiceTest {
 
         when(userRepository.findAll()).thenReturn(Flux.fromIterable(allUsers));
         when(userMapper.toUserResponseList(List.of(savedUser)))
-                .thenReturn(List.of(new UserResponse(test_id, test_username, test_email,"USER")));
+                .thenReturn(List.of(new UserResponse(test_id, test_username, test_email, "USER")));
 
         // When
         Mono<UserScrollResponse> resultMono = userService.getUsersScroll(cursor, limit);

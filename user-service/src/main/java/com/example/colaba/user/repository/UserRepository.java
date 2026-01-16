@@ -1,5 +1,6 @@
 package com.example.colaba.user.repository;
 
+import com.example.colaba.shared.common.entity.UserRole;
 import com.example.colaba.user.entity.User;
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.r2dbc.repository.R2dbcRepository;
@@ -22,4 +23,9 @@ public interface UserRepository extends R2dbcRepository<User, Long> {
 
     @Query("SELECT COUNT(*) > 0 FROM users WHERE email = :email AND id != :id")
     Mono<Boolean> existsByEmailAndIdNot(@Param("email") String email, @Param("id") Long id);
+
+    @Query("SELECT role FROM users WHERE id = :id")
+    Mono<UserRole> findRoleById(Long id);
+
+    Mono<Boolean> existsByIdAndRole(Long id, UserRole role);
 }

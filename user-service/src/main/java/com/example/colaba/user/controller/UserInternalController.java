@@ -67,4 +67,22 @@ public class UserInternalController {
                         userResponse.role()
                 ));
     }
+
+    @GetMapping("/{id}/is-admin")
+    public Mono<Boolean> isAdmin(@PathVariable Long id) {
+        return userRepository.existsByIdAndRole(id, UserRole.ADMIN);
+    }
+
+    @GetMapping("/{id}/role")
+    public Mono<UserRole> getUserRole(@PathVariable Long id) {
+        return userRepository.findRoleById(id);
+    }
+
+    @GetMapping("/{currentUserId}/can-manage/{targetUserId}")
+    public Mono<Boolean> canManageUser(@PathVariable Long currentUserId, @PathVariable Long targetUserId) {
+        if (currentUserId.equals(targetUserId)) {
+            return Mono.just(true);
+        }
+        return userRepository.existsByIdAndRole(currentUserId, UserRole.ADMIN);
+    }
 }

@@ -1,5 +1,6 @@
 package com.example.colaba.task.service;
 
+import com.example.colaba.shared.webmvc.client.UserServiceClient;
 import com.example.colaba.shared.webmvc.security.ProjectAccessChecker;
 import com.example.colaba.task.dto.comment.CommentResponse;
 import com.example.colaba.task.dto.comment.CommentScrollResponse;
@@ -11,6 +12,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -19,6 +21,7 @@ public class CommentServicePublic {
     private final ProjectAccessChecker accessChecker;
     private final CommentService commentService;
     private final TaskService taskService;
+    private final UserServiceClient userServiceClient;
 
     @Transactional
     public CommentResponse createComment(CreateCommentRequest request, Long currentUserId) {
@@ -32,20 +35,29 @@ public class CommentServicePublic {
     }
 
     public CommentResponse getCommentById(Long id, Long currentUserId) {
-//        CommentJpa comment = commentService.getCommentEntityById(id);
-//        accessChecker.requireAnyRole(comment.getTask().getProjectId(), currentUserId);
-        return commentService.getCommentById(id);
+        boolean isAdmin = userServiceClient.isAdmin(currentUserId);
+        if (isAdmin) {
+            return commentService.getCommentById(id);
+        }
+        throw new AccessDeniedException("Required user role: ADMIN");
     }
 
     public Page<CommentResponse> getCommentsByTask(Long taskId, Pageable pageable, Long currentUserId) {
         TaskJpa task = taskService.getTaskEntityById(taskId);
-        accessChecker.requireAnyRole(task.getProjectId(), currentUserId);
+        boolean isAdmin = userServiceClient.isAdmin(currentUserId);
+        if (!isAdmin) {
+            accessChecker.requireAnyRole(task.getProjectId(), currentUserId);
+        }
         return commentService.getCommentsByTask(taskId, pageable);
+
     }
 
     public CommentScrollResponse getCommentsByTaskScroll(Long taskId, String cursor, int limit, Long currentUserId) {
         TaskJpa task = taskService.getTaskEntityById(taskId);
-        accessChecker.requireAnyRole(task.getProjectId(), currentUserId);
+        boolean isAdmin = userServiceClient.isAdmin(currentUserId);
+        if (!isAdmin) {
+            accessChecker.requireAnyRole(task.getProjectId(), currentUserId);
+        }
         return commentService.getCommentsByTaskScroll(taskId, cursor, limit);
     }
 
@@ -62,11 +74,15 @@ public class CommentServicePublic {
     @Transactional
     public void deleteComment(Long id, Long currentUserId) {
         CommentJpa comment = commentService.getCommentEntityById(id);
-        boolean isAuthor = comment.getUserId().equals(currentUserId);
-        if (!isAuthor) {
-            throw new org.springframework.security.access.AccessDeniedException(
-                    "You can only delete your own comments");
+        boolean isAdmin = userServiceClient.isAdmin(currentUserId);
+        if (!isAdmin) {
+            boolean isAuthor = comment.getUserId().equals(currentUserId);
+            if (!isAuthor) {
+                throw new AccessDeniedException(
+                        "You can only delete your own comments");
+            }
         }
         commentService.deleteComment(id);
+
     }
 }
