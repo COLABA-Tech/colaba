@@ -99,14 +99,15 @@ public class ProjectServicePublic {
     }
 
     @Transactional
-    public void deleteProject(Long id, Long currentUserId) {
-        boolean isAdmin = Boolean.TRUE.equals(userServiceClient.isAdmin(currentUserId).block());
-        if (isAdmin) {
-            projectService.deleteProject(id);
-        } else {
-            projectAccessCheckerLocal.requireOwner(id, currentUserId);
-            projectService.deleteProject(id);
-        }
+    public Mono<Void> deleteProject(Long id, Long currentUserId) {
+        return userServiceClient.isAdmin(currentUserId)
+                .flatMap(isAdmin -> {
+                    if (isAdmin) {
+                        return Mono.fromRunnable(() -> projectService.deleteProject(id));
+                    }
+                    return projectAccessCheckerLocal.requireOwnerMono(id, currentUserId)
+                            .then(Mono.fromRunnable(() -> projectService.deleteProject(id)));
+                });
     }
 
     public Mono<List<ProjectResponse>> getProjectByOwnerId(Long ownerId, Long currentUserId) {

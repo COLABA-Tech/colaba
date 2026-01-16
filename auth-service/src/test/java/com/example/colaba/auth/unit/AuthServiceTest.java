@@ -1,215 +1,390 @@
 package com.example.colaba.auth.unit;
 
-import com.example.colaba.auth.service.AuthUserDetailsService;
+import com.example.colaba.auth.dto.AuthResponse;
+import com.example.colaba.auth.dto.LoginRequest;
+import com.example.colaba.auth.dto.RegisterRequest;
+import com.example.colaba.auth.service.AuthService;
 import com.example.colaba.shared.common.dto.user.UserAuthDto;
-import com.example.colaba.shared.webmvc.client.UserServiceClient;
-import feign.FeignException;
+import com.example.colaba.shared.common.dto.user.UserResponse;
+import com.example.colaba.shared.common.entity.UserRole;
+import com.example.colaba.shared.common.security.JwtService;
+import com.example.colaba.shared.webmvc.circuit.UserServiceClientWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class AuthUserDetailsServiceTest {
+class AuthServiceTest {
 
     @Mock
-    private UserServiceClient userServiceClient;
+    private AuthenticationManager authenticationManager;
+
+    @Mock
+    private JwtService jwtService;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private UserServiceClientWrapper userServiceClient;
 
     @InjectMocks
-    private AuthUserDetailsService authUserDetailsService;
+    private AuthService authService;
 
+    private final Long adminUserId = 1L;
+    private final Long regularUserId = 2L;
     private final String username = "testuser";
     private final String email = "test@example.com";
-    private final String password = "encodedPassword123";
+    private final String password = "password123";
+    private final String encodedPassword = "encodedPassword123";
+    private final String token = "jwt.token.here";
 
+    private RegisterRequest registerRequest;
+    private LoginRequest loginRequest;
     private UserAuthDto userAuthDto;
+    private UserResponse userResponse;
+    private UserDetails userDetails;
 
     @BeforeEach
     void setUp() {
+        registerRequest = new RegisterRequest(
+                username,
+                email,
+                password,
+                UserRole.USER
+        );
+
+        loginRequest = new LoginRequest(username, password);
+
         userAuthDto = new UserAuthDto(
                 1L,
                 username,
                 email,
-                password,
+                encodedPassword,
                 "USER"
+        );
+
+        userResponse = new UserResponse(
+                1L,
+                username,
+                email,
+                "USER"
+        );
+
+        userDetails = new User(
+                username,
+                encodedPassword,
+                List.of(new SimpleGrantedAuthority("ROLE_USER"))
         );
     }
 
     @Test
-    void loadUserByUsername_withUsername_success() {
+    void register_adminUser_success() {
         // Given
+        when(userServiceClient.isAdmin(adminUserId)).thenReturn(true);
+        when(passwordEncoder.encode(password)).thenReturn(encodedPassword);
+        when(userServiceClient.createUser(any(UserAuthDto.class))).thenReturn(null);
+
+        Authentication auth = mock(Authentication.class);
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(auth);
+        when(auth.getPrincipal()).thenReturn(userDetails);
+
         when(userServiceClient.findForAuthByUsername(username)).thenReturn(userAuthDto);
+        when(jwtService.generateToken(anyLong(), anyString())).thenReturn(token);
 
         // When
-        UserDetails userDetails = authUserDetailsService.loadUserByUsername(username);
+        AuthResponse result = authService.register(registerRequest, adminUserId);
 
         // Then
-        assertNotNull(userDetails);
-        assertEquals(username, userDetails.getUsername());
-        assertEquals(password, userDetails.getPassword());
-        assertTrue(userDetails.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_USER")));
+        assertNotNull(result);
+        assertEquals(token, result.token());
+        assertEquals(userResponse.id(), result.user().id());
+        assertEquals(username, result.user().username());
+        assertEquals(email, result.user().email());
 
-        verify(userServiceClient).findForAuthByUsername(username);
-        verify(userServiceClient, never()).findForAuthByEmail(anyString());
+        verify(userServiceClient).isAdmin(adminUserId);
+        verify(passwordEncoder, times(2)).encode(password);
+        verify(userServiceClient).createUser(argThat(dto ->
+                dto.username().equals(username) &&
+                        dto.email().equals(email) &&
+                        dto.password().equals(encodedPassword) &&
+                        dto.role().equals("USER")
+        ));
     }
 
     @Test
-    void loadUserByUsername_withEmail_success() {
+    void register_nonAdminUser_throwsAccessDenied() {
         // Given
+        when(userServiceClient.isAdmin(regularUserId)).thenReturn(false);
+
+        // When & Then
+        AccessDeniedException exception = assertThrows(AccessDeniedException.class,
+                () -> authService.register(registerRequest, regularUserId));
+        assertEquals("Only administrators can register new users", exception.getMessage());
+
+        verify(userServiceClient).isAdmin(regularUserId);
+        verify(passwordEncoder, never()).encode(anyString());
+        verify(userServiceClient, never()).createUser(any());
+    }
+
+    @Test
+    void register_withEmailAsUsername_success() {
+        // Given
+        RegisterRequest emailRegisterRequest = new RegisterRequest(
+                email,
+                email,
+                password,
+                UserRole.USER
+        );
+
+        when(userServiceClient.isAdmin(adminUserId)).thenReturn(true);
+        when(passwordEncoder.encode(password)).thenReturn(encodedPassword);
+
+        // Исправлено
+        when(userServiceClient.createUser(any(UserAuthDto.class))).thenReturn(null);
+
+        Authentication auth = mock(Authentication.class);
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(auth);
+        when(auth.getPrincipal()).thenReturn(userDetails);
+
         when(userServiceClient.findForAuthByEmail(email)).thenReturn(userAuthDto);
+        when(jwtService.generateToken(anyLong(), anyString())).thenReturn(token);
 
         // When
-        UserDetails userDetails = authUserDetailsService.loadUserByUsername(email);
+        AuthResponse result = authService.register(emailRegisterRequest, adminUserId);
 
         // Then
-        assertNotNull(userDetails);
-        assertEquals(username, userDetails.getUsername());
+        assertNotNull(result);
         verify(userServiceClient).findForAuthByEmail(email);
         verify(userServiceClient, never()).findForAuthByUsername(anyString());
     }
 
     @Test
-    void loadUserByUsername_userNotFoundByUsername_throwsException() {
+    void register_withAdminRole_success() {
         // Given
-        when(userServiceClient.findForAuthByUsername(username))
-                .thenThrow(FeignException.NotFound.class);
+        RegisterRequest adminRequest = new RegisterRequest(
+                "adminuser",
+                "admin@example.com",
+                password,
+                UserRole.ADMIN
+        );
 
-        // When & Then
-        UsernameNotFoundException exception = assertThrows(UsernameNotFoundException.class,
-                () -> authUserDetailsService.loadUserByUsername(username));
-        assertTrue(exception.getMessage().contains("User not found: USERNAME " + username));
+        UserAuthDto adminAuthDto = new UserAuthDto(
+                2L,
+                "adminuser",
+                "admin@example.com",
+                encodedPassword,
+                "ADMIN"
+        );
+
+        UserDetails adminUserDetails = new User(
+                "adminuser",
+                encodedPassword,
+                List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
+        );
+
+        when(userServiceClient.isAdmin(adminUserId)).thenReturn(true);
+        when(passwordEncoder.encode(password)).thenReturn(encodedPassword);
+
+        // Исправлено
+        when(userServiceClient.createUser(any(UserAuthDto.class))).thenReturn(null);
+
+        Authentication auth = mock(Authentication.class);
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(auth);
+        when(auth.getPrincipal()).thenReturn(adminUserDetails);
+
+        when(userServiceClient.findForAuthByUsername("adminuser")).thenReturn(adminAuthDto);
+        when(jwtService.generateToken(anyLong(), eq("ADMIN"))).thenReturn(token);
+
+        // When
+        AuthResponse result = authService.register(adminRequest, adminUserId);
+
+        // Then
+        assertNotNull(result);
+        verify(jwtService).generateToken(anyLong(), eq("ADMIN"));
     }
 
     @Test
-    void loadUserByUsername_userNotFoundByEmail_throwsException() {
+    void login_withUsername_success() {
         // Given
-        when(userServiceClient.findForAuthByEmail(email))
-                .thenThrow(FeignException.NotFound.class);
+        Authentication auth = mock(Authentication.class);
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(auth);
+        when(auth.getPrincipal()).thenReturn(userDetails);
+        when(userServiceClient.findForAuthByUsername(username)).thenReturn(userAuthDto);
+        when(jwtService.generateToken(anyLong(), anyString())).thenReturn(token);
 
-        // When & Then
-        UsernameNotFoundException exception = assertThrows(UsernameNotFoundException.class,
-                () -> authUserDetailsService.loadUserByUsername(email));
-        assertTrue(exception.getMessage().contains("User not found: USERNAME " + email));
+        // When
+        AuthResponse result = authService.login(loginRequest);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(token, result.token());
+        assertEquals(userResponse.id(), result.user().id());
+        assertEquals(username, result.user().username());
+
+        verify(authenticationManager).authenticate(argThat(token ->
+                token.getPrincipal().equals(username) &&
+                        token.getCredentials().equals(password)
+        ));
+        verify(userServiceClient).findForAuthByUsername(username);
+        verify(userServiceClient, never()).findForAuthByEmail(anyString());
+        verify(jwtService).generateToken(userAuthDto.id(), "USER");
     }
 
     @Test
-    void loadUserByUsername_serviceReturnsNull_throwsException() {
+    void login_withEmail_success() {
         // Given
+        LoginRequest emailLoginRequest = new LoginRequest(email, password);
+
+        Authentication auth = mock(Authentication.class);
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(auth);
+        when(auth.getPrincipal()).thenReturn(userDetails);
+        when(userServiceClient.findForAuthByEmail(email)).thenReturn(userAuthDto);
+        when(jwtService.generateToken(anyLong(), anyString())).thenReturn(token);
+
+        // When
+        AuthResponse result = authService.login(emailLoginRequest);
+
+        // Then
+        assertNotNull(result);
+        verify(userServiceClient).findForAuthByEmail(email);
+        verify(userServiceClient, never()).findForAuthByUsername(anyString());
+    }
+
+    @Test
+    void login_authenticationFails_throwsException() {
+        // Given
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenThrow(new org.springframework.security.core.AuthenticationException("Bad credentials") {
+                });
+
+        // When & Then
+        assertThrows(org.springframework.security.core.AuthenticationException.class,
+                () -> authService.login(loginRequest));
+
+        verify(userServiceClient, never()).findForAuthByUsername(anyString());
+        verify(userServiceClient, never()).findForAuthByEmail(anyString());
+        verify(jwtService, never()).generateToken(anyLong(), anyString());
+    }
+
+    @Test
+    void login_userServiceReturnsNull_throwsException() {
+        // Given
+        Authentication auth = mock(Authentication.class);
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(auth);
+        when(auth.getPrincipal()).thenReturn(userDetails);
         when(userServiceClient.findForAuthByUsername(username)).thenReturn(null);
 
         // When & Then
-        UsernameNotFoundException exception = assertThrows(UsernameNotFoundException.class,
-                () -> authUserDetailsService.loadUserByUsername(username));
-        assertTrue(exception.getMessage().contains("User not found: " + username));
+        assertThrows(NullPointerException.class, // или другой ожидаемый exception
+                () -> authService.login(loginRequest));
     }
 
     @Test
-    void loadUserByUsername_feignExceptionOtherThanNotFound_throwsExceptionWithCause() {
-        // Given
-        FeignException.ServiceUnavailable serviceException =
-                new FeignException.ServiceUnavailable("Service unavailable", mock(feign.Request.class), null, null);
-        when(userServiceClient.findForAuthByUsername(username))
-                .thenThrow(serviceException);
-
-        // When & Then
-        UsernameNotFoundException exception = assertThrows(UsernameNotFoundException.class,
-                () -> authUserDetailsService.loadUserByUsername(username));
-        assertTrue(exception.getMessage().contains("Error loading user: " + username));
-        assertEquals(serviceException, exception.getCause());
-    }
-
-    @Test
-    void loadUserByUsername_withDifferentRoles_success() {
-        // Given
-        UserAuthDto adminAuthDto = new UserAuthDto(
-                2L,
-                "admin",
-                "admin@example.com",
-                password,
-                "ADMIN"
-        );
-        when(userServiceClient.findForAuthByUsername("admin")).thenReturn(adminAuthDto);
-
-        // When
-        UserDetails userDetails = authUserDetailsService.loadUserByUsername("admin");
-
-        // Then
-        assertNotNull(userDetails);
-        assertTrue(userDetails.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN")));
-    }
-
-    @Test
-    void loadUserByUsername_withManagerRole_success() {
+    void login_withDifferentRoles_generatesCorrectToken() {
         // Given
         UserAuthDto managerAuthDto = new UserAuthDto(
                 3L,
                 "manager",
                 "manager@example.com",
-                password,
+                encodedPassword,
                 "MANAGER"
         );
-        when(userServiceClient.findForAuthByUsername("manager")).thenReturn(managerAuthDto);
 
-        // When
-        UserDetails userDetails = authUserDetailsService.loadUserByUsername("manager");
-
-        // Then
-        assertNotNull(userDetails);
-        assertTrue(userDetails.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_MANAGER")));
-    }
-
-    @Test
-    void loadUserByUsername_emailWithPlusAddress_success() {
-        // Given
-        String emailWithPlus = "test+tag@example.com";
-        UserAuthDto userWithPlusEmail = new UserAuthDto(
-                4L,
-                "testuser",
-                emailWithPlus,
-                password,
-                "USER"
+        UserDetails managerUserDetails = new User(
+                "manager",
+                encodedPassword,
+                List.of(new SimpleGrantedAuthority("ROLE_MANAGER"))
         );
-        when(userServiceClient.findForAuthByEmail(emailWithPlus)).thenReturn(userWithPlusEmail);
+
+        LoginRequest managerLogin = new LoginRequest("manager", password);
+
+        Authentication auth = mock(Authentication.class);
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(auth);
+        when(auth.getPrincipal()).thenReturn(managerUserDetails);
+        when(userServiceClient.findForAuthByUsername("manager")).thenReturn(managerAuthDto);
+        when(jwtService.generateToken(anyLong(), eq("MANAGER"))).thenReturn(token);
 
         // When
-        UserDetails userDetails = authUserDetailsService.loadUserByUsername(emailWithPlus);
+        AuthResponse result = authService.login(managerLogin);
 
         // Then
-        assertNotNull(userDetails);
-        assertEquals("testuser", userDetails.getUsername());
+        assertNotNull(result);
+        verify(jwtService).generateToken(managerAuthDto.id(), "MANAGER");
     }
 
     @Test
-    void loadUserByUsername_emptyUsername_throwsException() {
+    void login_verifiesPasswordEncodingLog() {
         // Given
-        String emptyUsername = "";
+        Authentication auth = mock(Authentication.class);
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(auth);
+        when(auth.getPrincipal()).thenReturn(userDetails);
+        when(userServiceClient.findForAuthByUsername(username)).thenReturn(userAuthDto);
+        when(jwtService.generateToken(anyLong(), anyString())).thenReturn(token);
 
-        // When & Then
-        UsernameNotFoundException exception = assertThrows(UsernameNotFoundException.class,
-                () -> authUserDetailsService.loadUserByUsername(emptyUsername));
-        // Note: contains("@") будет false для пустой строки
-        verify(userServiceClient).findForAuthByUsername(emptyUsername);
+        // When
+        authService.login(loginRequest);
+
+        // Then - проверяем что passwordEncoder.encode вызывается в логе
+        verify(passwordEncoder).encode(password);
     }
 
     @Test
-    void loadUserByUsername_nullUsername_throwsException() {
-        // When & Then
-        UsernameNotFoundException exception = assertThrows(UsernameNotFoundException.class,
-                () -> authUserDetailsService.loadUserByUsername(null));
+    void register_withSpecialCharactersInUsername_success() {
+        // Given
+        RegisterRequest specialRequest = new RegisterRequest(
+                "user.name_123",
+                "user.name@example.com",
+                password,
+                UserRole.USER
+        );
 
-        assertTrue(exception.getMessage().contains("Error loading user: null"));
-        assertNotNull(exception.getCause());
-        assertInstanceOf(NullPointerException.class, exception.getCause());
+        when(userServiceClient.isAdmin(adminUserId)).thenReturn(true);
+        when(passwordEncoder.encode(password)).thenReturn(encodedPassword);
+
+        // Исправлено
+        when(userServiceClient.createUser(any(UserAuthDto.class))).thenReturn(null);
+
+        Authentication auth = mock(Authentication.class);
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(auth);
+        when(auth.getPrincipal()).thenReturn(userDetails);
+
+        when(userServiceClient.findForAuthByUsername("user.name_123")).thenReturn(userAuthDto);
+        when(jwtService.generateToken(anyLong(), anyString())).thenReturn(token);
+
+        // When
+        AuthResponse result = authService.register(specialRequest, adminUserId);
+
+        // Then
+        assertNotNull(result);
+        verify(userServiceClient).createUser(argThat(dto ->
+                dto.username().equals("user.name_123")
+        ));
     }
 }

@@ -26,7 +26,6 @@ import reactor.test.StepVerifier;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -429,43 +428,51 @@ class ProjectServicePublicTest {
     void deleteProject_admin_success() {
         // Given
         when(userServiceClient.isAdmin(currentUserId)).thenReturn(Mono.just(true));
+        doNothing().when(projectService).deleteProject(testId);
 
-        // When
-        projectServicePublic.deleteProject(testId, currentUserId);
+        // When & Then
+        StepVerifier.create(projectServicePublic.deleteProject(testId, currentUserId))
+                .verifyComplete();
 
-        // Then
         verify(userServiceClient).isAdmin(currentUserId);
         verify(projectService).deleteProject(testId);
-        verify(projectAccessCheckerLocal, never()).requireOwner(any(), any());
+        verify(projectAccessCheckerLocal, never()).requireOwnerMono(any(), any());
     }
 
     @Test
     void deleteProject_nonAdmin_owner_success() {
         // Given
         when(userServiceClient.isAdmin(currentUserId)).thenReturn(Mono.just(false));
+        when(projectAccessCheckerLocal.requireOwnerMono(testId, currentUserId))
+                .thenReturn(Mono.empty());
+        doNothing().when(projectService).deleteProject(testId);
 
-        // When
-        projectServicePublic.deleteProject(testId, currentUserId);
+        // When & Then
+        StepVerifier.create(projectServicePublic.deleteProject(testId, currentUserId))
+                .verifyComplete();
 
-        // Then
         verify(userServiceClient).isAdmin(currentUserId);
-        verify(projectAccessCheckerLocal).requireOwner(testId, currentUserId);
+        verify(projectAccessCheckerLocal).requireOwnerMono(testId, currentUserId);
         verify(projectService).deleteProject(testId);
     }
 
     @Test
     void deleteProject_nonAdmin_notOwner_throwsException() {
         // Given
+        String errorMessage = "Only the project OWNER can perform this action";
         when(userServiceClient.isAdmin(currentUserId)).thenReturn(Mono.just(false));
-        doThrow(new AccessDeniedException("Access denied")).when(projectAccessCheckerLocal)
-                .requireOwner(testId, currentUserId);
+        when(projectAccessCheckerLocal.requireOwnerMono(testId, currentUserId))
+                .thenReturn(Mono.error(new AccessDeniedException(errorMessage)));
 
         // When & Then
-        assertThrows(AccessDeniedException.class,
-                () -> projectServicePublic.deleteProject(testId, currentUserId));
+        StepVerifier.create(projectServicePublic.deleteProject(testId, currentUserId))
+                .expectErrorMatches(throwable ->
+                        throwable instanceof AccessDeniedException &&
+                                throwable.getMessage().equals(errorMessage))
+                .verify();
 
         verify(userServiceClient).isAdmin(currentUserId);
-        verify(projectAccessCheckerLocal).requireOwner(testId, currentUserId);
+        verify(projectAccessCheckerLocal).requireOwnerMono(testId, currentUserId);
         verify(projectService, never()).deleteProject(any());
     }
 
@@ -747,8 +754,11 @@ class ProjectServicePublicTest {
         doThrow(new RuntimeException("Database error")).when(projectService).deleteProject(testId);
 
         // When & Then
-        assertThrows(RuntimeException.class,
-                () -> projectServicePublic.deleteProject(testId, currentUserId));
+        StepVerifier.create(projectServicePublic.deleteProject(testId, currentUserId))
+                .expectErrorMatches(throwable ->
+                        throwable instanceof RuntimeException &&
+                                throwable.getMessage().equals("Database error"))
+                .verify();
 
         verify(userServiceClient).isAdmin(currentUserId);
         verify(projectService).deleteProject(testId);

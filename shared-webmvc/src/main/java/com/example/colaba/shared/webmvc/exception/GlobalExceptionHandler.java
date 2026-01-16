@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -128,6 +129,20 @@ public class GlobalExceptionHandler {
                 .timestamp(OffsetDateTime.now())
                 .build();
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(dto);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponseDto> handleAccessDenied(AccessDeniedException e,
+                                                               HttpServletRequest request) {
+        log.warn("Access denied: {}", e.getMessage());
+        ErrorResponseDto dto = ErrorResponseDto.builder()
+                .error("AccessDenied")
+                .status(HttpStatus.FORBIDDEN.value())
+                .message(e.getMessage())
+                .path(request.getRequestURI())
+                .timestamp(OffsetDateTime.now())
+                .build();
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(dto);
     }
 
     @ExceptionHandler(AuthenticationException.class)
