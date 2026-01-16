@@ -8,6 +8,7 @@ import com.example.colaba.shared.common.dto.user.UserResponse;
 import com.example.colaba.shared.common.security.JwtService;
 import com.example.colaba.shared.webmvc.client.UserServiceClient;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -34,7 +35,11 @@ public class AuthService {
     }
 
     @Transactional
-    public AuthResponse register(RegisterRequest request) {
+    public AuthResponse register(RegisterRequest request, Long currentUserId) {
+        boolean isAdmin = userServiceClient.isAdmin(currentUserId);
+        if (!isAdmin) {
+            throw new AccessDeniedException("Only administrators can register new users");
+        }
         String hashedPassword = passwordEncoder.encode(request.password());
         userServiceClient.createUser(
                 new UserAuthDto(null, request.username(), request.email(),

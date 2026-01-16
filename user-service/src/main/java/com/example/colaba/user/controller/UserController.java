@@ -2,10 +2,9 @@ package com.example.colaba.user.controller;
 
 import com.example.colaba.shared.common.controller.BaseController;
 import com.example.colaba.shared.common.dto.user.UserResponse;
-import com.example.colaba.user.dto.user.CreateUserRequest;
 import com.example.colaba.user.dto.user.UpdateUserRequest;
 import com.example.colaba.user.dto.user.UserScrollResponse;
-import com.example.colaba.user.service.UserService;
+import com.example.colaba.user.service.UserServicePublic;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -14,8 +13,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
@@ -24,18 +23,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 @Tag(name = "Users Public", description = "API for managing users")
 public class UserController extends BaseController {
-    private final UserService userService;
-
-    @PostMapping
-    @Operation(summary = "Create a new user", description = "Creates a new user with the provided username and email. Validates for duplicates.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "User created successfully"),
-            @ApiResponse(responseCode = "400", description = "Validation error or duplicate username/email")
-    })
-    public Mono<ResponseEntity<UserResponse>> createUser(@Valid @RequestBody CreateUserRequest request) {
-        return userService.createUser(request)
-                .map(userResponse -> ResponseEntity.status(HttpStatus.CREATED).body(userResponse));
-    }
+    private final UserServicePublic userService;
 
     @GetMapping("/{username}")
     @Operation(summary = "Get user by username", description = "Retrieves a user by their unique username.")
@@ -43,8 +31,10 @@ public class UserController extends BaseController {
             @ApiResponse(responseCode = "200", description = "User found"),
             @ApiResponse(responseCode = "404", description = "User not found")
     })
-    public Mono<ResponseEntity<UserResponse>> getUserByUsername(@PathVariable String username) {
-        return userService.getUserByUsername(username)
+    public Mono<ResponseEntity<UserResponse>> getUserByUsername(
+            @PathVariable String username,
+            @AuthenticationPrincipal Long currentUserId) {
+        return userService.getUserByUsername(username, currentUserId)
                 .map(ResponseEntity::ok);
     }
 
@@ -53,9 +43,11 @@ public class UserController extends BaseController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Paginated list of users")
     })
-    public Mono<ResponseEntity<Page<UserResponse>>> getAllUsers(Pageable pageable) {
+    public Mono<ResponseEntity<Page<UserResponse>>> getAllUsers(
+            Pageable pageable,
+            @AuthenticationPrincipal Long currentUserId) {
         pageable = validatePageable(pageable);
-        return userService.getAllUsers(pageable)
+        return userService.getAllUsers(pageable, currentUserId)
                 .map(ResponseEntity::ok);
     }
 
@@ -64,10 +56,12 @@ public class UserController extends BaseController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Scroll response with users, nextCursor, and hasMore flag")
     })
-    public Mono<ResponseEntity<UserScrollResponse>> getUsersScroll(@RequestParam(defaultValue = "0") String cursor,
-                                                                   @RequestParam(defaultValue = "20") int limit) {
+    public Mono<ResponseEntity<UserScrollResponse>> getUsersScroll(
+            @RequestParam(defaultValue = "0") String cursor,
+            @RequestParam(defaultValue = "20") int limit,
+            @AuthenticationPrincipal Long currentUserId) {
         if (limit > 50) limit = 50;
-        return userService.getUsersScroll(cursor, limit)
+        return userService.getUsersScroll(cursor, limit, currentUserId)
                 .map(ResponseEntity::ok);
     }
 
@@ -76,9 +70,11 @@ public class UserController extends BaseController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Paginated list of users with total count header")
     })
-    public Mono<ResponseEntity<Page<UserResponse>>> getUsersPaginated(Pageable pageable) {
+    public Mono<ResponseEntity<Page<UserResponse>>> getUsersPaginated(
+            Pageable pageable,
+            @AuthenticationPrincipal Long currentUserId) {
         pageable = validatePageable(pageable);
-        return userService.getAllUsers(pageable)
+        return userService.getAllUsers(pageable, currentUserId)
                 .map(users -> ResponseEntity.ok()
                         .header("X-Total-Count", String.valueOf(users.getTotalElements()))
                         .body(users));
@@ -91,8 +87,11 @@ public class UserController extends BaseController {
             @ApiResponse(responseCode = "400", description = "Validation error or duplicate username/email"),
             @ApiResponse(responseCode = "404", description = "User not found")
     })
-    public Mono<ResponseEntity<UserResponse>> updateUser(@PathVariable Long id, @Valid @RequestBody UpdateUserRequest request) {
-        return userService.updateUser(id, request)
+    public Mono<ResponseEntity<UserResponse>> updateUser(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateUserRequest request,
+            @AuthenticationPrincipal Long currentUserId) {
+        return userService.updateUser(id, request, currentUserId)
                 .map(ResponseEntity::ok);
     }
 
@@ -102,8 +101,10 @@ public class UserController extends BaseController {
             @ApiResponse(responseCode = "204", description = "User deleted successfully"),
             @ApiResponse(responseCode = "404", description = "User not found")
     })
-    public Mono<ResponseEntity<Void>> deleteUser(@PathVariable Long id) {
-        return userService.deleteUser(id)
+    public Mono<ResponseEntity<Void>> deleteUser(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Long currentUserId) {
+        return userService.deleteUser(id, currentUserId)
                 .then(Mono.just(ResponseEntity.noContent().build()));
     }
 }

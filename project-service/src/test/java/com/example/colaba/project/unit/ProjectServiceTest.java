@@ -1,7 +1,6 @@
 package com.example.colaba.project.unit;
 
 import com.example.colaba.project.dto.project.CreateProjectRequest;
-import com.example.colaba.project.dto.project.ProjectScrollResponse;
 import com.example.colaba.project.dto.project.UpdateProjectRequest;
 import com.example.colaba.project.entity.ProjectJpa;
 import com.example.colaba.project.mapper.ProjectMapper;
@@ -21,10 +20,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -213,31 +208,6 @@ class ProjectServiceTest {
 
         verify(projectRepository).findById(testId);
     }
-
-//    @Test
-//    void getAllProjects_success() {
-//        // Given
-//        Pageable pageable = PageRequest.of(0, 10);
-//        Page<ProjectJpa> mockPage = new PageImpl<>(List.of(testProject));
-//        Page<ProjectResponse> mockResponsePage = new PageImpl<>(List.of(testProjectResponse));
-//
-//        when(projectRepository.findAll(pageable)).thenReturn(mockPage);
-//        when(projectMapper.toProjectResponsePage(mockPage)).thenReturn(mockResponsePage);
-//
-//        // When
-//        Mono<Page<ProjectResponse>> resultMono = projectService.getAllProjects(pageable);
-//
-//        // Then
-//        StepVerifier.create(resultMono)
-//                .expectNextMatches(page ->
-//                        page.getContent().size() == 1 &&
-//                                page.getContent().get(0).id().equals(testId)
-//                )
-//                .verifyComplete();
-//
-//        verify(projectRepository).findAll(pageable);
-//        verify(projectMapper).toProjectResponsePage(mockPage);
-//    }
 
     @Test
     void updateProject_success() {
@@ -543,61 +513,6 @@ class ProjectServiceTest {
         verify(userServiceClient).userExists(testUserId);
         verify(projectRepository, never()).findByOwnerId(anyLong());
     }
-
-//    @Test
-//    void scroll_success() {
-//        // Given
-//        int page = 0;
-//        int size = 10;
-//        Pageable pageable = PageRequest.of(page, size);
-//        Page<ProjectJpa> projectPage = new PageImpl<>(List.of(testProject), pageable, 1);
-//        List<ProjectResponse> projectResponses = List.of(testProjectResponse);
-//
-//        when(projectRepository.findAll(pageable)).thenReturn(projectPage);
-//        when(projectMapper.toProjectResponseList(projectPage.getContent())).thenReturn(projectResponses);
-//
-//        // When
-//        Mono<ProjectScrollResponse> resultMono = projectService.scroll(page, size);
-//
-//        // Then
-//        StepVerifier.create(resultMono)
-//                .expectNextMatches(response ->
-//                        response.projects().size() == 1 &&
-//                                !response.hasMore() &&
-//                                response.total() == 1)
-//                .verifyComplete();
-//
-//        verify(projectRepository).findAll(pageable);
-//        verify(projectMapper).toProjectResponseList(projectPage.getContent());
-//    }
-
-//    @Test
-//    void scroll_withNextPage() {
-//        // Given
-//        int page = 0;
-//        int size = 1;
-//        Pageable pageable = PageRequest.of(page, size);
-//
-//        Page<ProjectJpa> projectPage = new PageImpl<>(List.of(testProject), pageable, 2);
-//        List<ProjectResponse> projectResponses = List.of(testProjectResponse);
-//
-//        when(projectRepository.findAll(pageable)).thenReturn(projectPage);
-//        when(projectMapper.toProjectResponseList(projectPage.getContent())).thenReturn(projectResponses);
-//
-//        // When
-//        Mono<ProjectScrollResponse> resultMono = projectService.scroll(page, size);
-//
-//        // Then
-//        StepVerifier.create(resultMono)
-//                .expectNextMatches(response ->
-//                        response.projects().size() == 1 &&
-//                                response.hasMore() &&
-//                                response.total() == 2)
-//                .verifyComplete();
-//
-//        verify(projectRepository).findAll(pageable);
-//        verify(projectMapper).toProjectResponseList(projectPage.getContent());
-//    }
 
     @Test
     void handleUserDeletion_success() {

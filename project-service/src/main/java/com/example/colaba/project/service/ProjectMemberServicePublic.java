@@ -4,6 +4,7 @@ import com.example.colaba.project.dto.projectmember.CreateProjectMemberRequest;
 import com.example.colaba.project.dto.projectmember.ProjectMemberResponse;
 import com.example.colaba.project.dto.projectmember.UpdateProjectMemberRequest;
 import com.example.colaba.project.security.ProjectAccessCheckerLocal;
+import com.example.colaba.shared.webflux.client.UserServiceClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,13 +17,20 @@ import reactor.core.publisher.Mono;
 public class ProjectMemberServicePublic {
     private final ProjectMemberService projectMemberService;
     private final ProjectAccessCheckerLocal accessChecker;
+    private final UserServiceClient userServiceClient;
 
     public Mono<Page<ProjectMemberResponse>> getMembersByProject(
             Long projectId,
             Pageable pageable,
             Long currentUserId) {
-        return accessChecker.requireAtLeastEditorMono(projectId, currentUserId)
-                .then(projectMemberService.getMembersByProject(projectId, pageable));
+        return userServiceClient.isAdmin(currentUserId)
+                .flatMap(isAdmin -> {
+                    if (isAdmin) {
+                        return projectMemberService.getMembersByProject(projectId, pageable);
+                    }
+                    return accessChecker.requireAtLeastEditorMono(projectId, currentUserId)
+                            .then(projectMemberService.getMembersByProject(projectId, pageable));
+                });
     }
 
     @Transactional
@@ -30,8 +38,14 @@ public class ProjectMemberServicePublic {
             Long projectId,
             CreateProjectMemberRequest request,
             Long currentUserId) {
-        return accessChecker.requireOwnerMono(projectId, currentUserId)
-                .then(projectMemberService.createMembership(projectId, request));
+        return userServiceClient.isAdmin(currentUserId)
+                .flatMap(isAdmin -> {
+                    if (isAdmin) {
+                        return projectMemberService.createMembership(projectId, request);
+                    }
+                    return accessChecker.requireOwnerMono(projectId, currentUserId)
+                            .then(projectMemberService.createMembership(projectId, request));
+                });
     }
 
     @Transactional
@@ -40,8 +54,14 @@ public class ProjectMemberServicePublic {
             Long userId,
             UpdateProjectMemberRequest request,
             Long currentUserId) {
-        return accessChecker.requireOwnerMono(projectId, currentUserId)
-                .then(projectMemberService.updateMembership(projectId, userId, request));
+        return userServiceClient.isAdmin(currentUserId)
+                .flatMap(isAdmin -> {
+                    if (isAdmin) {
+                        return projectMemberService.updateMembership(projectId, userId, request);
+                    }
+                    return accessChecker.requireOwnerMono(projectId, currentUserId)
+                            .then(projectMemberService.updateMembership(projectId, userId, request));
+                });
     }
 
     @Transactional
@@ -49,7 +69,13 @@ public class ProjectMemberServicePublic {
             Long projectId,
             Long userId,
             Long currentUserId) {
-        return accessChecker.requireOwnerMono(projectId, currentUserId)
-                .then(projectMemberService.deleteMembership(projectId, userId));
+        return userServiceClient.isAdmin(currentUserId)
+                .flatMap(isAdmin -> {
+                    if (isAdmin) {
+                        return projectMemberService.deleteMembership(projectId, userId);
+                    }
+                    return accessChecker.requireOwnerMono(projectId, currentUserId)
+                            .then(projectMemberService.deleteMembership(projectId, userId));
+                });
     }
 }

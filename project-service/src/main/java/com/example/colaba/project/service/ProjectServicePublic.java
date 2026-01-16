@@ -8,16 +8,17 @@ import com.example.colaba.project.mapper.ProjectMapper;
 import com.example.colaba.project.repository.ProjectRepository;
 import com.example.colaba.project.security.ProjectAccessCheckerLocal;
 import com.example.colaba.shared.common.dto.project.ProjectResponse;
+import com.example.colaba.shared.webflux.client.UserServiceClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.nio.file.AccessDeniedException;
 import java.util.List;
 
 @Service
@@ -28,6 +29,7 @@ public class ProjectServicePublic {
     private final ProjectMapper projectMapper;
     private final ProjectAccessCheckerLocal projectAccessCheckerLocal;
     private final ProjectService projectService;
+    private final UserServiceClient userServiceClient;
 
     @Transactional
     public Mono<ProjectResponse> createProject(CreateProjectRequest request, Long currentUserId) {
@@ -40,54 +42,99 @@ public class ProjectServicePublic {
     }
 
     public Mono<ProjectResponse> getProjectById(Long id, Long currentUserId) {
-        return projectAccessCheckerLocal.requireAnyRoleMono(id, currentUserId)
-                .then(projectService.getProjectById(id));
+        return userServiceClient.isAdmin(currentUserId)
+                .flatMap(isAdmin -> {
+                    if (isAdmin) {
+                        return projectService.getProjectById(id);
+                    }
+                    return projectAccessCheckerLocal.requireAnyRoleMono(id, currentUserId)
+                            .then(projectService.getProjectById(id));
+                });
     }
 
     public Mono<Page<ProjectResponse>> getAllProjects(Pageable pageable, Long currentUserId) {
-        return Mono.fromCallable(() -> {
-            Page<ProjectJpa> userProjects = projectRepository.findUserProjects(currentUserId, pageable);
-            return projectMapper.toProjectResponsePage(userProjects);
-        }).subscribeOn(Schedulers.boundedElastic());
+        return userServiceClient.isAdmin(currentUserId)
+                .flatMap(isAdmin -> {
+                    if (isAdmin) {
+                        return Mono.fromCallable(() -> {
+                            Page<ProjectJpa> allProjects = projectRepository.findAll(pageable);
+                            return projectMapper.toProjectResponsePage(allProjects);
+                        }).subscribeOn(Schedulers.boundedElastic());
+                    }
+                    return Mono.fromCallable(() -> {
+                        Page<ProjectJpa> userProjects = projectRepository.findUserProjects(currentUserId, pageable);
+                        return projectMapper.toProjectResponsePage(userProjects);
+                    }).subscribeOn(Schedulers.boundedElastic());
+                });
     }
 
     @Transactional
     public Mono<ProjectResponse> updateProject(Long id, UpdateProjectRequest request, Long currentUserId) {
-        return projectAccessCheckerLocal.requireOwnerMono(id, currentUserId)
-                .then(projectService.updateProject(id, request));
+        return userServiceClient.isAdmin(currentUserId)
+                .flatMap(isAdmin -> {
+                    if (isAdmin) {
+                        return projectService.updateProject(id, request);
+                    }
+                    return projectAccessCheckerLocal.requireOwnerMono(id, currentUserId)
+                            .then(projectService.updateProject(id, request));
+                });
     }
 
     @Transactional
     public Mono<ProjectResponse> changeProjectOwner(Long projectId, Long newOwnerId, Long currentUserId) {
-        return projectAccessCheckerLocal.requireOwnerMono(projectId, currentUserId)
-                .then(projectService.changeProjectOwner(projectId, newOwnerId));
+        return userServiceClient.isAdmin(currentUserId)
+                .flatMap(isAdmin -> {
+                    if (isAdmin) {
+                        return projectService.changeProjectOwner(projectId, newOwnerId);
+                    }
+                    return projectAccessCheckerLocal.requireOwnerMono(projectId, currentUserId)
+                            .then(projectService.changeProjectOwner(projectId, newOwnerId));
+                });
     }
 
     @Transactional
     public void deleteProject(Long id, Long currentUserId) {
-        projectAccessCheckerLocal.requireOwner(id, currentUserId);
-        projectService.deleteProject(id);
+        boolean isAdmin = Boolean.TRUE.equals(userServiceClient.isAdmin(currentUserId).block());
+        if (isAdmin) {
+            projectService.deleteProject(id);
+        } else {
+            projectAccessCheckerLocal.requireOwner(id, currentUserId);
+            projectService.deleteProject(id);
+        }
     }
 
     public Mono<List<ProjectResponse>> getProjectByOwnerId(Long ownerId, Long currentUserId) {
-        return Mono.defer(() -> {
-            if (!ownerId.equals(currentUserId)) {
-                return Mono.error(new AccessDeniedException("You can only view your own projects"));
-            }
-            return Mono.empty();
-        }).then(projectService.getProjectByOwnerId(ownerId));
+        return userServiceClient.isAdmin(currentUserId)
+                .flatMap(isAdmin -> {
+                    if (isAdmin) {
+                        return projectService.getProjectByOwnerId(ownerId);
+                    }
+                    return Mono.defer(() -> {
+                        if (!ownerId.equals(currentUserId)) {
+                            return Mono.error(new AccessDeniedException("You can only view your own projects"));
+                        }
+                        return Mono.empty();
+                    }).then(projectService.getProjectByOwnerId(ownerId));
+                });
     }
 
     public Mono<ProjectScrollResponse> scroll(int page, int size, Long currentUserId) {
-        return Mono.fromCallable(() -> {
-            Pageable pageable = PageRequest.of(page, size);
-            Page<ProjectJpa> projectPage = projectRepository.findUserProjects(currentUserId, pageable);
+        return userServiceClient.isAdmin(currentUserId)
+                .flatMap(isAdmin -> Mono.fromCallable(() -> {
+                    Pageable pageable = PageRequest.of(page, size);
+                    Page<ProjectJpa> projectPage;
 
-            List<ProjectResponse> projects = projectMapper.toProjectResponseList(projectPage.getContent());
-            boolean hasNext = projectPage.hasNext();
-            long total = projectPage.getTotalElements();
+                    if (isAdmin) {
+                        projectPage = projectRepository.findAll(pageable);
+                    } else {
+                        projectPage = projectRepository.findUserProjects(currentUserId, pageable);
+                    }
 
-            return new ProjectScrollResponse(projects, hasNext, total);
-        }).subscribeOn(Schedulers.boundedElastic());
+                    List<ProjectResponse> projects = projectMapper.toProjectResponseList(projectPage.getContent());
+                    boolean hasNext = projectPage.hasNext();
+                    long total = projectPage.getTotalElements();
+
+                    return new ProjectScrollResponse(projects, hasNext, total);
+                }).subscribeOn(Schedulers.boundedElastic()));
     }
 }
