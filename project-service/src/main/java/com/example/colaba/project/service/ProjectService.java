@@ -175,6 +175,7 @@ public class ProjectService {
 
     @Transactional
     public Mono<Void> handleUserDeletion(Long userId) {
-        return Mono.fromRunnable(() -> projectMemberRepository.deleteByUserId(userId));
+        return Mono.fromRunnable(() -> projectMemberRepository.deleteByUserId(userId))
+                .subscribeOn(Schedulers.boundedElastic()).then();
     }
 }

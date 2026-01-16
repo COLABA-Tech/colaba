@@ -10,8 +10,10 @@ import com.example.colaba.shared.webmvc.circuit.UserServiceClientWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@EnableMethodSecurity
 public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
@@ -28,11 +31,8 @@ public class AuthService {
     private final UserServiceClientWrapper userServiceClient;
 
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public AuthResponse register(RegisterRequest request, Long currentUserId) {
-        boolean isAdmin = userServiceClient.isAdmin(currentUserId);
-        if (!isAdmin) {
-            throw new AccessDeniedException("Only administrators can register new users");
-        }
         String hashedPassword = passwordEncoder.encode(request.password());
         userServiceClient.createUser(
                 new UserAuthDto(null, request.username(), request.email(),
