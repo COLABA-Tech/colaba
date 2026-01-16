@@ -107,7 +107,8 @@ class ProjectMemberServiceTest {
         StepVerifier.create(resultMono)
                 .expectNextMatches(page ->
                         page.getContent().size() == 1 &&
-                                page.getContent().getFirst().projectId().equals(testProjectId))
+                                page.getContent().get(0).projectId().equals(testProjectId)
+                )
                 .verifyComplete();
 
         verify(projectService).getProjectEntityById(testProjectId);
