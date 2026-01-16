@@ -101,13 +101,19 @@ public class SecurityConfig {
                         .pathMatchers(
                                 "/actuator/**",
                                 "/health",
-                                "/v3/api-docs**",
-                                "/swagger-ui**"
+                                "/v3/api-docs/**",
+                                "/v3/api-docs-project",
+                                "/v3/api-docs-project/**",
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/swagger-resources/**",
+                                "/webjars/**",
+                                "/swagger-config",
+                                "/favicon.ico",
+                                "/webjars/swagger-ui/**"
                         ).permitAll()
-                        .pathMatchers(
-                                "/api/projects/**",
-                                "/api/tags/**"
-                        ).authenticated()
+                        .pathMatchers("/api/projects/internal/**", "/api/tags/internal/**").permitAll()
+                        .pathMatchers("/api/projects/**", "/api/tags/**").authenticated()
                         .anyExchange().denyAll()
                 )
 

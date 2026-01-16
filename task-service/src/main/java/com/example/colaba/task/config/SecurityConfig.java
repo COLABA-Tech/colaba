@@ -52,7 +52,19 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/**", "/health", "/v3/api-docs**", "/swagger-ui**").permitAll()
+                        .requestMatchers(
+                                "/actuator/**",
+                                "/health",
+                                "/v3/api-docs/**",
+                                "/v3/api-docs-task",
+                                "/v3/api-docs-task/**",
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/swagger-resources/**",
+                                "/webjars/**",
+                                "/swagger-config",
+                                "/favicon.ico"
+                        ).permitAll()
                         .requestMatchers("/api/tasks/internal/**").permitAll()
                         .requestMatchers("/api/tasks/**", "/api/comments/**", "/api/task-tags/**").authenticated()
                         .anyRequest().denyAll()
