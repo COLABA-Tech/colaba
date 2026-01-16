@@ -7,6 +7,7 @@ import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -146,6 +147,19 @@ public class ReactiveGlobalExceptionHandler {
                 .timestamp(OffsetDateTime.now())
                 .build();
         return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(dto));
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public Mono<ResponseEntity<ErrorResponseDto>> handleAccessDenied(AccessDeniedException e, ServerWebExchange exchange) {
+        log.warn("Access denied: {}", e.getMessage());
+        ErrorResponseDto dto = ErrorResponseDto.builder()
+                .error("AccessDenied")
+                .status(HttpStatus.FORBIDDEN.value())
+                .message(e.getMessage())
+                .path(exchange.getRequest().getPath().value())
+                .timestamp(OffsetDateTime.now())
+                .build();
+        return Mono.just(ResponseEntity.status(HttpStatus.FORBIDDEN).body(dto));
     }
 
     @ExceptionHandler(Exception.class)

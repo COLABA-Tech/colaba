@@ -6,7 +6,8 @@ import com.example.colaba.auth.dto.RegisterRequest;
 import com.example.colaba.shared.common.dto.user.UserAuthDto;
 import com.example.colaba.shared.common.dto.user.UserResponse;
 import com.example.colaba.shared.common.security.JwtService;
-import com.example.colaba.shared.webmvc.client.UserServiceClient;
+import com.example.colaba.shared.webmvc.circuit.UserServiceClientWrapper;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -19,20 +20,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class AuthService {
-
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
-    private final UserServiceClient userServiceClient;
-
-    public AuthService(AuthenticationManager authenticationManager, JwtService jwtService,
-                       PasswordEncoder passwordEncoder, UserServiceClient userServiceClient) {
-        this.authenticationManager = authenticationManager;
-        this.jwtService = jwtService;
-        this.passwordEncoder = passwordEncoder;
-        this.userServiceClient = userServiceClient;
-    }
+    private final UserServiceClientWrapper userServiceClient;
 
     @Transactional
     public AuthResponse register(RegisterRequest request, Long currentUserId) {

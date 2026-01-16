@@ -145,11 +145,11 @@ public class ProjectController extends BaseController {
             @ApiResponse(responseCode = "204", description = "Project deleted successfully"),
             @ApiResponse(responseCode = "404", description = "Project not found")
     })
-    public ResponseEntity<Void> delete(
+    public Mono<ResponseEntity<Void>> delete(
             @PathVariable("id") Long id,
             @AuthenticationPrincipal Long currentUserId) {
-        projectService.deleteProject(id, currentUserId);
-        return ResponseEntity.noContent().build();
+        return projectService.deleteProject(id, currentUserId)
+                .then(Mono.just(ResponseEntity.noContent().build()));
     }
 
     @GetMapping("/{id}/tags")
