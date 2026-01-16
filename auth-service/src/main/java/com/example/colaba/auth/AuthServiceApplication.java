@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Import;
         "com.example.colaba.shared.webmvc"
 })
 @EnableDiscoveryClient
-@EnableFeignClients(basePackages = "com.example.colaba.auth.client")
+@EnableFeignClients(basePackages = "com.example.colaba.shared.webmvc.client")
 @Import(FeignConfig.class)
 public class AuthServiceApplication {
     public static void main(String[] args) {

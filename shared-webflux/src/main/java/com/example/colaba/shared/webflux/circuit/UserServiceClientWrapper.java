@@ -1,6 +1,6 @@
-package com.example.colaba.project.circuit;
+package com.example.colaba.shared.webflux.circuit;
 
-import com.example.colaba.project.client.UserServiceClient;
+import com.example.colaba.shared.webflux.client.UserServiceClient;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import lombok.RequiredArgsConstructor;

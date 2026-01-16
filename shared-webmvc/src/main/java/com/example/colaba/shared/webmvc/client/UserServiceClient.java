@@ -1,4 +1,4 @@
-package com.example.colaba.auth.client;
+package com.example.colaba.shared.webmvc.client;
 
 import com.example.colaba.shared.common.dto.user.UserAuthDto;
 import com.example.colaba.shared.common.feign.FeignConfig;

@@ -1,11 +1,8 @@
 package com.example.colaba.project;
 
-import com.example.colaba.shared.common.feign.FeignConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
-import org.springframework.cloud.openfeign.EnableFeignClients;
-import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication(scanBasePackages = {
@@ -14,8 +11,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
         "com.example.colaba.shared.webflux"
 })
 @EnableDiscoveryClient
-@EnableFeignClients(basePackages = "com.example.colaba.project.client")
-@Import(FeignConfig.class)
 @EnableJpaRepositories(basePackages = "com.example.colaba.project.repository")
 public class ProjectServiceApplication {
     public static void main(String[] args) {

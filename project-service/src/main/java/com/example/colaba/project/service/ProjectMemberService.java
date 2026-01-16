@@ -1,17 +1,17 @@
 package com.example.colaba.project.service;
 
-import com.example.colaba.project.circuit.UserServiceClientWrapper;
 import com.example.colaba.project.dto.projectmember.CreateProjectMemberRequest;
 import com.example.colaba.project.dto.projectmember.ProjectMemberResponse;
 import com.example.colaba.project.dto.projectmember.UpdateProjectMemberRequest;
 import com.example.colaba.project.entity.projectmember.ProjectMemberId;
 import com.example.colaba.project.entity.projectmember.ProjectMemberJpa;
-import com.example.colaba.project.entity.projectmember.ProjectRole;
 import com.example.colaba.project.mapper.ProjectMemberMapper;
 import com.example.colaba.project.repository.ProjectMemberRepository;
+import com.example.colaba.shared.common.entity.ProjectRole;
 import com.example.colaba.shared.common.exception.projectmember.DuplicateProjectMemberException;
 import com.example.colaba.shared.common.exception.projectmember.ProjectMemberNotFoundException;
 import com.example.colaba.shared.common.exception.user.UserNotFoundException;
+import com.example.colaba.shared.webflux.circuit.UserServiceClientWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -101,7 +101,8 @@ public class ProjectMemberService {
                     if (!exists) {
                         return Mono.error(new ProjectMemberNotFoundException(projectId, userId));
                     }
-                    return Mono.fromRunnable(() -> projectMemberRepository.deleteById(new ProjectMemberId(projectId, userId)))
+                    return Mono.fromRunnable(() ->
+                                    projectMemberRepository.deleteById(new ProjectMemberId(projectId, userId)))
                             .subscribeOn(Schedulers.boundedElastic());
                 }).then();
     }

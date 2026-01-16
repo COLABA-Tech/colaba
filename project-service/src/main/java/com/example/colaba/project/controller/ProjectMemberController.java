@@ -3,7 +3,7 @@ package com.example.colaba.project.controller;
 import com.example.colaba.project.dto.projectmember.CreateProjectMemberRequest;
 import com.example.colaba.project.dto.projectmember.ProjectMemberResponse;
 import com.example.colaba.project.dto.projectmember.UpdateProjectMemberRequest;
-import com.example.colaba.project.service.ProjectMemberService;
+import com.example.colaba.project.service.ProjectMemberServicePublic;
 import com.example.colaba.shared.common.controller.BaseController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
@@ -22,7 +23,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 @Tag(name = "Project Members", description = "API for managing project members and their roles")
 public class ProjectMemberController extends BaseController {
-    private final ProjectMemberService projectMemberService;
+    private final ProjectMemberServicePublic projectMemberService;
 
     @GetMapping
     @Operation(summary = "Get project members with pagination", description = "Retrieves a paginated list of all members for a specific project. Supports standard Spring Pageable parameters.")
@@ -32,9 +33,10 @@ public class ProjectMemberController extends BaseController {
     })
     public Mono<ResponseEntity<Page<ProjectMemberResponse>>> getMembersByProject(
             @PathVariable Long projectId,
-            Pageable pageable) {
+            Pageable pageable,
+            @AuthenticationPrincipal Long currentUserId) {
         pageable = validatePageable(pageable);
-        return projectMemberService.getMembersByProject(projectId, pageable)
+        return projectMemberService.getMembersByProject(projectId, pageable, currentUserId)
                 .map(ResponseEntity::ok);
     }
 
@@ -47,8 +49,9 @@ public class ProjectMemberController extends BaseController {
     })
     public Mono<ResponseEntity<ProjectMemberResponse>> addMember(
             @PathVariable Long projectId,
-            @Valid @RequestBody CreateProjectMemberRequest request) {
-        return projectMemberService.createMembership(projectId, request)
+            @Valid @RequestBody CreateProjectMemberRequest request,
+            @AuthenticationPrincipal Long currentUserId) {
+        return projectMemberService.createMembership(projectId, request, currentUserId)
                 .map(ResponseEntity::ok);
     }
 
@@ -62,8 +65,9 @@ public class ProjectMemberController extends BaseController {
     public Mono<ResponseEntity<ProjectMemberResponse>> updateMember(
             @PathVariable Long projectId,
             @PathVariable Long userId,
-            @Valid @RequestBody UpdateProjectMemberRequest request) {
-        return projectMemberService.updateMembership(projectId, userId, request)
+            @Valid @RequestBody UpdateProjectMemberRequest request,
+            @AuthenticationPrincipal Long currentUserId) {
+        return projectMemberService.updateMembership(projectId, userId, request, currentUserId)
                 .map(ResponseEntity::ok);
     }
 
@@ -75,8 +79,9 @@ public class ProjectMemberController extends BaseController {
     })
     public Mono<ResponseEntity<Void>> removeMember(
             @PathVariable Long projectId,
-            @PathVariable Long userId) {
-        return projectMemberService.deleteMembership(projectId, userId)
+            @PathVariable Long userId,
+            @AuthenticationPrincipal Long currentUserId) {
+        return projectMemberService.deleteMembership(projectId, userId, currentUserId)
                 .then(Mono.just(ResponseEntity.noContent().build()));
     }
 }
