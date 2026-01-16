@@ -3,7 +3,6 @@ package com.example.colaba.user.config;
 import com.example.colaba.shared.common.security.JwtService;
 import com.example.colaba.shared.webflux.filter.ReactiveInternalAuthenticationFilter;
 import com.example.colaba.shared.webflux.filter.ReactiveJwtAuthenticationFilter;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,7 +20,6 @@ import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
-@Slf4j
 @Configuration
 @EnableWebFluxSecurity
 public class SecurityConfig {
@@ -45,7 +43,6 @@ public class SecurityConfig {
     public SecurityWebFilterChain internalSecurityFilterChain(
             ServerHttpSecurity http,
             @Value("${internal.api-key}") String internalApiKey) {
-        log.info("Initializing internalSecurityFilterChain with API key: {}", internalApiKey);
 
         ReactiveInternalAuthenticationFilter internalFilter =
                 new ReactiveInternalAuthenticationFilter(internalApiKey);
@@ -84,7 +81,7 @@ public class SecurityConfig {
     public SecurityWebFilterChain mainSecurityFilterChain(
             ServerHttpSecurity http,
             JwtService jwtService) {
-        log.info("Initializing mainSecurityFilterChain");
+
         ReactiveJwtAuthenticationFilter jwtFilter = new ReactiveJwtAuthenticationFilter(jwtService);
 
         http
@@ -101,10 +98,18 @@ public class SecurityConfig {
                         .pathMatchers(
                                 "/actuator/**",
                                 "/health",
-                                "/v3/api-docs**",
-                                "/swagger-ui**"
+                                "/v3/api-docs/**",
+                                "/v3/api-docs-user",
+                                "/v3/api-docs-user/**",
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/swagger-resources/**",
+                                "/webjars/**",
+                                "/swagger-config",
+                                "/favicon.ico",
+                                "/webjars/swagger-ui/**"
                         ).permitAll()
-                        .pathMatchers("/api/users/internal/**").permitAll() //?
+                        .pathMatchers("/api/users/internal/**").permitAll()
                         .pathMatchers("/api/users/**").authenticated()
                         .anyExchange().denyAll()
                 )
