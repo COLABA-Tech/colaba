@@ -3,6 +3,7 @@ package com.example.colaba.project.controller;
 import com.example.colaba.project.mapper.TagMapper;
 import com.example.colaba.project.repository.TagRepository;
 import com.example.colaba.shared.common.dto.tag.TagResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
@@ -12,6 +13,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/tags/internal")
 @RequiredArgsConstructor
+@Tag(name = "Tags Internal", description = "Internal Tags API")
 public class TagInternalController {
     private final TagRepository tagRepository;
     private final TagMapper tagMapper;

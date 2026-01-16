@@ -6,6 +6,7 @@ import com.example.colaba.shared.common.exception.user.UserNotFoundException;
 import com.example.colaba.user.dto.user.CreateUserRequest;
 import com.example.colaba.user.repository.UserRepository;
 import com.example.colaba.user.service.UserService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
@@ -13,6 +14,7 @@ import reactor.core.publisher.Mono;
 @RestController
 @RequestMapping("/api/users/internal")
 @RequiredArgsConstructor
+@Tag(name = "Users Internal", description = "Internal Users API")
 public class UserInternalController {
 
     private final UserRepository userRepository;

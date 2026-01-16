@@ -1,4 +1,4 @@
-package com.example.colaba.user.config;
+package com.example.colaba.auth.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
@@ -16,9 +16,9 @@ public class OpenApiConfig {
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("User Service API")
+                        .title("Auth Service API")
                         .version("1.0")
-                        .description("API для управления пользователями"))
+                        .description("API для аутентификации и авторизации"))
                 .servers(List.of(
                         new Server()
                                 .url("/")
@@ -29,17 +29,8 @@ public class OpenApiConfig {
     @Bean
     public GroupedOpenApi publicApi() {
         return GroupedOpenApi.builder()
-                .group("public-user-api")
-                .pathsToMatch("/api/users/**")
-                .pathsToExclude("/api/users/internal/**")
-                .build();
-    }
-
-    @Bean
-    public GroupedOpenApi internalApi() {
-        return GroupedOpenApi.builder()
-                .group("internal-user-api")
-                .pathsToMatch("/api/users/internal/**")
+                .group("public-auth-api")
+                .pathsToMatch("/auth/**")
                 .build();
     }
 }

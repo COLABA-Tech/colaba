@@ -22,7 +22,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 @RestController
 @RequestMapping("/api/comments")
 @RequiredArgsConstructor
-@Tag(name = "Comments", description = "API for managing comments")
+@Tag(name = "Comments Public", description = "API for managing comments")
 public class CommentController extends BaseController {
 
     private final CommentServicePublic commentService;

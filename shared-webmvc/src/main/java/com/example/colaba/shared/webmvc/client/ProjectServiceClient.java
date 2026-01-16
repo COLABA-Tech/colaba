@@ -2,7 +2,7 @@ package com.example.colaba.shared.webmvc.client;
 
 import com.example.colaba.shared.common.dto.project.ProjectResponse;
 import com.example.colaba.shared.common.dto.tag.TagResponse;
-import com.example.colaba.shared.common.feign.FeignConfig;
+import com.example.colaba.shared.webmvc.feign.FeignConfig;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 

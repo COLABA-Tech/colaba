@@ -21,7 +21,7 @@ import reactor.core.publisher.Mono;
 @RestController
 @RequestMapping("/api/projects/{projectId}/members")
 @RequiredArgsConstructor
-@Tag(name = "Project Members", description = "API for managing project members and their roles")
+@Tag(name = "Project Members Public", description = "API for managing project members")
 public class ProjectMemberController extends BaseController {
     private final ProjectMemberServicePublic projectMemberService;
 

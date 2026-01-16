@@ -30,49 +30,51 @@ COPY project-service/src project-service/src
 COPY task-service/src task-service/src
 COPY auth-service/src auth-service/src
 
-RUN ./mvnw clean package -B -DskipTests -Dmaven.test.skip=true
+RUN --mount=type=cache,target=/root/.m2 ./mvnw clean package -B -DskipTests -Dmaven.test.skip=true
 
 FROM eclipse-temurin:25-jre AS base
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+USER appuser
 
 FROM base AS discovery-server
 WORKDIR /colaba
-COPY --from=builder /colaba/discovery-server/target/*.jar colaba.jar
+COPY --from=builder /colaba/discovery-server/target/discovery-server-*.jar discovery-server.jar
 EXPOSE 8761
-ENTRYPOINT ["java", "-jar", "colaba.jar"]
+ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-XX:+ExitOnOutOfMemoryError", "-jar", "discovery-server.jar"]
 
 FROM base AS config-server
 WORKDIR /colaba
-COPY --from=builder /colaba/config-server/target/*.jar colaba.jar
+COPY --from=builder /colaba/config-server/target/config-server-*.jar config-server.jar
 EXPOSE 8888
-ENTRYPOINT ["java", "-jar", "colaba.jar"]
+ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-XX:+ExitOnOutOfMemoryError", "-jar", "config-server.jar"]
 
 FROM base AS api-gateway
 WORKDIR /colaba
-COPY --from=builder /colaba/api-gateway/target/*.jar colaba.jar
+COPY --from=builder /colaba/api-gateway/target/api-gateway-*.jar api-gateway.jar
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "colaba.jar"]
+ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-XX:+ExitOnOutOfMemoryError", "-jar", "api-gateway.jar"]
 
 FROM base AS user-service
 WORKDIR /colaba
-COPY --from=builder /colaba/user-service/target/*.jar colaba.jar
+COPY --from=builder /colaba/user-service/target/user-service-*.jar user-service.jar
 EXPOSE 8081
-ENTRYPOINT ["java", "-jar", "colaba.jar"]
+ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-XX:+ExitOnOutOfMemoryError", "-jar", "user-service.jar"]
 
 FROM base AS project-service
 WORKDIR /colaba
-COPY --from=builder /colaba/project-service/target/*.jar colaba.jar
+COPY --from=builder /colaba/project-service/target/project-service-*.jar project-service.jar
 EXPOSE 8082
-ENTRYPOINT ["java", "-jar", "colaba.jar"]
+ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-XX:+ExitOnOutOfMemoryError", "-jar", "project-service.jar"]
 
 FROM base AS task-service
 WORKDIR /colaba
-COPY --from=builder /colaba/task-service/target/*.jar colaba.jar
+COPY --from=builder /colaba/task-service/target/task-service-*.jar task-service.jar
 EXPOSE 8083
-ENTRYPOINT ["java", "-jar", "colaba.jar"]
+ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-XX:+ExitOnOutOfMemoryError", "-jar", "task-service.jar"]
 
 FROM base AS auth-service
 WORKDIR /colaba
-COPY --from=builder /colaba/auth-service/target/*.jar colaba.jar
+COPY --from=builder /colaba/auth-service/target/auth-service-*.jar auth-service.jar
 EXPOSE 8084
-ENTRYPOINT ["java", "-jar", "colaba.jar"]
+ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-XX:+ExitOnOutOfMemoryError", "-jar", "auth-service.jar"]

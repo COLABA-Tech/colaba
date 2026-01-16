@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/tasks")
 @RequiredArgsConstructor
-@Tag(name = "Tasks", description = "API for managing tasks, including CRUD operations and tag associations")
+@Tag(name = "Tasks Public", description = "API for managing tasks")
 public class TaskController extends BaseController {
     private final TaskServicePublic taskService;
 

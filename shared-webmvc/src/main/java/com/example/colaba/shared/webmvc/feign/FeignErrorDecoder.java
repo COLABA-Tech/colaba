@@ -1,4 +1,4 @@
-package com.example.colaba.shared.common.feign;
+package com.example.colaba.shared.webmvc.feign;
 
 import com.example.colaba.shared.common.exception.common.DuplicateEntityException;
 import com.example.colaba.shared.common.exception.common.NotFoundException;

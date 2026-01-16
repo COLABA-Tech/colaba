@@ -22,7 +22,7 @@ import reactor.core.publisher.Mono;
 @RestController
 @RequestMapping("/api/tags")
 @RequiredArgsConstructor
-@Tag(name = "Tags", description = "API for managing tags, including CRUD operations and project associations")
+@Tag(name = "Tags Public", description = "API for managing tags")
 public class TagController extends BaseController {
     private final TagServicePublic tagService;
 
