@@ -29,7 +29,7 @@ public class ProjectMemberServicePublic {
                         return projectMemberService.getMembersByProject(projectId, pageable);
                     }
                     return accessChecker.requireAtLeastEditorMono(projectId, currentUserId)
-                            .then(projectMemberService.getMembersByProject(projectId, pageable));
+                            .then(Mono.defer(() -> projectMemberService.getMembersByProject(projectId, pageable)));
                 });
     }
 
@@ -44,7 +44,7 @@ public class ProjectMemberServicePublic {
                         return projectMemberService.createMembership(projectId, request);
                     }
                     return accessChecker.requireOwnerMono(projectId, currentUserId)
-                            .then(projectMemberService.createMembership(projectId, request));
+                            .then(Mono.defer(() -> projectMemberService.createMembership(projectId, request)));
                 });
     }
 
@@ -60,7 +60,7 @@ public class ProjectMemberServicePublic {
                         return projectMemberService.updateMembership(projectId, userId, request);
                     }
                     return accessChecker.requireOwnerMono(projectId, currentUserId)
-                            .then(projectMemberService.updateMembership(projectId, userId, request));
+                            .then(Mono.defer(() -> projectMemberService.updateMembership(projectId, userId, request)));
                 });
     }
 
@@ -75,7 +75,7 @@ public class ProjectMemberServicePublic {
                         return projectMemberService.deleteMembership(projectId, userId);
                     }
                     return accessChecker.requireOwnerMono(projectId, currentUserId)
-                            .then(projectMemberService.deleteMembership(projectId, userId));
+                            .then(Mono.defer(() -> projectMemberService.deleteMembership(projectId, userId)));
                 });
     }
 }

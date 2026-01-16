@@ -23,14 +23,12 @@ public class UserAccessCheckerLocal {
     public Mono<Void> requireAdminMono(Long userId) {
         return isAdminMono(userId)
                 .flatMap(isAdmin -> {
-                    if (!isAdmin) {
-                        return getUserRoleMono(userId)
-                                .flatMap(role -> Mono.error(new AccessDeniedException(
-                                        "Required user role: ADMIN. Current role: " + role
-                                )));
+                    if (isAdmin) {
+                        return Mono.<Void>empty();
                     }
-                    return Mono.empty();
-                });
+                    return Mono.error(new AccessDeniedException("Required user role: ADMIN"));
+                })
+                .switchIfEmpty(Mono.error(new AccessDeniedException("User not found")));
     }
 
     public Mono<Boolean> canManageUserMono(Long currentUserId, Long targetUserId) {

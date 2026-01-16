@@ -34,11 +34,14 @@ public class ProjectServicePublic {
     @Transactional
     public Mono<ProjectResponse> createProject(CreateProjectRequest request, Long currentUserId) {
         return Mono.defer(() -> {
-            if (!request.ownerId().equals(currentUserId)) {
-                return Mono.error(new AccessDeniedException("You can only create projects for yourself"));
+            if (request.ownerId() == null ||
+                    !request.ownerId().equals(currentUserId)) {
+                return Mono.error(
+                        new AccessDeniedException("You can only create projects for yourself")
+                );
             }
-            return Mono.empty();
-        }).then(projectService.createProject(request));
+            return projectService.createProject(request);
+        });
     }
 
     public Mono<ProjectResponse> getProjectById(Long id, Long currentUserId) {
@@ -47,8 +50,9 @@ public class ProjectServicePublic {
                     if (isAdmin) {
                         return projectService.getProjectById(id);
                     }
-                    return projectAccessCheckerLocal.requireAnyRoleMono(id, currentUserId)
-                            .then(projectService.getProjectById(id));
+                    return projectAccessCheckerLocal
+                            .requireAnyRoleMono(id, currentUserId)
+                            .flatMap(v -> projectService.getProjectById(id));
                 });
     }
 
@@ -75,8 +79,9 @@ public class ProjectServicePublic {
                     if (isAdmin) {
                         return projectService.updateProject(id, request);
                     }
-                    return projectAccessCheckerLocal.requireOwnerMono(id, currentUserId)
-                            .then(projectService.updateProject(id, request));
+                    return projectAccessCheckerLocal
+                            .requireOwnerMono(id, currentUserId)
+                            .flatMap(v -> projectService.updateProject(id, request));
                 });
     }
 
@@ -87,8 +92,9 @@ public class ProjectServicePublic {
                     if (isAdmin) {
                         return projectService.changeProjectOwner(projectId, newOwnerId);
                     }
-                    return projectAccessCheckerLocal.requireOwnerMono(projectId, currentUserId)
-                            .then(projectService.changeProjectOwner(projectId, newOwnerId));
+                    return projectAccessCheckerLocal
+                            .requireOwnerMono(projectId, currentUserId)
+                            .flatMap(v -> projectService.changeProjectOwner(projectId, newOwnerId));
                 });
     }
 
@@ -109,12 +115,12 @@ public class ProjectServicePublic {
                     if (isAdmin) {
                         return projectService.getProjectByOwnerId(ownerId);
                     }
-                    return Mono.defer(() -> {
-                        if (!ownerId.equals(currentUserId)) {
-                            return Mono.error(new AccessDeniedException("You can only view your own projects"));
-                        }
-                        return Mono.empty();
-                    }).then(projectService.getProjectByOwnerId(ownerId));
+                    if (!ownerId.equals(currentUserId)) {
+                        return Mono.error(
+                                new AccessDeniedException("You can only view your own projects")
+                        );
+                    }
+                    return projectService.getProjectByOwnerId(ownerId);
                 });
     }
 

@@ -172,6 +172,36 @@ public class UserServiceTest {
     }
 
     @Test
+    void getUserEntityById_success() {
+        // Given
+        when(userRepository.findById(test_id)).thenReturn(Mono.just(savedUser));
+
+        // When
+        Mono<User> resultMono = userService.getUserEntityById(test_id);
+
+        // Then
+        StepVerifier.create(resultMono)
+                .expectNextMatches(result ->
+                        result.getId().equals(test_id) &&
+                                result.getUsername().equals(test_username) &&
+                                result.getEmail().equals(test_email))
+                .verifyComplete();
+    }
+
+    @Test
+    void getUserEntityById_notFound_throwsException() {
+        // Given (arrange)
+        when(userRepository.findById(test_id)).thenReturn(Mono.empty());
+
+        // When & Then
+        StepVerifier.create(userService.getUserEntityById(test_id))
+                .expectErrorMatches(throwable ->
+                        throwable instanceof UserNotFoundException &&
+                                throwable.getMessage().equals("User not found: ID " + test_id))
+                .verify();
+    }
+
+    @Test
     void updateUser_success() {
         // Given
         String newUsername = "newUsername";

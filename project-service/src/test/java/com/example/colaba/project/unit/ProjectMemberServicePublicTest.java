@@ -9,7 +9,6 @@ import com.example.colaba.project.service.ProjectMemberServicePublic;
 import com.example.colaba.shared.common.entity.ProjectRole;
 import com.example.colaba.shared.webflux.client.UserServiceClient;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -116,7 +115,6 @@ class ProjectMemberServicePublicTest {
     }
 
     @Test
-    @Disabled
     void getMembersByProject_userIsNotAdminAndNotEditor_accessDenied() {
         // Given
         Pageable pageable = PageRequest.of(0, 10);
@@ -207,7 +205,6 @@ class ProjectMemberServicePublicTest {
     }
 
     @Test
-    @Disabled
     void createMembership_userIsNotAdminAndNotOwner_accessDenied() {
         // Given
         RuntimeException accessDeniedException = new RuntimeException("Access denied");
@@ -318,7 +315,6 @@ class ProjectMemberServicePublicTest {
     }
 
     @Test
-    @Disabled
     void updateMembership_userIsNotAdminAndNotOwner_accessDenied() {
         // Given
         RuntimeException accessDeniedException = new RuntimeException("Access denied");
@@ -342,7 +338,6 @@ class ProjectMemberServicePublicTest {
     }
 
     @Test
-    @Disabled
     void updateMembership_updatingSelfRole_asEditorNotAdmin_notAllowed() {
         // Given
         Long selfUserId = testCurrentUserId;
@@ -409,7 +404,6 @@ class ProjectMemberServicePublicTest {
     }
 
     @Test
-    @Disabled
     void deleteMembership_userIsNotAdminAndNotOwner_accessDenied() {
         // Given
         RuntimeException accessDeniedException = new RuntimeException("Access denied");

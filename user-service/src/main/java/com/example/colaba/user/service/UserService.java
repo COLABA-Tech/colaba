@@ -65,6 +65,11 @@ public class UserService {
                 .map(userMapper::toUserResponse);
     }
 
+    public Mono<User> getUserEntityById(Long id) {
+        return userRepository.findById(id)
+                .switchIfEmpty(Mono.error(new UserNotFoundException(id)));
+    }
+
     public Mono<UserResponse> updateUser(Long id, UpdateUserRequest request) {
         return userRepository.findById(id)
                 .switchIfEmpty(Mono.error(new UserNotFoundException(id)))

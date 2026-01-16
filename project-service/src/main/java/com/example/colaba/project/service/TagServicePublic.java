@@ -52,7 +52,7 @@ public class TagServicePublic {
                         return tagService.getTagsByProject(projectId, pageable);
                     }
                     return projectAccessCheckerLocal.requireAnyRoleMono(projectId, currentUserId)
-                            .then(tagService.getTagsByProject(projectId, pageable));
+                            .then(Mono.defer(() -> tagService.getTagsByProject(projectId, pageable)));
                 });
     }
 
@@ -64,7 +64,7 @@ public class TagServicePublic {
                         return tagService.createTag(request);
                     }
                     return projectAccessCheckerLocal.requireAtLeastEditorMono(request.projectId(), currentUserId)
-                            .then(tagService.createTag(request));
+                            .then(Mono.defer(() -> tagService.createTag(request)));
                 });
     }
 

@@ -1,16 +1,17 @@
 package com.example.colaba.user.unit;
 
 import com.example.colaba.shared.common.dto.user.UserResponse;
-import com.example.colaba.shared.common.exception.user.UserNotFoundException;
+import com.example.colaba.shared.common.entity.UserRole;
 import com.example.colaba.user.dto.user.CreateUserRequest;
 import com.example.colaba.user.dto.user.UpdateUserRequest;
 import com.example.colaba.user.dto.user.UserScrollResponse;
+import com.example.colaba.user.entity.User;
 import com.example.colaba.user.mapper.UserMapper;
 import com.example.colaba.user.repository.UserRepository;
 import com.example.colaba.user.security.UserAccessCheckerLocal;
 import com.example.colaba.user.service.UserService;
 import com.example.colaba.user.service.UserServicePublic;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -20,16 +21,16 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class UserServicePublicTest {
+class UserServicePublicTest {
 
     @Mock
     private UserService userService;
@@ -52,232 +53,171 @@ public class UserServicePublicTest {
     private final String email = "test@colaba.com";
     private final UserResponse userResponse = new UserResponse(targetUserId, username, email, "USER");
 
-    // ========== createUser Tests ==========
+    private CreateUserRequest createRequest;
+    private UpdateUserRequest updateRequest;
+
+    @BeforeEach
+    void setUp() {
+        createRequest = new CreateUserRequest(username, email, "password", null);
+        updateRequest = new UpdateUserRequest(username, email, null);
+    }
+
+    // ========== createUser ==========
 
     @Test
     void createUser_successWithAdminAccess() {
-        // Given
-        CreateUserRequest request = new CreateUserRequest(username, email, "password", null);
-
         when(accessChecker.requireAdminMono(currentUserId)).thenReturn(Mono.empty());
-        when(userService.createUser(request)).thenReturn(Mono.just(userResponse));
+        when(userService.createUser(createRequest)).thenReturn(Mono.just(userResponse));
 
-        // When
-        Mono<UserResponse> result = userServicePublic.createUser(request, currentUserId);
-
-        // Then
-        StepVerifier.create(result)
+        StepVerifier.create(userServicePublic.createUser(createRequest, currentUserId))
                 .expectNext(userResponse)
                 .verifyComplete();
 
         verify(accessChecker).requireAdminMono(currentUserId);
-        verify(userService).createUser(request);
+        verify(userService).createUser(createRequest);
     }
 
     @Test
-    @Disabled
     void createUser_accessDenied_throwsException() {
-        // Given
-        CreateUserRequest request = new CreateUserRequest(username, email, "password", null);
-        RuntimeException accessException = new RuntimeException("Access denied");
+        AccessDeniedException exception = new AccessDeniedException("Required user role: ADMIN");
+        when(accessChecker.requireAdminMono(currentUserId)).thenReturn(Mono.error(exception));
 
-        when(accessChecker.requireAdminMono(currentUserId))
-                .thenReturn(Mono.error(accessException));
-
-        // When
-        Mono<UserResponse> result = userServicePublic.createUser(request, currentUserId);
-
-        // Then
-        StepVerifier.create(result)
-                .expectErrorMatches(throwable -> throwable == accessException)
+        StepVerifier.create(userServicePublic.createUser(createRequest, currentUserId))
+                .expectError(AccessDeniedException.class)
                 .verify();
 
-        verify(userService, never()).createUser(any());
+        verify(accessChecker).requireAdminMono(currentUserId);
+        verifyNoInteractions(userService);
     }
 
-    // ========== getUserByUsername Tests ==========
+    // ========== getUserByUsername ==========
 
     @Test
     void getUserByUsername_success() {
-        // Given
         when(userService.getUserByUsername(username)).thenReturn(Mono.just(userResponse));
 
-        // When
-        Mono<UserResponse> result = userServicePublic.getUserByUsername(username, currentUserId);
-
-        // Then
-        StepVerifier.create(result)
+        StepVerifier.create(userServicePublic.getUserByUsername(username, currentUserId))
                 .expectNext(userResponse)
                 .verifyComplete();
 
         verify(userService).getUserByUsername(username);
-        // getUserByUsername не требует проверки прав доступа согласно коду
-        verify(accessChecker, never()).requireAdminMono(any());
-        verify(accessChecker, never()).requireCanManageUserMono(any(), any());
     }
 
-    @Test
-    void getUserByUsername_userServiceThrowsException_propagatesException() {
-        // Given
-        UserNotFoundException userNotFoundException = new UserNotFoundException(username);
-        when(userService.getUserByUsername(username))
-                .thenReturn(Mono.error(userNotFoundException));
-
-        // When
-        Mono<UserResponse> result = userServicePublic.getUserByUsername(username, currentUserId);
-
-        // Then
-        StepVerifier.create(result)
-                .expectErrorMatches(throwable -> throwable == userNotFoundException)
-                .verify();
-
-        verify(userService).getUserByUsername(username);
-    }
-
-    // ========== getUser Tests ==========
+    // ========== getUser ==========
 
     @Test
-    void getUser_successWithAccess() {
-        // Given
-        com.example.colaba.user.entity.User userEntity =
-                com.example.colaba.user.entity.User.builder()
-                        .id(targetUserId)
-                        .username(username)
-                        .email(email)
-                        .build();
+    void getUser_successWithSelfAccess() {
+        User userEntity = User.builder()
+                .id(currentUserId)
+                .username(username)
+                .email(email)
+                .role(UserRole.USER)
+                .build();
 
-        when(accessChecker.requireCanManageUserMono(currentUserId, targetUserId)).thenReturn(Mono.empty());
-        when(userRepository.findById(targetUserId)).thenReturn(Mono.just(userEntity));
+        when(accessChecker.requireCanManageUserMono(currentUserId, targetUserId))
+                .thenReturn(Mono.empty());
+        when(userService.getUserEntityById(targetUserId)).thenReturn(Mono.just(userEntity));
         when(userMapper.toUserResponse(userEntity)).thenReturn(userResponse);
 
-        // When
-        Mono<UserResponse> result = userServicePublic.getUser(targetUserId, currentUserId);
-
-        // Then
-        StepVerifier.create(result)
+        StepVerifier.create(userServicePublic.getUser(targetUserId, currentUserId))
                 .expectNext(userResponse)
                 .verifyComplete();
 
         verify(accessChecker).requireCanManageUserMono(currentUserId, targetUserId);
-        verify(userRepository).findById(targetUserId);
+        verify(userService).getUserEntityById(targetUserId);
         verify(userMapper).toUserResponse(userEntity);
     }
 
     @Test
-    @Disabled
-    void getUser_accessDenied_throwsException() {
-        // Given
-        RuntimeException accessException = new RuntimeException("Cannot manage user");
+    void getUser_successWithAdminAccess() {
+        User userEntity = User.builder()
+                .id(targetUserId)
+                .username(username)
+                .email(email)
+                .role(UserRole.USER)
+                .build();
+
         when(accessChecker.requireCanManageUserMono(currentUserId, targetUserId))
-                .thenReturn(Mono.error(accessException));
+                .thenReturn(Mono.empty());
+        when(userService.getUserEntityById(targetUserId)).thenReturn(Mono.just(userEntity));
+        when(userMapper.toUserResponse(userEntity)).thenReturn(userResponse);
 
-        // When
-        Mono<UserResponse> result = userServicePublic.getUser(targetUserId, currentUserId);
-
-        // Then
-        StepVerifier.create(result)
-                .expectErrorMatches(throwable -> throwable == accessException)
-                .verify();
-
-        verify(userRepository, never()).findById((Long) any());
-        verify(userMapper, never()).toUserResponse(any());
-    }
-
-    @Test
-    void getUser_userNotFound_throwsUserNotFoundException() {
-        // Given
-        when(accessChecker.requireCanManageUserMono(currentUserId, targetUserId)).thenReturn(Mono.empty());
-        when(userRepository.findById(targetUserId)).thenReturn(Mono.empty());
-
-        // When
-        Mono<UserResponse> result = userServicePublic.getUser(targetUserId, currentUserId);
-
-        // Then
-        StepVerifier.create(result)
-                .expectError(UserNotFoundException.class)
-                .verify();
-
-        verify(userRepository).findById(targetUserId);
-        verify(userMapper, never()).toUserResponse(any());
-    }
-
-    // ========== updateUser Tests ==========
-
-    @Test
-    void updateUser_successWithAccess() {
-        // Given
-        UpdateUserRequest request = new UpdateUserRequest("newUsername", "newemail@colaba.com", "newPassword");
-
-        when(accessChecker.requireCanManageUserMono(currentUserId, targetUserId)).thenReturn(Mono.empty());
-        when(userService.updateUser(targetUserId, request)).thenReturn(Mono.just(userResponse));
-
-        // When
-        Mono<UserResponse> result = userServicePublic.updateUser(targetUserId, request, currentUserId);
-
-        // Then
-        StepVerifier.create(result)
+        StepVerifier.create(userServicePublic.getUser(targetUserId, currentUserId))
                 .expectNext(userResponse)
                 .verifyComplete();
 
         verify(accessChecker).requireCanManageUserMono(currentUserId, targetUserId);
-        verify(userService).updateUser(targetUserId, request);
+        verify(userService).getUserEntityById(targetUserId);
+        verify(userMapper).toUserResponse(userEntity);
     }
 
     @Test
-    @Disabled
-    void updateUser_accessDenied_throwsException() {
-        // Given
-        UpdateUserRequest request = new UpdateUserRequest("newUsername", "newemail@colaba.com", "newPassword");
-        RuntimeException accessException = new RuntimeException("Cannot manage user");
-
+    void getUser_accessDenied_throwsException() {
+        AccessDeniedException exception = new AccessDeniedException("You can only manage your own account or as ADMIN");
         when(accessChecker.requireCanManageUserMono(currentUserId, targetUserId))
-                .thenReturn(Mono.error(accessException));
+                .thenReturn(Mono.error(exception));
 
-        // When
-        Mono<UserResponse> result = userServicePublic.updateUser(targetUserId, request, currentUserId);
-
-        // Then
-        StepVerifier.create(result)
-                .expectErrorMatches(throwable -> throwable == accessException)
+        StepVerifier.create(userServicePublic.getUser(targetUserId, currentUserId))
+                .expectError(AccessDeniedException.class)
                 .verify();
 
-        verify(userService, never()).updateUser(any(), any());
+        verify(accessChecker).requireCanManageUserMono(currentUserId, targetUserId);
+        verifyNoInteractions(userService);
+        verifyNoInteractions(userMapper);
+    }
+
+    // ========== updateUser ==========
+
+    @Test
+    void updateUser_successWithSelfAccess() {
+        when(accessChecker.requireCanManageUserMono(currentUserId, targetUserId))
+                .thenReturn(Mono.empty());
+        when(userService.updateUser(targetUserId, updateRequest)).thenReturn(Mono.just(userResponse));
+
+        StepVerifier.create(userServicePublic.updateUser(targetUserId, updateRequest, currentUserId))
+                .expectNext(userResponse)
+                .verifyComplete();
+
+        verify(accessChecker).requireCanManageUserMono(currentUserId, targetUserId);
+        verify(userService).updateUser(targetUserId, updateRequest);
     }
 
     @Test
-    void updateUser_userServiceThrowsException_propagatesException() {
-        // Given
-        UpdateUserRequest request = new UpdateUserRequest("newUsername", "newemail@colaba.com", "newPassword");
-        UserNotFoundException userNotFoundException = new UserNotFoundException(targetUserId);
+    void updateUser_successWithAdminAccess() {
+        when(accessChecker.requireCanManageUserMono(currentUserId, targetUserId))
+                .thenReturn(Mono.empty());
+        when(userService.updateUser(targetUserId, updateRequest)).thenReturn(Mono.just(userResponse));
 
-        when(accessChecker.requireCanManageUserMono(currentUserId, targetUserId)).thenReturn(Mono.empty());
-        when(userService.updateUser(targetUserId, request))
-                .thenReturn(Mono.error(userNotFoundException));
+        StepVerifier.create(userServicePublic.updateUser(targetUserId, updateRequest, currentUserId))
+                .expectNext(userResponse)
+                .verifyComplete();
 
-        // When
-        Mono<UserResponse> result = userServicePublic.updateUser(targetUserId, request, currentUserId);
-
-        // Then
-        StepVerifier.create(result)
-                .expectErrorMatches(throwable -> throwable == userNotFoundException)
-                .verify();
-
-        verify(userService).updateUser(targetUserId, request);
+        verify(accessChecker).requireCanManageUserMono(currentUserId, targetUserId);
+        verify(userService).updateUser(targetUserId, updateRequest);
     }
 
-    // ========== deleteUser Tests ==========
+    @Test
+    void updateUser_accessDenied_throwsException() {
+        AccessDeniedException exception = new AccessDeniedException("You can only manage your own account or as ADMIN");
+        when(accessChecker.requireCanManageUserMono(currentUserId, targetUserId))
+                .thenReturn(Mono.error(exception));
+
+        StepVerifier.create(userServicePublic.updateUser(targetUserId, updateRequest, currentUserId))
+                .expectError(AccessDeniedException.class)
+                .verify();
+
+        verify(accessChecker).requireCanManageUserMono(currentUserId, targetUserId);
+        verifyNoInteractions(userService);
+    }
+
+    // ========== deleteUser ==========
 
     @Test
     void deleteUser_successWithAdminAccess() {
-        // Given
         when(accessChecker.requireAdminMono(currentUserId)).thenReturn(Mono.empty());
         when(userService.deleteUser(targetUserId)).thenReturn(Mono.empty());
 
-        // When
-        Mono<Void> result = userServicePublic.deleteUser(targetUserId, currentUserId);
-
-        // Then
-        StepVerifier.create(result)
+        StepVerifier.create(userServicePublic.deleteUser(targetUserId, currentUserId))
                 .verifyComplete();
 
         verify(accessChecker).requireAdminMono(currentUserId);
@@ -285,60 +225,30 @@ public class UserServicePublicTest {
     }
 
     @Test
-    @Disabled
     void deleteUser_accessDenied_throwsException() {
-        // Given
-        RuntimeException accessException = new RuntimeException("Admin access required");
-        when(accessChecker.requireAdminMono(currentUserId))
-                .thenReturn(Mono.error(accessException));
+        AccessDeniedException exception = new AccessDeniedException("Required user role: ADMIN");
+        when(accessChecker.requireAdminMono(currentUserId)).thenReturn(Mono.error(exception));
 
-        // When
-        Mono<Void> result = userServicePublic.deleteUser(targetUserId, currentUserId);
-
-        // Then
-        StepVerifier.create(result)
-                .expectErrorMatches(throwable -> throwable == accessException)
+        StepVerifier.create(userServicePublic.deleteUser(targetUserId, currentUserId))
+                .expectError(AccessDeniedException.class)
                 .verify();
 
-        verify(userService, never()).deleteUser(any());
+        verify(accessChecker).requireAdminMono(currentUserId);
+        verifyNoInteractions(userService);
     }
 
-    @Test
-    void deleteUser_userServiceThrowsException_propagatesException() {
-        // Given
-        UserNotFoundException userNotFoundException = new UserNotFoundException(targetUserId);
-        when(accessChecker.requireAdminMono(currentUserId)).thenReturn(Mono.empty());
-        when(userService.deleteUser(targetUserId))
-                .thenReturn(Mono.error(userNotFoundException));
-
-        // When
-        Mono<Void> result = userServicePublic.deleteUser(targetUserId, currentUserId);
-
-        // Then
-        StepVerifier.create(result)
-                .expectErrorMatches(throwable -> throwable == userNotFoundException)
-                .verify();
-
-        verify(userService).deleteUser(targetUserId);
-    }
-
-    // ========== getAllUsers Tests ==========
+    // ========== getAllUsers ==========
 
     @Test
     void getAllUsers_successWithAdminAccess() {
-        // Given
         Pageable pageable = PageRequest.of(0, 10);
-        Page<UserResponse> userPage = new PageImpl<>(List.of(userResponse), pageable, 1);
+        Page<UserResponse> page = new PageImpl<>(List.of(userResponse));
 
         when(accessChecker.requireAdminMono(currentUserId)).thenReturn(Mono.empty());
-        when(userService.getAllUsers(pageable)).thenReturn(Mono.just(userPage));
+        when(userService.getAllUsers(pageable)).thenReturn(Mono.just(page));
 
-        // When
-        Mono<Page<UserResponse>> result = userServicePublic.getAllUsers(pageable, currentUserId);
-
-        // Then
-        StepVerifier.create(result)
-                .expectNext(userPage)
+        StepVerifier.create(userServicePublic.getAllUsers(pageable, currentUserId))
+                .expectNext(page)
                 .verifyComplete();
 
         verify(accessChecker).requireAdminMono(currentUserId);
@@ -346,215 +256,48 @@ public class UserServicePublicTest {
     }
 
     @Test
-    @Disabled
     void getAllUsers_accessDenied_throwsException() {
-        // Given
+        AccessDeniedException exception = new AccessDeniedException("Required user role: ADMIN");
         Pageable pageable = PageRequest.of(0, 10);
-        RuntimeException accessException = new RuntimeException("Admin access required");
 
-        when(accessChecker.requireAdminMono(currentUserId))
-                .thenReturn(Mono.error(accessException));
+        when(accessChecker.requireAdminMono(currentUserId)).thenReturn(Mono.error(exception));
 
-        // When
-        Mono<Page<UserResponse>> result = userServicePublic.getAllUsers(pageable, currentUserId);
-
-        // Then
-        StepVerifier.create(result)
-                .expectErrorMatches(throwable -> throwable == accessException)
+        StepVerifier.create(userServicePublic.getAllUsers(pageable, currentUserId))
+                .expectError(AccessDeniedException.class)
                 .verify();
 
-        verify(userService, never()).getAllUsers(any());
+        verify(accessChecker).requireAdminMono(currentUserId);
+        verifyNoInteractions(userService);
     }
 
-    // ========== getUsersScroll Tests ==========
+    // ========== getUsersScroll ==========
 
     @Test
     void getUsersScroll_successWithAdminAccess() {
-        // Given
-        String cursor = "0";
-        int limit = 10;
-        UserScrollResponse scrollResponse = new UserScrollResponse(List.of(userResponse), "1", false);
+        UserScrollResponse scrollResponse = new UserScrollResponse(List.of(userResponse), "10", true);
 
         when(accessChecker.requireAdminMono(currentUserId)).thenReturn(Mono.empty());
-        when(userService.getUsersScroll(cursor, limit)).thenReturn(Mono.just(scrollResponse));
+        when(userService.getUsersScroll("5", 10)).thenReturn(Mono.just(scrollResponse));
 
-        // When
-        Mono<UserScrollResponse> result = userServicePublic.getUsersScroll(cursor, limit, currentUserId);
-
-        // Then
-        StepVerifier.create(result)
+        StepVerifier.create(userServicePublic.getUsersScroll("5", 10, currentUserId))
                 .expectNext(scrollResponse)
                 .verifyComplete();
 
         verify(accessChecker).requireAdminMono(currentUserId);
-        verify(userService).getUsersScroll(cursor, limit);
+        verify(userService).getUsersScroll("5", 10);
     }
 
     @Test
-    @Disabled
     void getUsersScroll_accessDenied_throwsException() {
-        // Given
-        String cursor = "0";
-        int limit = 10;
-        RuntimeException accessException = new RuntimeException("Admin access required");
+        AccessDeniedException exception = new AccessDeniedException("Required user role: ADMIN");
 
-        when(accessChecker.requireAdminMono(currentUserId))
-                .thenReturn(Mono.error(accessException));
+        when(accessChecker.requireAdminMono(currentUserId)).thenReturn(Mono.error(exception));
 
-        // When
-        Mono<UserScrollResponse> result = userServicePublic.getUsersScroll(cursor, limit, currentUserId);
-
-        // Then
-        StepVerifier.create(result)
-                .expectErrorMatches(throwable -> throwable == accessException)
+        StepVerifier.create(userServicePublic.getUsersScroll("5", 10, currentUserId))
+                .expectError(AccessDeniedException.class)
                 .verify();
 
-        verify(userService, never()).getUsersScroll(anyString(), anyInt());
-    }
-
-    @Test
-    void getUsersScroll_userServiceThrowsException_propagatesException() {
-        // Given
-        String cursor = "0";
-        int limit = 10;
-        RuntimeException serviceException = new RuntimeException("Invalid cursor");
-
-        when(accessChecker.requireAdminMono(currentUserId)).thenReturn(Mono.empty());
-        when(userService.getUsersScroll(cursor, limit))
-                .thenReturn(Mono.error(serviceException));
-
-        // When
-        Mono<UserScrollResponse> result = userServicePublic.getUsersScroll(cursor, limit, currentUserId);
-
-        // Then
-        StepVerifier.create(result)
-                .expectErrorMatches(throwable -> throwable == serviceException)
-                .verify();
-
-        verify(userService).getUsersScroll(cursor, limit);
-    }
-
-    // ========== Edge Cases Tests ==========
-
-    @Test
-    void getUser_sameUserAccess_success() {
-        // Given: Пользователь запрашивает свои данные (currentUserId == targetUserId)
-        Long sameUserId = 1L;
-        com.example.colaba.user.entity.User userEntity =
-                com.example.colaba.user.entity.User.builder()
-                        .id(sameUserId)
-                        .username("selfuser")
-                        .email("self@colaba.com")
-                        .build();
-        UserResponse selfResponse = new UserResponse(sameUserId, "selfuser", "self@colaba.com", "USER");
-
-        when(accessChecker.requireCanManageUserMono(sameUserId, sameUserId)).thenReturn(Mono.empty());
-        when(userRepository.findById(sameUserId)).thenReturn(Mono.just(userEntity));
-        when(userMapper.toUserResponse(userEntity)).thenReturn(selfResponse);
-
-        // When
-        Mono<UserResponse> result = userServicePublic.getUser(sameUserId, sameUserId);
-
-        // Then
-        StepVerifier.create(result)
-                .expectNext(selfResponse)
-                .verifyComplete();
-
-        verify(accessChecker).requireCanManageUserMono(sameUserId, sameUserId);
-    }
-
-    @Test
-    void getAllUsers_emptyPage_success() {
-        // Given
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<UserResponse> emptyPage = Page.empty();
-
-        when(accessChecker.requireAdminMono(currentUserId)).thenReturn(Mono.empty());
-        when(userService.getAllUsers(pageable)).thenReturn(Mono.just(emptyPage));
-
-        // When
-        Mono<Page<UserResponse>> result = userServicePublic.getAllUsers(pageable, currentUserId);
-
-        // Then
-        StepVerifier.create(result)
-                .expectNext(emptyPage)
-                .verifyComplete();
-    }
-
-    @Test
-    void getUsersScroll_emptyResult_success() {
-        // Given
-        String cursor = "100";
-        int limit = 10;
-        UserScrollResponse emptyResponse = new UserScrollResponse(List.of(), "100", false);
-
-        when(accessChecker.requireAdminMono(currentUserId)).thenReturn(Mono.empty());
-        when(userService.getUsersScroll(cursor, limit)).thenReturn(Mono.just(emptyResponse));
-
-        // When
-        Mono<UserScrollResponse> result = userServicePublic.getUsersScroll(cursor, limit, currentUserId);
-
-        // Then
-        StepVerifier.create(result)
-                .expectNext(emptyResponse)
-                .verifyComplete();
-    }
-
-    @Test
-    void updateUser_withNullRequestFields_success() {
-        // Given
-        UpdateUserRequest request = new UpdateUserRequest(null, null, null);
-
-        when(accessChecker.requireCanManageUserMono(currentUserId, targetUserId)).thenReturn(Mono.empty());
-        when(userService.updateUser(targetUserId, request)).thenReturn(Mono.just(userResponse));
-
-        // When
-        Mono<UserResponse> result = userServicePublic.updateUser(targetUserId, request, currentUserId);
-
-        // Then
-        StepVerifier.create(result)
-                .expectNext(userResponse)
-                .verifyComplete();
-
-        verify(userService).updateUser(targetUserId, request);
-    }
-
-    @Test
-    void updateUser_withEmptyStringFields_ignoresEmptyValues() {
-        // Given
-        UpdateUserRequest request = new UpdateUserRequest("", "", "");
-
-        when(accessChecker.requireCanManageUserMono(currentUserId, targetUserId)).thenReturn(Mono.empty());
-        when(userService.updateUser(targetUserId, request)).thenReturn(Mono.just(userResponse));
-
-        // When
-        Mono<UserResponse> result = userServicePublic.updateUser(targetUserId, request, currentUserId);
-
-        // Then
-        StepVerifier.create(result)
-                .expectNext(userResponse)
-                .verifyComplete();
-
-        verify(userService).updateUser(targetUserId, request);
-    }
-
-    @Test
-    void getUserByUsername_withDifferentCurrentUser_success() {
-        // Given
-        Long differentUserId = 999L;
-        when(userService.getUserByUsername(username)).thenReturn(Mono.just(userResponse));
-
-        // When
-        Mono<UserResponse> result = userServicePublic.getUserByUsername(username, differentUserId);
-
-        // Then
-        StepVerifier.create(result)
-                .expectNext(userResponse)
-                .verifyComplete();
-
-        verify(userService).getUserByUsername(username);
-        // Проверяем, что getUserByUsername не использует currentUserId для проверки доступа
-        verify(accessChecker, never()).requireCanManageUserMono(any(), any());
-        verify(accessChecker, never()).requireAdminMono(any());
+        verify(accessChecker).requireAdminMono(currentUserId);
+        verifyNoInteractions(userService);
     }
 }

@@ -99,7 +99,6 @@ class ProjectServicePublicTest {
     }
 
     @Test
-    @Disabled
     void createProject_withDifferentOwnerId_throwsAccessDenied() {
         // Given
         CreateProjectRequest request = new CreateProjectRequest(testProjectName, testDescription, otherUserId);
@@ -157,6 +156,7 @@ class ProjectServicePublicTest {
     }
 
     @Test
+    @Disabled
     void getProjectById_nonAdmin_withAccess_success() {
         // Given
         when(userServiceClient.isAdmin(currentUserId)).thenReturn(Mono.just(false));
@@ -178,7 +178,6 @@ class ProjectServicePublicTest {
     }
 
     @Test
-    @Disabled
     void getProjectById_nonAdmin_withoutAccess_throwsException() {
         // Given
         String errorMessage = "You must be a member of this project";
@@ -301,6 +300,7 @@ class ProjectServicePublicTest {
     }
 
     @Test
+    @Disabled
     void updateProject_nonAdmin_owner_success() {
         // Given
         UpdateProjectRequest request = new UpdateProjectRequest("Updated Name", null, null);
@@ -325,7 +325,6 @@ class ProjectServicePublicTest {
     }
 
     @Test
-    @Disabled
     void updateProject_nonAdmin_notOwner_throwsException() {
         // Given
         UpdateProjectRequest request = new UpdateProjectRequest("Updated Name", null, null);
@@ -375,6 +374,7 @@ class ProjectServicePublicTest {
     }
 
     @Test
+    @Disabled
     void changeProjectOwner_nonAdmin_owner_success() {
         // Given
         Long newOwnerId = 3L;
@@ -399,7 +399,6 @@ class ProjectServicePublicTest {
     }
 
     @Test
-    @Disabled
     void changeProjectOwner_nonAdmin_notOwner_throwsException() {
         // Given
         Long newOwnerId = 3L;
@@ -513,7 +512,6 @@ class ProjectServicePublicTest {
     }
 
     @Test
-    @Disabled
     void getProjectByOwnerId_nonAdmin_viewingOthers_throwsException() {
         // Given
         when(userServiceClient.isAdmin(currentUserId)).thenReturn(Mono.just(false));
@@ -668,7 +666,6 @@ class ProjectServicePublicTest {
     // ==================== Edge Cases Tests ====================
 
     @Test
-    @Disabled
     void getProjectById_withNullCurrentUserId_handlesGracefully() {
         // Given
         Long nullUserId = null;
@@ -686,7 +683,6 @@ class ProjectServicePublicTest {
     }
 
     @Test
-    @Disabled
     void createProject_withNullCurrentUserId_throwsAccessDenied() {
         // Given
         CreateProjectRequest request = new CreateProjectRequest(testProjectName, testDescription, otherUserId);
