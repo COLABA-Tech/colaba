@@ -1,21 +1,21 @@
 package com.example.colaba.project.unit;
 
-import com.example.colaba.project.circuit.UserServiceClientWrapper;
 import com.example.colaba.project.dto.projectmember.CreateProjectMemberRequest;
 import com.example.colaba.project.dto.projectmember.ProjectMemberResponse;
 import com.example.colaba.project.dto.projectmember.UpdateProjectMemberRequest;
 import com.example.colaba.project.entity.ProjectJpa;
 import com.example.colaba.project.entity.projectmember.ProjectMemberId;
 import com.example.colaba.project.entity.projectmember.ProjectMemberJpa;
-import com.example.colaba.project.entity.projectmember.ProjectRole;
 import com.example.colaba.project.mapper.ProjectMemberMapper;
 import com.example.colaba.project.repository.ProjectMemberRepository;
 import com.example.colaba.project.service.ProjectMemberService;
 import com.example.colaba.project.service.ProjectService;
+import com.example.colaba.shared.common.entity.ProjectRole;
 import com.example.colaba.shared.common.exception.project.ProjectNotFoundException;
 import com.example.colaba.shared.common.exception.projectmember.DuplicateProjectMemberException;
 import com.example.colaba.shared.common.exception.projectmember.ProjectMemberNotFoundException;
 import com.example.colaba.shared.common.exception.user.UserNotFoundException;
+import com.example.colaba.shared.webflux.circuit.UserServiceClientWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -5,8 +5,8 @@ import com.example.colaba.shared.common.exception.project.ProjectNotFoundExcepti
 import com.example.colaba.shared.common.exception.tag.TagNotFoundException;
 import com.example.colaba.shared.common.exception.task.TaskNotFoundException;
 import com.example.colaba.shared.common.exception.user.UserNotFoundException;
-import com.example.colaba.task.circuit.ProjectServiceClientWrapper;
-import com.example.colaba.task.circuit.UserServiceClientWrapper;
+import com.example.colaba.shared.webmvc.circuit.ProjectServiceClientWrapper;
+import com.example.colaba.shared.webmvc.circuit.UserServiceClientWrapper;
 import com.example.colaba.task.dto.task.CreateTaskRequest;
 import com.example.colaba.task.dto.task.TaskResponse;
 import com.example.colaba.task.dto.task.UpdateTaskRequest;
