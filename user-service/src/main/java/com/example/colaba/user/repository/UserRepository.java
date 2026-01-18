@@ -25,7 +25,7 @@ public interface UserRepository extends R2dbcRepository<User, Long> {
     Mono<Boolean> existsByEmailAndIdNot(@Param("email") String email, @Param("id") Long id);
 
     @Query("SELECT role FROM users WHERE id = :id")
-    Mono<UserRole> findRoleById(Long id);
+    Mono<String> findRoleById(Long id);
 
     Mono<Boolean> existsByIdAndRole(Long id, UserRole role);
 }

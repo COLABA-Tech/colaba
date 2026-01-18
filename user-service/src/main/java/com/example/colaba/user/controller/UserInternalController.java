@@ -75,7 +75,7 @@ public class UserInternalController {
 
     @GetMapping("/{id}/role")
     public Mono<UserRole> getUserRole(@PathVariable Long id) {
-        return userRepository.findRoleById(id);
+        return userRepository.findRoleById(id).map(UserRole::valueOf);
     }
 
     @GetMapping("/{currentUserId}/can-manage/{targetUserId}")
