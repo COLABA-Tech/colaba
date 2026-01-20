@@ -89,12 +89,12 @@ class ProjectMemberServicePublicTest {
     }
 
     @Test
-    void getMembersByProject_userIsNotAdminButEditor_success() {
+    void getMembersByProject_userIsNotAdminButViewer_success() {
         // Given
         Pageable pageable = PageRequest.of(0, 10);
 
         when(userServiceClient.isAdmin(testCurrentUserId)).thenReturn(Mono.just(false));
-        when(accessChecker.requireAtLeastEditorMono(testProjectId, testCurrentUserId))
+        when(accessChecker.requireAnyRoleMono(testProjectId, testCurrentUserId))
                 .thenReturn(Mono.empty());
         when(projectMemberService.getMembersByProject(testProjectId, pageable))
                 .thenReturn(Mono.just(testPage));
@@ -109,18 +109,18 @@ class ProjectMemberServicePublicTest {
                 .verifyComplete();
 
         verify(userServiceClient).isAdmin(testCurrentUserId);
-        verify(accessChecker).requireAtLeastEditorMono(testProjectId, testCurrentUserId);
+        verify(accessChecker).requireAnyRoleMono(testProjectId, testCurrentUserId);
         verify(projectMemberService).getMembersByProject(testProjectId, pageable);
     }
 
     @Test
-    void getMembersByProject_userIsNotAdminAndNotEditor_accessDenied() {
+    void getMembersByProject_userIsNotAdminAndNotViewer_accessDenied() {
         // Given
         Pageable pageable = PageRequest.of(0, 10);
         RuntimeException accessDeniedException = new RuntimeException("Access denied");
 
         when(userServiceClient.isAdmin(testCurrentUserId)).thenReturn(Mono.just(false));
-        when(accessChecker.requireAtLeastEditorMono(testProjectId, testCurrentUserId))
+        when(accessChecker.requireAnyRoleMono(testProjectId, testCurrentUserId))
                 .thenReturn(Mono.error(accessDeniedException));
         // Stub для избежания NPE
         when(projectMemberService.getMembersByProject(testProjectId, pageable))
@@ -136,7 +136,7 @@ class ProjectMemberServicePublicTest {
                 .verify();
 
         verify(userServiceClient).isAdmin(testCurrentUserId);
-        verify(accessChecker).requireAtLeastEditorMono(testProjectId, testCurrentUserId);
+        verify(accessChecker).requireAnyRoleMono(testProjectId, testCurrentUserId);
     }
 
     @Test
@@ -485,7 +485,7 @@ class ProjectMemberServicePublicTest {
     void allMethods_adminCheckReturnsFalseThenAccessCheckerIsUsed() {
         // Given
         when(userServiceClient.isAdmin(testCurrentUserId)).thenReturn(Mono.just(false));
-        when(accessChecker.requireAtLeastEditorMono(eq(testProjectId), eq(testCurrentUserId))).thenReturn(Mono.empty());
+        when(accessChecker.requireAnyRoleMono(eq(testProjectId), eq(testCurrentUserId))).thenReturn(Mono.empty());
         when(accessChecker.requireOwnerMono(eq(testProjectId), eq(testCurrentUserId))).thenReturn(Mono.empty());
         when(projectMemberService.getMembersByProject(eq(testProjectId), any(Pageable.class)))
                 .thenReturn(Mono.just(testPage));
@@ -517,7 +517,7 @@ class ProjectMemberServicePublicTest {
                 .verifyComplete();
 
         verify(userServiceClient, times(4)).isAdmin(testCurrentUserId);
-        verify(accessChecker).requireAtLeastEditorMono(eq(testProjectId), eq(testCurrentUserId));
+        verify(accessChecker).requireAnyRoleMono(eq(testProjectId), eq(testCurrentUserId));
         verify(accessChecker, times(3)).requireOwnerMono(eq(testProjectId), eq(testCurrentUserId));
     }
 

@@ -36,11 +36,11 @@ public class ProjectService {
     private final ProjectMapper projectMapper;
     private final TransactionTemplate transactionTemplate;
 
-    public Mono<ProjectResponse> createProject(CreateProjectRequest request) {
-        return userServiceClient.userExists(request.ownerId())
+    public Mono<ProjectResponse> createProject(CreateProjectRequest request, Long ownerId) {
+        return userServiceClient.userExists(ownerId)
                 .flatMap(exists -> {
                     if (!exists) {
-                        return Mono.error(new UserNotFoundException(request.ownerId()));
+                        return Mono.error(new UserNotFoundException(ownerId));
                     }
                     return Mono.fromCallable(() -> transactionTemplate.execute(_ -> {
                         if (projectRepository.existsByName(request.name())) {
@@ -50,14 +50,14 @@ public class ProjectService {
                         ProjectJpa project = ProjectJpa.builder()
                                 .name(request.name())
                                 .description(request.description())
-                                .ownerId(request.ownerId())
+                                .ownerId(ownerId)
                                 .build();
 
                         ProjectJpa saved = projectRepository.save(project);
 
                         ProjectMemberJpa ownerMember = ProjectMemberJpa.builder()
                                 .projectId(saved.getId())
-                                .userId(request.ownerId())
+                                .userId(ownerId)
                                 .role(ProjectRole.OWNER)
                                 .build();
                         projectMemberRepository.save(ownerMember);

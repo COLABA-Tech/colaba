@@ -57,21 +57,6 @@ class TaskControllerTest {
     @MockitoBean
     private TaskServicePublic taskService;
 
-//    @MockitoBean
-//    private ProjectServiceClient projectServiceClient;
-//
-//    @MockitoBean
-//    private ProjectServiceClient userServiceClient;
-//
-//    @MockitoBean
-//    private ProjectServiceClientWrapper projectServiceClientWrapper;
-//
-//    @MockitoBean
-//    private UserServiceClientWrapper userServiceClientWrapper;
-//
-//    @MockitoBean
-//    private ProjectAccessChecker projectAccessChecker;
-
     @MockitoBean
     private JwtService jwtService;
 
@@ -179,7 +164,7 @@ class TaskControllerTest {
     // ----------- CREATE TASK -----------
     @Test
     void createTask_success_asAdmin() throws Exception {
-        CreateTaskRequest request = new CreateTaskRequest("Title", "Desc", null, null, 2L, 1L, 1L, null);
+        CreateTaskRequest request = new CreateTaskRequest("Title", "Desc", null, null, 2L, 1L, null);
         TaskResponse response = new TaskResponse(100L, "Title", "Desc", "TODO", "MEDIUM", 10L, 2L, 1L, null, null, null);
 
         when(taskService.createTask(any(CreateTaskRequest.class), eq(1L))).thenReturn(response);
@@ -194,7 +179,7 @@ class TaskControllerTest {
 
     @Test
     void createTask_forbidden_forNonAdminWithoutAccess() throws Exception {
-        CreateTaskRequest request = new CreateTaskRequest("Title", "Desc", null, null, 2L, 2L, 1L, null);
+        CreateTaskRequest request = new CreateTaskRequest("Title", "Desc", null, null, 2L, 2L, null);
 
         when(taskService.createTask(any(CreateTaskRequest.class), eq(2L)))
                 .thenThrow(new AccessDeniedException("Required user role: ADMIN"));

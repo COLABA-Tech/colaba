@@ -103,7 +103,7 @@ class TaskServiceTest {
 
         request = new CreateTaskRequest(
                 testTitle, testDescription, testStatus, testPriority,
-                testProjectId, testAssigneeId, testReporterId, testDueDate
+                testProjectId, testAssigneeId, testDueDate
         );
 
         updateRequest = new UpdateTaskRequest(
@@ -122,7 +122,7 @@ class TaskServiceTest {
         when(taskMapper.toTaskResponse(savedTask)).thenReturn(taskResponse);
 
         // When (act)
-        TaskResponse result = taskService.createTask(request);
+        TaskResponse result = taskService.createTask(request, testReporterId);
 
         // Then (assert)
         assertEquals(testId, result.id());
@@ -145,7 +145,7 @@ class TaskServiceTest {
 
         // When & Then
         ProjectNotFoundException exception = assertThrows(ProjectNotFoundException.class,
-                () -> taskService.createTask(request));
+                () -> taskService.createTask(request, testReporterId));
         assertEquals("Project not found: ID " + testProjectId, exception.getMessage());
         verify(userServiceClient, never()).userExists(anyLong());
         verify(taskRepository, never()).save(any(TaskJpa.class));
@@ -160,7 +160,7 @@ class TaskServiceTest {
 
         // When & Then
         UserNotFoundException exception = assertThrows(UserNotFoundException.class,
-                () -> taskService.createTask(request));
+                () -> taskService.createTask(request, testReporterId));
         assertEquals("User not found: ID " + testReporterId, exception.getMessage());
         verify(userServiceClient).userExists(testReporterId);
         verify(taskRepository, never()).save(any(TaskJpa.class));
@@ -171,7 +171,7 @@ class TaskServiceTest {
         // Given
         CreateTaskRequest optionalRequest = new CreateTaskRequest(
                 testTitle, testDescription, testStatus, testPriority,
-                testProjectId, null, testReporterId, testDueDate
+                testProjectId, null, testDueDate
         );
 
         TaskJpa nullAssigneeTask = TaskJpa.builder()
@@ -192,7 +192,7 @@ class TaskServiceTest {
         when(taskMapper.toTaskResponse(nullAssigneeTask)).thenReturn(taskResponse);
 
         // When
-        TaskResponse result = taskService.createTask(optionalRequest);
+        TaskResponse result = taskService.createTask(optionalRequest, testReporterId);
 
         // Then
         assertEquals(testId, result.id());
@@ -209,7 +209,7 @@ class TaskServiceTest {
 
         // When & Then
         UserNotFoundException exception = assertThrows(UserNotFoundException.class,
-                () -> taskService.createTask(request));
+                () -> taskService.createTask(request, testReporterId));
         assertEquals("User not found: ID " + testAssigneeId, exception.getMessage());
         verify(userServiceClient).userExists(testAssigneeId);
         verify(taskRepository, never()).save(any(TaskJpa.class));
@@ -220,7 +220,7 @@ class TaskServiceTest {
         // Given
         CreateTaskRequest nullPriorityRequest = new CreateTaskRequest(
                 testTitle, testDescription, testStatus, null,
-                testProjectId, testAssigneeId, testReporterId, testDueDate
+                testProjectId, testAssigneeId, testDueDate
         );
 
         TaskJpa nullPriorityTask = TaskJpa.builder()
@@ -251,7 +251,7 @@ class TaskServiceTest {
         when(taskMapper.toTaskResponse(nullPriorityTask)).thenReturn(nullPriorityResponse);
 
         // When
-        TaskResponse result = taskService.createTask(nullPriorityRequest);
+        TaskResponse result = taskService.createTask(nullPriorityRequest, testReporterId);
 
         // Then
         assertEquals(testId, result.id());
@@ -269,7 +269,7 @@ class TaskServiceTest {
         // Given
         CreateTaskRequest nullStatusRequest = new CreateTaskRequest(
                 testTitle, testDescription, null, testPriority,
-                testProjectId, testAssigneeId, testReporterId, testDueDate
+                testProjectId, testAssigneeId, testDueDate
         );
 
         TaskJpa defaultStatusTask = TaskJpa.builder()
@@ -300,7 +300,7 @@ class TaskServiceTest {
         when(taskMapper.toTaskResponse(defaultStatusTask)).thenReturn(defaultStatusResponse);
 
         // When
-        TaskResponse result = taskService.createTask(nullStatusRequest);
+        TaskResponse result = taskService.createTask(nullStatusRequest, testReporterId);
 
         // Then
         assertEquals(testId, result.id());
@@ -315,7 +315,7 @@ class TaskServiceTest {
         // Given
         CreateTaskRequest nullDueDateRequest = new CreateTaskRequest(
                 testTitle, testDescription, testStatus, testPriority,
-                testProjectId, testAssigneeId, testReporterId, null
+                testProjectId, testAssigneeId, null
         );
 
         TaskJpa nullDueDateTask = TaskJpa.builder()
@@ -346,7 +346,7 @@ class TaskServiceTest {
         when(taskMapper.toTaskResponse(nullDueDateTask)).thenReturn(nullDueDateResponse);
 
         // When
-        TaskResponse result = taskService.createTask(nullDueDateRequest);
+        TaskResponse result = taskService.createTask(nullDueDateRequest, testReporterId);
 
         // Then
         assertEquals(testId, result.id());
@@ -361,7 +361,7 @@ class TaskServiceTest {
         // Given
         CreateTaskRequest nullDescriptionRequest = new CreateTaskRequest(
                 testTitle, null, testStatus, testPriority,
-                testProjectId, testAssigneeId, testReporterId, testDueDate
+                testProjectId, testAssigneeId, testDueDate
         );
 
         TaskJpa nullDescriptionTask = TaskJpa.builder()
@@ -392,7 +392,7 @@ class TaskServiceTest {
         when(taskMapper.toTaskResponse(nullDescriptionTask)).thenReturn(nullDescriptionResponse);
 
         // When
-        TaskResponse result = taskService.createTask(nullDescriptionRequest);
+        TaskResponse result = taskService.createTask(nullDescriptionRequest, testReporterId);
 
         // Then
         assertEquals(testId, result.id());
@@ -408,7 +408,7 @@ class TaskServiceTest {
         Long sameUserId = testReporterId;
         CreateTaskRequest sameUserRequest = new CreateTaskRequest(
                 testTitle, testDescription, testStatus, testPriority,
-                testProjectId, sameUserId, sameUserId, testDueDate
+                testProjectId, sameUserId, testDueDate
         );
 
         TaskJpa sameUserTask = TaskJpa.builder()
@@ -438,7 +438,7 @@ class TaskServiceTest {
         when(taskMapper.toTaskResponse(sameUserTask)).thenReturn(sameUserResponse);
 
         // When
-        TaskResponse result = taskService.createTask(sameUserRequest);
+        TaskResponse result = taskService.createTask(sameUserRequest, testReporterId);
 
         // Then
         assertEquals(testId, result.id());
@@ -453,7 +453,7 @@ class TaskServiceTest {
         // Given
         CreateTaskRequest fullRequest = new CreateTaskRequest(
                 "Special Title", "Detailed Description", TaskStatus.IN_PROGRESS, TaskPriority.HIGH,
-                testProjectId, testAssigneeId, testReporterId, LocalDate.now().plusDays(7)
+                testProjectId, testAssigneeId, LocalDate.now().plusDays(7)
         );
 
         when(projectServiceClient.projectExists(testProjectId)).thenReturn(true);
@@ -472,7 +472,7 @@ class TaskServiceTest {
         when(taskMapper.toTaskResponse(savedTask)).thenReturn(taskResponse);
 
         // When
-        TaskResponse result = taskService.createTask(fullRequest);
+        TaskResponse result = taskService.createTask(fullRequest, testReporterId);
 
         // Then
         assertEquals(testId, result.id());

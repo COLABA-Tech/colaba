@@ -95,8 +95,10 @@ public class ProjectAccessCheckerLocal {
                         return Mono.empty();
                     }
                     return getUserProjectRoleMono(projectId, userId)
-                            .flatMap(role -> Mono.error(new AccessDeniedException(
-                                    "Required project role: at least EDITOR. Current role: " + role)));
+                            .map(role -> "Current role: " + (role == null ? "none" : role))
+                            .defaultIfEmpty("Current role: none")
+                            .flatMap(message -> Mono.error(new AccessDeniedException(
+                                    "Required project role: at least EDITOR. " + message)));
                 });
     }
 

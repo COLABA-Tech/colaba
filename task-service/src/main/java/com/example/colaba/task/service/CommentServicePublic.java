@@ -27,11 +27,7 @@ public class CommentServicePublic {
     public CommentResponse createComment(CreateCommentRequest request, Long currentUserId) {
         TaskJpa task = taskService.getTaskEntityById(request.taskId());
         accessChecker.requireAnyRole(task.getProjectId(), currentUserId);
-        if (!request.userId().equals(currentUserId)) {
-            throw new org.springframework.security.access.AccessDeniedException(
-                    "You can only create comments on your own behalf");
-        }
-        return commentService.createComment(request);
+        return commentService.createComment(request, currentUserId);
     }
 
     public CommentResponse getCommentById(Long id, Long currentUserId) {

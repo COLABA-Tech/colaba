@@ -91,7 +91,7 @@ class TaskServicePublicTest {
 
         createRequest = new CreateTaskRequest(
                 "New Task", "New Description", TaskStatus.TODO, TaskPriority.MEDIUM,
-                testProjectId, testAssigneeId, currentUserId, LocalDate.now()
+                testProjectId, testAssigneeId, LocalDate.now()
         );
 
         updateRequest = new UpdateTaskRequest(
@@ -251,7 +251,7 @@ class TaskServicePublicTest {
     void createTask_adminUser_success() {
         // Given
         when(userServiceClient.isAdmin(adminUserId)).thenReturn(true);
-        when(taskService.createTask(createRequest)).thenReturn(taskResponse);
+        when(taskService.createTask(createRequest, adminUserId)).thenReturn(taskResponse);
 
         // When
         TaskResponse result = taskServicePublic.createTask(createRequest, adminUserId);
@@ -261,7 +261,7 @@ class TaskServicePublicTest {
         assertEquals(testTaskId, result.id());
         verify(userServiceClient).isAdmin(adminUserId);
         verify(accessChecker, never()).requireAtLeastEditor(anyLong(), anyLong());
-        verify(taskService).createTask(createRequest);
+        verify(taskService).createTask(createRequest, adminUserId);
     }
 
     @Test
@@ -269,7 +269,7 @@ class TaskServicePublicTest {
         // Given
         when(userServiceClient.isAdmin(currentUserId)).thenReturn(false);
         doNothing().when(accessChecker).requireAtLeastEditor(testProjectId, currentUserId);
-        when(taskService.createTask(createRequest)).thenReturn(taskResponse);
+        when(taskService.createTask(createRequest, currentUserId)).thenReturn(taskResponse);
 
         // When
         TaskResponse result = taskServicePublic.createTask(createRequest, currentUserId);
@@ -279,7 +279,7 @@ class TaskServicePublicTest {
         assertEquals(testTaskId, result.id());
         verify(userServiceClient).isAdmin(currentUserId);
         verify(accessChecker).requireAtLeastEditor(testProjectId, currentUserId);
-        verify(taskService).createTask(createRequest);
+        verify(taskService).createTask(createRequest, currentUserId);
     }
 
     @Test
@@ -293,7 +293,7 @@ class TaskServicePublicTest {
         AccessDeniedException exception = assertThrows(AccessDeniedException.class,
                 () -> taskServicePublic.createTask(createRequest, currentUserId));
         assertEquals("Editor role required", exception.getMessage());
-        verify(taskService, never()).createTask(any());
+        verify(taskService, never()).createTask(any(), any());
     }
 
     @Test
@@ -301,7 +301,7 @@ class TaskServicePublicTest {
         // Given
         when(userServiceClient.isAdmin(currentUserId)).thenReturn(false);
         doNothing().when(accessChecker).requireAtLeastEditor(testProjectId, currentUserId);
-        when(taskService.createTask(createRequest))
+        when(taskService.createTask(createRequest, currentUserId))
                 .thenThrow(new ProjectNotFoundException(testProjectId));
 
         // When & Then
@@ -699,17 +699,17 @@ class TaskServicePublicTest {
         // Given
         CreateTaskRequest nullRequest = new CreateTaskRequest(
                 null, null, null, null,
-                null, null, null, null
+                null, null, null
         );
 
         when(userServiceClient.isAdmin(adminUserId)).thenReturn(true);
-        when(taskService.createTask(nullRequest)).thenReturn(taskResponse);
+        when(taskService.createTask(nullRequest, adminUserId)).thenReturn(taskResponse);
 
         // When
         TaskResponse result = taskServicePublic.createTask(nullRequest, adminUserId);
 
         // Then
         assertNotNull(result);
-        verify(taskService).createTask(nullRequest);
+        verify(taskService).createTask(nullRequest, adminUserId);
     }
 }

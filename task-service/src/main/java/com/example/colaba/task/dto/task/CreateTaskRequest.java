@@ -21,9 +21,6 @@ public record CreateTaskRequest(
         Long projectId,
         @Positive(message = "Assignee ID must be positive")
         Long assigneeId,
-        @NotNull(message = "Reporter ID is required")
-        @Positive(message = "Reporter ID must be positive")
-        Long reporterId,
         LocalDate dueDate
 ) {
     public CreateTaskRequest {

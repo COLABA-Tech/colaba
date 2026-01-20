@@ -31,15 +31,7 @@ public class ProjectServicePublic {
     private final UserServiceClient userServiceClient;
 
     public Mono<ProjectResponse> createProject(CreateProjectRequest request, Long currentUserId) {
-        return Mono.defer(() -> {
-            if (request.ownerId() == null ||
-                    !request.ownerId().equals(currentUserId)) {
-                return Mono.error(
-                        new AccessDeniedException("You can only create projects for yourself")
-                );
-            }
-            return projectService.createProject(request);
-        });
+        return Mono.defer(() -> projectService.createProject(request, currentUserId));
     }
 
     public Mono<ProjectResponse> getProjectById(Long id, Long currentUserId) {

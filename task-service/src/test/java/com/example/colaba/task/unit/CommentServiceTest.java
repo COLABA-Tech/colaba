@@ -79,14 +79,14 @@ class CommentServiceTest {
 
     @Test
     void createComment_ShouldReturnResponse_WhenValidRequest() {
-        CreateCommentRequest request = new CreateCommentRequest(1L, 1L, "Test content");
+        CreateCommentRequest request = new CreateCommentRequest(1L, "Test content");
 
         when(userServiceClient.userExists(1L)).thenReturn(true);
         when(taskRepository.existsById(1L)).thenReturn(true);
         when(commentRepository.save(any(CommentJpa.class))).thenReturn(mockComment);
         when(commentMapper.toResponse(mockComment)).thenReturn(mockResponse);
 
-        CommentResponse result = commentService.createComment(request);
+        CommentResponse result = commentService.createComment(request, 1L);
 
         assertEquals(mockResponse, result);
         verify(userServiceClient).userExists(1L);
@@ -97,12 +97,12 @@ class CommentServiceTest {
 
     @Test
     void createComment_ShouldThrowUserNotFoundException_WhenUserNotExists() {
-        CreateCommentRequest request = new CreateCommentRequest(1L, 999L, "Test");
+        CreateCommentRequest request = new CreateCommentRequest(1L, "Test");
 
         when(userServiceClient.userExists(999L)).thenReturn(false);
 
         UserNotFoundException exception = assertThrows(UserNotFoundException.class,
-                () -> commentService.createComment(request));
+                () -> commentService.createComment(request, 999L));
         assertEquals("User not found: ID " + 999L, exception.getMessage());
 
         verify(userServiceClient).userExists(999L);
@@ -112,13 +112,13 @@ class CommentServiceTest {
 
     @Test
     void createComment_ShouldThrowTaskNotFoundException_WhenTaskNotExists() {
-        CreateCommentRequest request = new CreateCommentRequest(999L, 1L, "Test");
+        CreateCommentRequest request = new CreateCommentRequest(999L, "Test");
 
         when(userServiceClient.userExists(1L)).thenReturn(true);
         when(taskRepository.existsById(999L)).thenReturn(false);
 
         TaskNotFoundException exception = assertThrows(TaskNotFoundException.class,
-                () -> commentService.createComment(request));
+                () -> commentService.createComment(request, 1L));
         assertEquals("Task not found: ID " + 999L, exception.getMessage());
 
         verify(userServiceClient).userExists(1L);
@@ -401,7 +401,7 @@ class CommentServiceTest {
 
     @Test
     void createComment_ShouldUseTaskIdAndUserIdInBuilder() {
-        CreateCommentRequest request = new CreateCommentRequest(123L, 456L, "Test content");
+        CreateCommentRequest request = new CreateCommentRequest(123L, "Test content");
 
         when(userServiceClient.userExists(456L)).thenReturn(true);
         when(taskRepository.existsById(123L)).thenReturn(true);
@@ -413,7 +413,7 @@ class CommentServiceTest {
         ))).thenReturn(mockComment);
         when(commentMapper.toResponse(mockComment)).thenReturn(mockResponse);
 
-        commentService.createComment(request);
+        commentService.createComment(request, 456L);
 
         verify(commentRepository).save(any(CommentJpa.class));
     }

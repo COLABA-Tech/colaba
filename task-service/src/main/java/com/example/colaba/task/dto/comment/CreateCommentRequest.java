@@ -10,10 +10,6 @@ public record CreateCommentRequest(
         @Positive(message = "Task ID must be a positive number")
         Long taskId,
 
-        @NotNull(message = "User ID is required")
-        @Positive(message = "User ID must be a positive number")
-        Long userId,
-
         @NotBlank(message = "Content cannot be blank")
         @Size(min = 1, max = 500, message = "Content must be between 1 and 500 characters")
         String content

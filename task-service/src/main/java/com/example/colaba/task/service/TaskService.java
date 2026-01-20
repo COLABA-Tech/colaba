@@ -59,7 +59,7 @@ public class TaskService {
     }
 
     @Transactional
-    public TaskResponse createTask(CreateTaskRequest request) {
+    public TaskResponse createTask(CreateTaskRequest request, Long reporterId) {
         boolean projectExists = projectServiceClient.projectExists(request.projectId());
         if (!projectExists) {
             throw new ProjectNotFoundException(request.projectId());
@@ -72,9 +72,9 @@ public class TaskService {
             }
         }
 
-        boolean reporterExists = userServiceClient.userExists(request.reporterId());
+        boolean reporterExists = userServiceClient.userExists(reporterId);
         if (!reporterExists) {
-            throw new UserNotFoundException(request.reporterId());
+            throw new UserNotFoundException(reporterId);
         }
 
         TaskPriority priority = (request.priority() != null) ? request.priority() : null;
@@ -86,7 +86,7 @@ public class TaskService {
                 .priority(priority)
                 .projectId(request.projectId())
                 .assigneeId(request.assigneeId())
-                .reporterId(request.reporterId())
+                .reporterId(reporterId)
                 .dueDate(request.dueDate())
                 .build();
 

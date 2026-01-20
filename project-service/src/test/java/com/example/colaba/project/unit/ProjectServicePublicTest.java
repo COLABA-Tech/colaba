@@ -81,9 +81,9 @@ class ProjectServicePublicTest {
     @Test
     void createProject_success() {
         // Given
-        CreateProjectRequest request = new CreateProjectRequest(testProjectName, testDescription, currentUserId);
+        CreateProjectRequest request = new CreateProjectRequest(testProjectName, testDescription);
 
-        when(projectService.createProject(request)).thenReturn(Mono.just(testProjectResponse));
+        when(projectService.createProject(request, currentUserId)).thenReturn(Mono.just(testProjectResponse));
 
         // When
         Mono<ProjectResponse> resultMono = projectServicePublic.createProject(request, currentUserId);
@@ -93,25 +93,7 @@ class ProjectServicePublicTest {
                 .expectNext(testProjectResponse)
                 .verifyComplete();
 
-        verify(projectService).createProject(request);
-    }
-
-    @Test
-    void createProject_withDifferentOwnerId_throwsAccessDenied() {
-        // Given
-        CreateProjectRequest request = new CreateProjectRequest(testProjectName, testDescription, otherUserId);
-
-        // When
-        Mono<ProjectResponse> resultMono = projectServicePublic.createProject(request, currentUserId);
-
-        // Then
-        StepVerifier.create(resultMono)
-                .expectErrorMatches(throwable ->
-                        throwable instanceof AccessDeniedException &&
-                                throwable.getMessage().equals("You can only create projects for yourself"))
-                .verify();
-
-        verify(projectService, never()).createProject(any());
+        verify(projectService).createProject(request, currentUserId);
     }
 
     // ==================== getProjectById Tests ====================
@@ -661,25 +643,6 @@ class ProjectServicePublicTest {
         StepVerifier.create(resultMono)
                 .expectError(AccessDeniedException.class)
                 .verify();
-    }
-
-    @Test
-    void createProject_withNullCurrentUserId_throwsAccessDenied() {
-        // Given
-        CreateProjectRequest request = new CreateProjectRequest(testProjectName, testDescription, otherUserId);
-        Long nullUserId = null;
-
-        // When
-        Mono<ProjectResponse> resultMono = projectServicePublic.createProject(request, nullUserId);
-
-        // Then
-        StepVerifier.create(resultMono)
-                .expectErrorMatches(throwable ->
-                        throwable instanceof AccessDeniedException &&
-                                throwable.getMessage().equals("You can only create projects for yourself"))
-                .verify();
-
-        verify(projectService, never()).createProject(any());
     }
 
     @Test

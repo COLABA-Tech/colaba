@@ -28,7 +28,7 @@ public class ProjectMemberServicePublic {
                     if (Boolean.TRUE.equals(isAdmin)) {
                         return projectMemberService.getMembersByProject(projectId, pageable);
                     }
-                    return accessChecker.requireAtLeastEditorMono(projectId, currentUserId)
+                    return accessChecker.requireAnyRoleMono(projectId, currentUserId)
                             .then(projectMemberService.getMembersByProject(projectId, pageable));
                 });
     }

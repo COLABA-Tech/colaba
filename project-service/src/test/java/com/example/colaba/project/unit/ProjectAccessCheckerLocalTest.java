@@ -377,18 +377,24 @@ class ProjectAccessCheckerLocalTest {
     }
 
     @Test
-    void getUserProjectRoleMono_whenUserNotFound_completesEmpty() {
+    void requireAtLeastEditorMono_whenUserNotFound_throwsAccessDeniedWithNoneRole() {
         // Given
+        when(memberRepository.existsByProjectIdAndUserIdAndRoleIn(
+                testProjectId, testUserId,
+                Set.of(ProjectRole.EDITOR, ProjectRole.OWNER)))
+                .thenReturn(false);
         when(memberRepository.findByProjectIdAndUserId(testProjectId, testUserId))
                 .thenReturn(Optional.empty());
 
         // When
-        Mono<ProjectRole> result = projectAccessChecker.getUserProjectRoleMono(testProjectId, testUserId);
+        Mono<Void> result = projectAccessChecker.requireAtLeastEditorMono(testProjectId, testUserId);
 
         // Then
-        // fromCallable возвращает null → Mono завершается empty (без emission)
         StepVerifier.create(result)
-                .verifyComplete();
+                .expectErrorMatches(throwable ->
+                        throwable instanceof AccessDeniedException &&
+                                throwable.getMessage().equals("Required project role: at least EDITOR. Current role: none"))
+                .verify();
     }
 
     @Test
@@ -459,25 +465,6 @@ class ProjectAccessCheckerLocalTest {
                         throwable instanceof AccessDeniedException &&
                                 throwable.getMessage().equals("Required project role: at least EDITOR. Current role: VIEWER"))
                 .verify();
-    }
-
-    @Test
-    void requireAtLeastEditorMono_whenUserNotFound_completesSuccessfully() {
-        // Given
-        when(memberRepository.existsByProjectIdAndUserIdAndRoleIn(
-                testProjectId, testUserId,
-                Set.of(ProjectRole.EDITOR, ProjectRole.OWNER)))
-                .thenReturn(false);
-        when(memberRepository.findByProjectIdAndUserId(testProjectId, testUserId))
-                .thenReturn(Optional.empty());
-
-        // When
-        Mono<Void> result = projectAccessChecker.requireAtLeastEditorMono(testProjectId, testUserId);
-
-        // Then
-        // getUserProjectRoleMono завершается empty (из-за fromCallable + null) → flatMap не вызывается → complete
-        StepVerifier.create(result)
-                .verifyComplete();
     }
 
     @Test

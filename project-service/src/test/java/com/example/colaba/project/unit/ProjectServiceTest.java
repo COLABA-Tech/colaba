@@ -111,7 +111,7 @@ class ProjectServiceTest {
     @Test
     void createProject_success() {
         // Given
-        CreateProjectRequest request = new CreateProjectRequest(testProjectName, testDescription, testUserId);
+        CreateProjectRequest request = new CreateProjectRequest(testProjectName, testDescription);
 
         when(projectRepository.existsByName(testProjectName)).thenReturn(false);
         when(userServiceClient.userExists(testUserId)).thenReturn(Mono.just(true));
@@ -124,7 +124,7 @@ class ProjectServiceTest {
         when(projectMapper.toProjectResponse(any(ProjectJpa.class))).thenReturn(testProjectResponse);
 
         // When
-        Mono<ProjectResponse> resultMono = projectService.createProject(request);
+        Mono<ProjectResponse> resultMono = projectService.createProject(request, testUserId);
 
         // Then
         StepVerifier.create(resultMono)
@@ -144,13 +144,13 @@ class ProjectServiceTest {
     @Test
     void createProject_duplicateName_throwsException() {
         // Given
-        CreateProjectRequest request = new CreateProjectRequest(testProjectName, testDescription, testUserId);
+        CreateProjectRequest request = new CreateProjectRequest(testProjectName, testDescription);
 
         when(projectRepository.existsByName(testProjectName)).thenReturn(true);
         when(userServiceClient.userExists(testUserId)).thenReturn(Mono.just(true));
 
         // When
-        Mono<ProjectResponse> resultMono = projectService.createProject(request);
+        Mono<ProjectResponse> resultMono = projectService.createProject(request, testUserId);
 
         // Then
         StepVerifier.create(resultMono)
@@ -167,13 +167,13 @@ class ProjectServiceTest {
     @Test
     void createProject_userNotFound_throwsException() {
         // Given
-        CreateProjectRequest request = new CreateProjectRequest(testProjectName, testDescription, testUserId);
+        CreateProjectRequest request = new CreateProjectRequest(testProjectName, testDescription);
 
         when(projectRepository.existsByName(testProjectName)).thenReturn(false);
         when(userServiceClient.userExists(testUserId)).thenReturn(Mono.just(false));
 
         // When
-        Mono<ProjectResponse> resultMono = projectService.createProject(request);
+        Mono<ProjectResponse> resultMono = projectService.createProject(request, testUserId);
 
         // Then
         StepVerifier.create(resultMono)

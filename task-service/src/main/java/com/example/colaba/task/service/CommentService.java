@@ -30,10 +30,10 @@ public class CommentService {
     private final CommentMapper commentMapper;
 
     @Transactional
-    public CommentResponse createComment(CreateCommentRequest request) {
-        boolean userExists = userServiceClient.userExists(request.userId());
+    public CommentResponse createComment(CreateCommentRequest request, Long userId) {
+        boolean userExists = userServiceClient.userExists(userId);
         if (!userExists) {
-            throw new UserNotFoundException(request.userId());
+            throw new UserNotFoundException(userId);
         }
 
         if (!taskRepository.existsById(request.taskId())) {
@@ -42,7 +42,7 @@ public class CommentService {
 
         CommentJpa comment = CommentJpa.builder()
                 .taskId(request.taskId())
-                .userId(request.userId())
+                .userId(userId)
                 .content(request.content())
                 .build();
 

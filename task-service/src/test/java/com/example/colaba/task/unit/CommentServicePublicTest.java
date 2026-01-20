@@ -82,11 +82,11 @@ class CommentServicePublicTest {
     @Test
     void createComment_ShouldSuccess_WhenUserIsAuthorAndHasAccess() {
         // Arrange
-        CreateCommentRequest request = new CreateCommentRequest(1L, currentUserId, "Test content");
+        CreateCommentRequest request = new CreateCommentRequest(1L, "Test content");
 
         when(taskService.getTaskEntityById(1L)).thenReturn(mockTask);
         doNothing().when(accessChecker).requireAnyRole(100L, currentUserId);
-        when(commentService.createComment(request)).thenReturn(mockCommentResponse);
+        when(commentService.createComment(request, currentUserId)).thenReturn(mockCommentResponse);
 
         // Act
         CommentResponse result = commentServicePublic.createComment(request, currentUserId);
@@ -95,25 +95,7 @@ class CommentServicePublicTest {
         assertEquals(mockCommentResponse, result);
         verify(taskService).getTaskEntityById(1L);
         verify(accessChecker).requireAnyRole(100L, currentUserId);
-        verify(commentService).createComment(request);
-    }
-
-    @Test
-    void createComment_ShouldThrowAccessDenied_WhenUserIdNotCurrentUser() {
-        // Arrange
-        CreateCommentRequest request = new CreateCommentRequest(1L, otherUserId, "Test content");
-
-        when(taskService.getTaskEntityById(1L)).thenReturn(mockTask);
-        doNothing().when(accessChecker).requireAnyRole(100L, currentUserId);
-
-        // Act & Assert
-        AccessDeniedException exception = assertThrows(AccessDeniedException.class,
-                () -> commentServicePublic.createComment(request, currentUserId));
-
-        assertEquals("You can only create comments on your own behalf", exception.getMessage());
-        verify(taskService).getTaskEntityById(1L);
-        verify(accessChecker).requireAnyRole(100L, currentUserId);
-        verify(commentService, never()).createComment(any());
+        verify(commentService).createComment(request, currentUserId);
     }
 
     @Test
@@ -369,7 +351,7 @@ class CommentServicePublicTest {
     @Test
     void createComment_ShouldThrowAccessDenied_WhenUserHasNoProjectAccess() {
         // Arrange
-        CreateCommentRequest request = new CreateCommentRequest(1L, currentUserId, "Test content");
+        CreateCommentRequest request = new CreateCommentRequest(1L, "Test content");
 
         when(taskService.getTaskEntityById(1L)).thenReturn(mockTask);
         doThrow(new AccessDeniedException("No project access")).when(accessChecker).requireAnyRole(100L, currentUserId);
@@ -381,7 +363,7 @@ class CommentServicePublicTest {
         assertEquals("No project access", exception.getMessage());
         verify(taskService).getTaskEntityById(1L);
         verify(accessChecker).requireAnyRole(100L, currentUserId);
-        verify(commentService, never()).createComment(any());
+        verify(commentService, never()).createComment(any(), any());
     }
 
     @Test

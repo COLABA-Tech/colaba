@@ -54,7 +54,7 @@ public class TaskServicePublic {
         if (!isAdmin) {
             accessChecker.requireAtLeastEditor(request.projectId(), currentUserId);
         }
-        return taskService.createTask(request);
+        return taskService.createTask(request, currentUserId);
     }
 
     @Transactional
