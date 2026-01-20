@@ -71,7 +71,7 @@ services:
       discovery-server:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:${API_GATEWAY_PORT:-8080}/actuator/health" ]
+      test: [ "CMD", "curl", "-f", "http://localhost:${MANAGEMENT_PORT:-8081}/actuator/health" ]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -83,8 +83,6 @@ services:
     container_name: colaba-user-service
     hostname: user-service
     env_file: .env
-    ports:
-      - "${USER_SERVICE_PORT:-8081}:${USER_SERVICE_PORT:-8081}"
     networks:
       - colaba-network
     depends_on:
@@ -95,7 +93,7 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:${USER_SERVICE_PORT:-8081}/actuator/health" ]
+      test: [ "CMD", "curl", "-f", "http://localhost:${MANAGEMENT_PORT:-8081}/actuator/health" ]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -107,8 +105,6 @@ services:
     container_name: colaba-project-service
     hostname: project-service
     env_file: .env
-    ports:
-      - "${PROJECT_SERVICE_PORT:-8082}:${PROJECT_SERVICE_PORT:-8082}"
     networks:
       - colaba-network
     depends_on:
@@ -119,7 +115,7 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:${PROJECT_SERVICE_PORT:-8082}/actuator/health" ]
+      test: [ "CMD", "curl", "-f", "http://localhost:${MANAGEMENT_PORT:-8081}/actuator/health" ]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -131,8 +127,6 @@ services:
     container_name: colaba-task-service
     hostname: task-service
     env_file: .env
-    ports:
-      - "${TASK_SERVICE_PORT:-8083}:${TASK_SERVICE_PORT:-8083}"
     networks:
       - colaba-network
     depends_on:
@@ -143,7 +137,7 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:${TASK_SERVICE_PORT:-8083}/actuator/health" ]
+      test: [ "CMD", "curl", "-f", "http://localhost:${MANAGEMENT_PORT:-8081}/actuator/health" ]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -155,8 +149,6 @@ services:
     container_name: colaba-auth-service
     hostname: auth-service
     env_file: .env
-    ports:
-      - "${AUTH_SERVICE_PORT:-8084}:${AUTH_SERVICE_PORT:-8084}"
     networks:
       - colaba-network
     depends_on:
@@ -167,7 +159,7 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:${AUTH_SERVICE_PORT:-8084}/actuator/health" ]
+      test: [ "CMD", "curl", "-f", "http://localhost:${MANAGEMENT_PORT:-8081}/actuator/health" ]
       interval: 30s
       timeout: 10s
       retries: 5
