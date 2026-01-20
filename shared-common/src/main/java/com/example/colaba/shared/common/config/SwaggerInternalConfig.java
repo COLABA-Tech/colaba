@@ -15,7 +15,7 @@ import java.util.List;
 @Configuration
 public class SwaggerInternalConfig {
 
-    @Value("${internal.api-key:tvulOBWkyfz+TfDMFKWxiZxsBXy8ODfzqX+4TnNSQD+Z+ihYaNS4n2j+1ios3rRM}")
+    @Value("${internal.api-key}")
     private String internalApiKey;
 
     @Bean
@@ -37,7 +37,7 @@ public class SwaggerInternalConfig {
         Method method = handlerMethod.getMethod();
 
         String path = extractPathFromAnnotations(method, handlerMethod.getBeanType());
-        if (path != null && path.contains("/internal/")) {
+        if (path.contains("/internal/")) {
             return true;
         }
 
@@ -117,8 +117,6 @@ public class SwaggerInternalConfig {
         addInternalApiKeyParameter(operation);
 
         addInternalDescription(operation);
-
-        addInternalTag(operation);
     }
 
     private void addInternalApiKeyParameter(Operation operation) {
@@ -154,19 +152,6 @@ public class SwaggerInternalConfig {
                     "• API Key автоматически подставляется в Swagger UI";
 
             operation.setDescription(originalDesc + internalDesc);
-        }
-    }
-
-    private void addInternalTag(Operation operation) {
-        if (operation.getTags() != null) {
-            boolean hasInternalTag = operation.getTags().stream()
-                    .anyMatch(tag -> "Internal".equals(tag) || "internal".equalsIgnoreCase(tag));
-
-            if (!hasInternalTag) {
-                operation.addTagsItem("Internal");
-            }
-        } else {
-            operation.addTagsItem("Internal");
         }
     }
 }

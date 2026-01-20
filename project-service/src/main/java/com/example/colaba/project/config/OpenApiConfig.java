@@ -45,16 +45,6 @@ public class OpenApiConfig {
                                         .bearerFormat("JWT")
                                         .description("Введите JWT-токен в формате: Bearer <token>")))
                 .addSecurityItem(new SecurityRequirement().addList("bearerAuth"));
-
-        if (internalApiKey != null && !internalApiKey.trim().isEmpty()) {
-            String description = openAPI.getInfo().getDescription();
-            openAPI.getInfo().setDescription(description +
-                    "\n\n**Internal Endpoints**\n" +
-                    "Для вызова internal эндпоинтов (`/api/projects/internal/**`, `/api/tags/internal/**`) требуется заголовок:\n" +
-                    "`X-Internal-Key: " + internalApiKey + "`\n" +
-                    "Этот заголовок автоматически подставляется в Swagger UI.");
-        }
-
         return openAPI;
     }
 
