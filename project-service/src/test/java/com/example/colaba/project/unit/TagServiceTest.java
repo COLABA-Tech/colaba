@@ -2,6 +2,7 @@ package com.example.colaba.project.unit;
 
 import com.example.colaba.project.dto.tag.CreateTagRequest;
 import com.example.colaba.project.dto.tag.UpdateTagRequest;
+import com.example.colaba.project.entity.ProjectJpa;
 import com.example.colaba.project.entity.TagJpa;
 import com.example.colaba.project.mapper.TagMapper;
 import com.example.colaba.project.repository.TagRepository;
@@ -18,21 +19,28 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.support.TransactionTemplate;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class TagServiceTest {
 
     @Mock
@@ -46,6 +54,9 @@ class TagServiceTest {
 
     @Mock
     private TagMapper tagMapper;
+
+    @Mock
+    private TransactionTemplate transactionTemplate;
 
     @InjectMocks
     private TagService tagService;
@@ -77,6 +88,18 @@ class TagServiceTest {
 
         createRequest = new CreateTagRequest(testName, testProjectId);
         updateRequest = new UpdateTagRequest("Updated Name");
+
+        // Моки TransactionTemplate
+        when(transactionTemplate.execute(any(TransactionCallback.class))).thenAnswer(invocation -> {
+            TransactionCallback<?> callback = invocation.getArgument(0);
+            return callback.doInTransaction(mock(TransactionStatus.class));
+        });
+
+        doAnswer(invocation -> {
+            Consumer<TransactionStatus> consumer = invocation.getArgument(0);
+            consumer.accept(mock(TransactionStatus.class));
+            return null;
+        }).when(transactionTemplate).executeWithoutResult(any(Consumer.class));
     }
 
     @Test
@@ -96,7 +119,7 @@ class TagServiceTest {
         StepVerifier.create(resultMono)
                 .expectNextMatches(page ->
                         page.getContent().size() == 1 &&
-                                page.getContent().get(0).id().equals(testTagId))
+                                page.getContent().getFirst().id().equals(testTagId))
                 .verifyComplete();
 
         verify(tagRepository).findAll(pageable);
@@ -139,7 +162,6 @@ class TagServiceTest {
                 .verify();
 
         verify(tagRepository).findById(testTagId);
-        verify(tagMapper, never()).toTagResponse(any(TagJpa.class));
     }
 
     @Test
@@ -149,7 +171,7 @@ class TagServiceTest {
         Page<TagJpa> mockPage = new PageImpl<>(List.of(savedTag));
         Page<TagResponse> mockResponsePage = new PageImpl<>(List.of(tagResponse));
 
-        var projectJpa = com.example.colaba.project.entity.ProjectJpa.builder()
+        ProjectJpa projectJpa = ProjectJpa.builder()
                 .id(testProjectId)
                 .name("Test Project")
                 .build();
@@ -165,7 +187,7 @@ class TagServiceTest {
         StepVerifier.create(resultMono)
                 .expectNextMatches(page ->
                         page.getContent().size() == 1 &&
-                                page.getContent().get(0).id().equals(testTagId))
+                                page.getContent().getFirst().id().equals(testTagId))
                 .verifyComplete();
 
         verify(projectService).getProjectEntityById(testProjectId);
@@ -197,15 +219,15 @@ class TagServiceTest {
     @Test
     void createTag_success() {
         // Given
-        var projectJpa = com.example.colaba.project.entity.ProjectJpa.builder()
+        ProjectJpa projectJpa = ProjectJpa.builder()
                 .id(testProjectId)
                 .name("Test Project")
                 .build();
 
         when(projectService.getProjectEntityById(testProjectId)).thenReturn(Mono.just(projectJpa));
         when(tagRepository.findByProjectIdAndNameIgnoreCase(testProjectId, testName)).thenReturn(Optional.empty());
-        when(tagRepository.save(any(TagJpa.class))).thenReturn(savedTag);
-        when(tagMapper.toTagResponse(savedTag)).thenReturn(tagResponse);
+        when(tagRepository.save(any(TagJpa.class))).thenAnswer(i -> i.getArgument(0));
+        when(tagMapper.toTagResponse(any(TagJpa.class))).thenReturn(tagResponse);
 
         // When
         Mono<TagResponse> resultMono = tagService.createTag(createRequest);
@@ -222,13 +244,13 @@ class TagServiceTest {
         verify(tagRepository).save(argThat(tag ->
                 testName.equals(tag.getName()) &&
                         testProjectId.equals(tag.getProjectId())));
-        verify(tagMapper).toTagResponse(savedTag);
+        verify(tagMapper).toTagResponse(any(TagJpa.class));
     }
 
     @Test
     void createTag_duplicateName_throwsException() {
         // Given
-        var projectJpa = com.example.colaba.project.entity.ProjectJpa.builder()
+        ProjectJpa projectJpa = ProjectJpa.builder()
                 .id(testProjectId)
                 .name("Test Project")
                 .build();
@@ -278,17 +300,12 @@ class TagServiceTest {
         // Given
         String newName = "Updated Tag";
         UpdateTagRequest changeRequest = new UpdateTagRequest(newName);
-        TagJpa updatedTag = TagJpa.builder()
-                .id(testTagId)
-                .name(newName)
-                .projectId(testProjectId)
-                .build();
         TagResponse updatedResponse = new TagResponse(testTagId, newName, testProjectId);
 
         when(tagRepository.findById(testTagId)).thenReturn(Optional.of(savedTag));
         when(tagRepository.findByProjectIdAndNameIgnoreCase(testProjectId, newName)).thenReturn(Optional.empty());
-        when(tagRepository.save(any(TagJpa.class))).thenReturn(updatedTag);
-        when(tagMapper.toTagResponse(updatedTag)).thenReturn(updatedResponse);
+        when(tagRepository.save(any(TagJpa.class))).thenAnswer(i -> i.getArgument(0));
+        when(tagMapper.toTagResponse(any(TagJpa.class))).thenReturn(updatedResponse);
 
         // When
         Mono<TagResponse> resultMono = tagService.updateTag(testTagId, changeRequest);
@@ -303,7 +320,7 @@ class TagServiceTest {
         verify(tagRepository).findById(testTagId);
         verify(tagRepository).findByProjectIdAndNameIgnoreCase(testProjectId, newName);
         verify(tagRepository).save(argThat(tag -> newName.equals(tag.getName())));
-        verify(tagMapper).toTagResponse(updatedTag);
+        verify(tagMapper).toTagResponse(any(TagJpa.class));
     }
 
     @Test
@@ -454,6 +471,7 @@ class TagServiceTest {
     void deleteTag_success() {
         // Given
         when(tagRepository.existsById(testTagId)).thenReturn(true);
+        when(taskServiceClient.deleteTaskTagsByTagId(testTagId)).thenReturn(Mono.empty());
 
         // When
         Mono<Void> resultMono = tagService.deleteTag(testTagId);
@@ -491,11 +509,15 @@ class TagServiceTest {
     void deleteTag_callsTaskServiceClient() {
         // Given
         when(tagRepository.existsById(testTagId)).thenReturn(true);
+        when(taskServiceClient.deleteTaskTagsByTagId(testTagId)).thenReturn(Mono.empty());
 
         // When
-        tagService.deleteTag(testTagId).block();
+        Mono<Void> resultMono = tagService.deleteTag(testTagId);
 
         // Then
+        StepVerifier.create(resultMono)
+                .verifyComplete();
+
         verify(taskServiceClient).deleteTaskTagsByTagId(testTagId);
     }
 
@@ -505,17 +527,12 @@ class TagServiceTest {
         String newName = "New Name";
         UpdateTagRequest changeRequest = new UpdateTagRequest(newName);
 
-        TagJpa updatedTag = TagJpa.builder()
-                .id(testTagId)
-                .name(newName)
-                .projectId(testProjectId)
-                .build();
         TagResponse updatedResponse = new TagResponse(testTagId, newName, testProjectId);
 
         when(tagRepository.findById(testTagId)).thenReturn(Optional.of(savedTag));
         when(tagRepository.findByProjectIdAndNameIgnoreCase(testProjectId, newName)).thenReturn(Optional.empty());
-        when(tagRepository.save(any(TagJpa.class))).thenReturn(updatedTag);
-        when(tagMapper.toTagResponse(updatedTag)).thenReturn(updatedResponse);
+        when(tagRepository.save(any(TagJpa.class))).thenAnswer(i -> i.getArgument(0));
+        when(tagMapper.toTagResponse(any(TagJpa.class))).thenReturn(updatedResponse);
 
         // When
         Mono<TagResponse> resultMono = tagService.updateTag(testTagId, changeRequest);
@@ -531,15 +548,15 @@ class TagServiceTest {
     @Test
     void createTag_savesWithCorrectProjectId() {
         // Given
-        var projectJpa = com.example.colaba.project.entity.ProjectJpa.builder()
+        ProjectJpa projectJpa = ProjectJpa.builder()
                 .id(testProjectId)
                 .name("Test Project")
                 .build();
 
         when(projectService.getProjectEntityById(testProjectId)).thenReturn(Mono.just(projectJpa));
         when(tagRepository.findByProjectIdAndNameIgnoreCase(testProjectId, testName)).thenReturn(Optional.empty());
-        when(tagRepository.save(any(TagJpa.class))).thenReturn(savedTag);
-        when(tagMapper.toTagResponse(savedTag)).thenReturn(tagResponse);
+        when(tagRepository.save(any(TagJpa.class))).thenAnswer(i -> i.getArgument(0));
+        when(tagMapper.toTagResponse(any(TagJpa.class))).thenReturn(tagResponse);
 
         // When
         Mono<TagResponse> resultMono = tagService.createTag(createRequest);

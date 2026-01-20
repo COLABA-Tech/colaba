@@ -4,9 +4,9 @@ import com.example.colaba.shared.common.dto.project.ProjectResponse;
 import com.example.colaba.shared.common.dto.tag.TagResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.client.loadbalancer.reactive.ReactorLoadBalancerExchangeFilterFunction;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -26,11 +26,12 @@ public class ProjectServiceClient {
                 .build();
     }
 
-    public Flux<ProjectResponse> findByOwnerId(Long id) {
+    public Mono<List<ProjectResponse>> findByOwnerId(Long id) {
         return webClient.get()
                 .uri("lb://project-service/api/projects/internal/owner/{id}", id)
                 .retrieve()
-                .bodyToFlux(ProjectResponse.class);
+                .bodyToMono(new ParameterizedTypeReference<>() {
+                });
     }
 
     public Mono<Void> deleteProject(Long id) {
@@ -68,12 +69,13 @@ public class ProjectServiceClient {
                 .bodyToMono(TagResponse.class);
     }
 
-    public Flux<TagResponse> getTagsByIds(List<Long> tagIds) {
+    public Mono<List<TagResponse>> getTagsByIds(List<Long> tagIds) {
         return webClient.post()
                 .uri("lb://project-service/api/tags/internal/batch")
                 .bodyValue(tagIds)
                 .retrieve()
-                .bodyToFlux(TagResponse.class);
+                .bodyToMono(new ParameterizedTypeReference<>() {
+                });
     }
 
     public Mono<Boolean> tagExists(Long id) {

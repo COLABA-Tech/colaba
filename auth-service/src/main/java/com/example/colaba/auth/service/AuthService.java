@@ -9,7 +9,6 @@ import com.example.colaba.shared.common.security.JwtService;
 import com.example.colaba.shared.webmvc.circuit.UserServiceClientWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;

@@ -17,7 +17,8 @@ import com.example.colaba.shared.webflux.circuit.TaskServiceClientWrapper;
 import com.example.colaba.shared.webflux.circuit.UserServiceClientWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -33,35 +34,37 @@ public class ProjectService {
     private final UserServiceClientWrapper userServiceClient;
     private final TaskServiceClientWrapper taskServiceClient;
     private final ProjectMapper projectMapper;
+    private final TransactionTemplate transactionTemplate;
 
-    @Transactional
     public Mono<ProjectResponse> createProject(CreateProjectRequest request) {
-        return Mono.fromCallable(() -> {
-            if (projectRepository.existsByName(request.name())) {
-                throw new DuplicateProjectNameException(request.name());
-            }
+        return userServiceClient.userExists(request.ownerId())
+                .flatMap(exists -> {
+                    if (!exists) {
+                        return Mono.error(new UserNotFoundException(request.ownerId()));
+                    }
+                    return Mono.fromCallable(() -> transactionTemplate.execute(_ -> {
+                        if (projectRepository.existsByName(request.name())) {
+                            throw new DuplicateProjectNameException(request.name());
+                        }
 
-            boolean userExists = userServiceClient.userExists(request.ownerId());
-            if (!userExists) {
-                throw new UserNotFoundException(request.ownerId());
-            }
+                        ProjectJpa project = ProjectJpa.builder()
+                                .name(request.name())
+                                .description(request.description())
+                                .ownerId(request.ownerId())
+                                .build();
 
-            ProjectJpa project = ProjectJpa.builder()
-                    .name(request.name())
-                    .description(request.description())
-                    .ownerId(request.ownerId())
-                    .build();
-            ProjectJpa saved = projectRepository.save(project);
+                        ProjectJpa saved = projectRepository.save(project);
 
-            ProjectMemberJpa ownerMember = ProjectMemberJpa.builder()
-                    .projectId(saved.getId())
-                    .userId(request.ownerId())
-                    .role(ProjectRole.OWNER)
-                    .build();
-            projectMemberRepository.save(ownerMember);
+                        ProjectMemberJpa ownerMember = ProjectMemberJpa.builder()
+                                .projectId(saved.getId())
+                                .userId(request.ownerId())
+                                .role(ProjectRole.OWNER)
+                                .build();
+                        projectMemberRepository.save(ownerMember);
 
-            return projectMapper.toProjectResponse(saved);
-        }).subscribeOn(Schedulers.boundedElastic());
+                        return projectMapper.toProjectResponse(saved);
+                    })).subscribeOn(Schedulers.boundedElastic());
+                });
     }
 
     public Mono<ProjectResponse> getProjectById(Long id) {
@@ -77,105 +80,133 @@ public class ProjectService {
                 .subscribeOn(Schedulers.boundedElastic());
     }
 
-    @Transactional
     public Mono<ProjectResponse> updateProject(Long id, UpdateProjectRequest request) {
-        return Mono.fromCallable(() -> {
-            ProjectJpa project = projectRepository.findById(id)
-                    .orElseThrow(() -> new ProjectNotFoundException(id));
+        Mono<Boolean> ownerCheck = (request.ownerId() != null)
+                ? userServiceClient.userExists(request.ownerId())
+                : Mono.just(true);
 
-            boolean hasChanges = false;
-            if (request.name() != null && !request.name().isBlank() && !request.name().equals(project.getName())) {
-                if (projectRepository.existsByNameAndIdNot(request.name(), id)) {
-                    throw new DuplicateProjectNameException(request.name());
-                }
-                project.setName(request.name());
-                hasChanges = true;
-            }
+        return ownerCheck
+                .flatMap(ownerExists -> {
+                    if (request.ownerId() != null && !ownerExists) {
+                        return Mono.error(new UserNotFoundException(request.ownerId()));
+                    }
+                    return Mono.fromCallable(() -> transactionTemplate.execute(_ -> {
+                        ProjectJpa project = projectRepository.findById(id)
+                                .orElseThrow(() -> new ProjectNotFoundException(id));
 
-            if (request.description() != null && !request.description().equals(project.getDescription())) {
-                project.setDescription(request.description());
-                hasChanges = true;
-            }
+                        boolean hasChanges = false;
 
-            if (request.ownerId() != null && !request.ownerId().equals(project.getOwnerId())) {
-                boolean userExists = userServiceClient.userExists(request.ownerId());
-                if (!userExists) {
-                    throw new UserNotFoundException(request.ownerId());
-                }
-                projectMemberRepository.updateRole(id, project.getOwnerId(), ProjectRole.EDITOR);
-                project.setOwnerId(request.ownerId());
-                if (projectMemberRepository.existsByProjectIdAndUserId(id, request.ownerId())) {
-                    projectMemberRepository.updateRole(id, request.ownerId(), ProjectRole.OWNER);
-                } else {
-                    ProjectMemberJpa newOwnerMember = ProjectMemberJpa.builder()
-                            .projectId(id)
-                            .userId(request.ownerId())
-                            .role(ProjectRole.OWNER)
-                            .build();
-                    projectMemberRepository.save(newOwnerMember);
-                }
-                hasChanges = true;
-            }
+                        if (request.name() != null && !request.name().isBlank()
+                                && !request.name().equals(project.getName())) {
+                            if (projectRepository.existsByNameAndIdNot(request.name(), id)) {
+                                throw new DuplicateProjectNameException(request.name());
+                            }
+                            project.setName(request.name());
+                            hasChanges = true;
+                        }
 
-            ProjectJpa saved = hasChanges ? projectRepository.save(project) : project;
-            return projectMapper.toProjectResponse(saved);
-        }).subscribeOn(Schedulers.boundedElastic());
+                        if (request.description() != null && !request.description().equals(project.getDescription())) {
+                            project.setDescription(request.description());
+                            hasChanges = true;
+                        }
+
+                        if (request.ownerId() != null && !request.ownerId().equals(project.getOwnerId())) {
+                            projectMemberRepository.updateRole(id, project.getOwnerId(), ProjectRole.EDITOR);
+                            project.setOwnerId(request.ownerId());
+
+                            if (projectMemberRepository.existsByProjectIdAndUserId(id, request.ownerId())) {
+                                projectMemberRepository.updateRole(id, request.ownerId(), ProjectRole.OWNER);
+                            } else {
+                                ProjectMemberJpa newOwnerMember = ProjectMemberJpa.builder()
+                                        .projectId(id)
+                                        .userId(request.ownerId())
+                                        .role(ProjectRole.OWNER)
+                                        .build();
+                                projectMemberRepository.save(newOwnerMember);
+                            }
+                            hasChanges = true;
+                        }
+
+                        ProjectJpa saved = hasChanges ? projectRepository.save(project) : project;
+                        return projectMapper.toProjectResponse(saved);
+                    })).subscribeOn(Schedulers.boundedElastic());
+                });
     }
 
-    @Transactional
     public Mono<ProjectResponse> changeProjectOwner(Long projectId, Long newOwnerId) {
+        return userServiceClient.userExists(newOwnerId)
+                .flatMap(exists -> {
+                    if (!exists) {
+                        return Mono.error(new UserNotFoundException(newOwnerId));
+                    }
+                    return Mono.fromCallable(() -> transactionTemplate.execute(_ -> {
+                        ProjectJpa project = projectRepository.findById(projectId)
+                                .orElseThrow(() -> new ProjectNotFoundException(projectId));
+
+                        if (newOwnerId.equals(project.getOwnerId())) {
+                            return projectMapper.toProjectResponse(project);
+                        }
+
+                        projectMemberRepository.updateRole(projectId, project.getOwnerId(), ProjectRole.EDITOR);
+                        project.setOwnerId(newOwnerId);
+                        ProjectJpa saved = projectRepository.save(project);
+
+                        if (projectMemberRepository.existsByProjectIdAndUserId(projectId, newOwnerId)) {
+                            projectMemberRepository.updateRole(projectId, newOwnerId, ProjectRole.OWNER);
+                        } else {
+                            ProjectMemberJpa newOwnerMember = ProjectMemberJpa.builder()
+                                    .projectId(projectId)
+                                    .userId(newOwnerId)
+                                    .role(ProjectRole.OWNER)
+                                    .build();
+                            projectMemberRepository.save(newOwnerMember);
+                        }
+
+                        return projectMapper.toProjectResponse(saved);
+                    })).subscribeOn(Schedulers.boundedElastic());
+                });
+    }
+
+    public Mono<Void> deleteProject(Long id) {
         return Mono.fromCallable(() -> {
-            ProjectJpa project = projectRepository.findById(projectId)
-                    .orElseThrow(() -> new ProjectNotFoundException(projectId));
-            if (newOwnerId.equals(project.getOwnerId())) {
-                return projectMapper.toProjectResponse(project);
-            }
-            boolean userExists = userServiceClient.userExists(newOwnerId);
-            if (!userExists) {
-                throw new UserNotFoundException(newOwnerId);
-            }
-            projectMemberRepository.updateRole(projectId, newOwnerId, ProjectRole.EDITOR);
-            project.setOwnerId(newOwnerId);
-            ProjectJpa saved = projectRepository.save(project);
-            if (projectMemberRepository.existsByProjectIdAndUserId(projectId, newOwnerId)) {
-                projectMemberRepository.updateRole(projectId, newOwnerId, ProjectRole.OWNER);
-            } else {
-                ProjectMemberJpa newOwnerMember = ProjectMemberJpa.builder()
-                        .projectId(projectId)
-                        .userId(newOwnerId)
-                        .role(ProjectRole.OWNER)
-                        .build();
-                projectMemberRepository.save(newOwnerMember);
-            }
-            return projectMapper.toProjectResponse(saved);
-        }).subscribeOn(Schedulers.boundedElastic());
+                    if (!projectRepository.existsById(id)) {
+                        throw new ProjectNotFoundException(id);
+                    }
+                    return id;
+                })
+                .subscribeOn(Schedulers.boundedElastic())
+                .flatMap(_ -> taskServiceClient.deleteTasksByProject(id))
+                .then(Mono.fromRunnable(() -> transactionTemplate.executeWithoutResult(_ -> {
+                    projectMemberRepository.deleteByProjectId(id);
+                    tagRepository.deleteByProjectId(id);
+                    projectRepository.deleteById(id);
+                })).subscribeOn(Schedulers.boundedElastic()))
+                .then();
     }
 
-    @Transactional
-    public void deleteProject(Long id) {
-        if (!projectRepository.existsById(id)) {
-            throw new ProjectNotFoundException(id);
-        }
-        projectMemberRepository.deleteByProjectId(id);
-        tagRepository.deleteByProjectId(id);
-        taskServiceClient.deleteTasksByProject(id);
-        projectRepository.deleteById(id);
+    public Mono<List<ProjectResponse>> getProjectsByOwnerId(Long ownerId) {
+        return userServiceClient.userExists(ownerId)
+                .flatMap(exists -> {
+                    if (!exists) {
+                        return Mono.error(new UserNotFoundException(ownerId));
+                    }
+                    return Mono.fromCallable(() ->
+                                    projectRepository.findByOwnerId(ownerId)
+                            )
+                            .subscribeOn(Schedulers.boundedElastic())
+                            .map(projectMapper::toProjectResponseList);
+                });
     }
 
-    public Mono<List<ProjectResponse>> getProjectByOwnerId(Long ownerId) {
-        return Mono.fromCallable(() -> {
-            boolean userExists = userServiceClient.userExists(ownerId);
-            if (!userExists) {
-                throw new UserNotFoundException(ownerId);
-            }
-            List<ProjectJpa> projects = projectRepository.findByOwnerId(ownerId);
-            return projectMapper.toProjectResponseList(projects);
-        }).subscribeOn(Schedulers.boundedElastic());
-    }
-
-    @Transactional
     public Mono<Void> handleUserDeletion(Long userId) {
-        return Mono.fromRunnable(() -> projectMemberRepository.deleteByUserId(userId))
-                .subscribeOn(Schedulers.boundedElastic()).then();
+        return Mono.fromCallable(() -> projectRepository.findByOwnerId(userId))
+                .subscribeOn(Schedulers.boundedElastic())
+                .flatMapMany(Flux::fromIterable)
+                .concatMap(projectJpa -> this.deleteProject(projectJpa.getId()))
+                .then()
+                .then(Mono.fromRunnable(() -> transactionTemplate.executeWithoutResult(_ ->
+                        projectMemberRepository.deleteByUserId(userId)
+                )).subscribeOn(Schedulers.boundedElastic()))
+                .then();
     }
 }

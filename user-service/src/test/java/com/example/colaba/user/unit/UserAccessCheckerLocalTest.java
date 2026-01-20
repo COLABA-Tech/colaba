@@ -68,7 +68,7 @@ public class UserAccessCheckerLocalTest {
     void getUserRoleMono_returnsUserRole() {
         // Given
         when(userRepository.findRoleById(testUserId))
-                .thenReturn(Mono.just(UserRole.USER));
+                .thenReturn(Mono.just(UserRole.USER).map(String::valueOf));
 
         // When
         Mono<UserRole> result = userAccessChecker.getUserRoleMono(testUserId);
@@ -248,7 +248,7 @@ public class UserAccessCheckerLocalTest {
     void getUserRole_returnsUserRole() {
         // Given
         when(userRepository.findRoleById(testUserId))
-                .thenReturn(Mono.just(UserRole.USER));
+                .thenReturn(Mono.just(UserRole.USER).map(String::valueOf));
 
         // When
         UserRole result = userAccessChecker.getUserRole(testUserId);
@@ -276,7 +276,7 @@ public class UserAccessCheckerLocalTest {
         when(userRepository.existsByIdAndRole(testUserId, UserRole.ADMIN))
                 .thenReturn(Mono.just(false));
         when(userRepository.findRoleById(testUserId))
-                .thenReturn(Mono.just(UserRole.USER));
+                .thenReturn(Mono.just(UserRole.USER).map(String::valueOf));
 
         // When & Then
         try {

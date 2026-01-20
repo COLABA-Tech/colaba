@@ -2,7 +2,6 @@ package com.example.colaba.auth.config;
 
 import com.example.colaba.shared.common.security.JwtService;
 import com.example.colaba.shared.webmvc.filter.JwtAuthenticationFilter;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -26,9 +25,6 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtService jwtService;
-
-    @Value("${internal.api-key:}")
-    private String internalApiKey;
 
     public SecurityConfig(JwtService jwtService) {
         this.jwtService = jwtService;
@@ -83,7 +79,8 @@ public class SecurityConfig {
                                 "/swagger-config",
                                 "/favicon.ico"
                         ).permitAll()
-                        .requestMatchers("/auth/login", "/auth/register").permitAll()
+                        .requestMatchers("/auth/login").permitAll()
+                        .requestMatchers("/auth/register").hasRole("ADMIN")
                         .requestMatchers("/auth/internal/**").permitAll()
                         .anyRequest().authenticated()
                 )

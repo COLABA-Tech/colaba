@@ -18,7 +18,4 @@ public interface TagRepository extends JpaRepository<TagJpa, Long> {
     @Modifying
     @Query("DELETE FROM TagJpa t WHERE t.projectId = :projectId")
     void deleteByProjectId(@Param("projectId") Long projectId);
-
-    @Query("SELECT t FROM TagJpa t JOIN ProjectMemberJpa pm ON t.projectId = pm.projectId WHERE pm.userId = :userId")
-    Page<TagJpa> findByUserId(@Param("userId") Long userId, Pageable pageable);
 }

@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
 
@@ -15,6 +16,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(name = "Tags Internal", description = "Internal Tags API")
 public class TagInternalController {
+
     private final TagRepository tagRepository;
     private final TagMapper tagMapper;
 
@@ -24,7 +26,7 @@ public class TagInternalController {
                 tagRepository.findById(id)
                         .map(tagMapper::toTagResponse)
                         .orElse(null)
-        );
+        ).subscribeOn(Schedulers.boundedElastic());
     }
 
     @PostMapping("/batch")
@@ -40,6 +42,6 @@ public class TagInternalController {
     public Mono<Boolean> tagExists(@PathVariable Long id) {
         return Mono.fromCallable(() ->
                 tagRepository.existsById(id)
-        );
+        ).subscribeOn(Schedulers.boundedElastic());
     }
 }

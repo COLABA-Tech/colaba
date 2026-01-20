@@ -4,6 +4,7 @@ import com.example.colaba.auth.service.AuthUserDetailsService;
 import com.example.colaba.shared.common.dto.user.UserAuthDto;
 import com.example.colaba.shared.webmvc.client.UserServiceClient;
 import feign.FeignException;
+import feign.Request;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -81,24 +82,24 @@ class AuthUserDetailsServiceTest {
     void loadUserByUsername_userNotFoundByUsername_throwsException() {
         // Given
         when(userServiceClient.findForAuthByUsername(username))
-                .thenThrow(FeignException.NotFound.class);
+                .thenThrow(new FeignException.NotFound("Not found", mock(Request.class), null, null));
 
         // When & Then
         UsernameNotFoundException exception = assertThrows(UsernameNotFoundException.class,
                 () -> authUserDetailsService.loadUserByUsername(username));
-        assertTrue(exception.getMessage().contains("User not found: USERNAME " + username));
+        assertTrue(exception.getMessage().contains("User not found: LOGIN " + username));
     }
 
     @Test
     void loadUserByUsername_userNotFoundByEmail_throwsException() {
         // Given
         when(userServiceClient.findForAuthByEmail(email))
-                .thenThrow(FeignException.NotFound.class);
+                .thenThrow(new FeignException.NotFound("Not found", mock(Request.class), null, null));
 
         // When & Then
         UsernameNotFoundException exception = assertThrows(UsernameNotFoundException.class,
                 () -> authUserDetailsService.loadUserByUsername(email));
-        assertTrue(exception.getMessage().contains("User not found: USERNAME " + email));
+        assertTrue(exception.getMessage().contains("User not found: LOGIN " + email));
     }
 
     @Test
@@ -109,21 +110,21 @@ class AuthUserDetailsServiceTest {
         // When & Then
         UsernameNotFoundException exception = assertThrows(UsernameNotFoundException.class,
                 () -> authUserDetailsService.loadUserByUsername(username));
-        assertTrue(exception.getMessage().contains("User not found: " + username));
+        assertTrue(exception.getMessage().contains("User not found: LOGIN " + username));
     }
 
     @Test
     void loadUserByUsername_feignExceptionOtherThanNotFound_throwsExceptionWithCause() {
         // Given
         FeignException.ServiceUnavailable serviceException =
-                new FeignException.ServiceUnavailable("Service unavailable", mock(feign.Request.class), null, null);
+                new FeignException.ServiceUnavailable("Service unavailable", mock(Request.class), null, null);
         when(userServiceClient.findForAuthByUsername(username))
                 .thenThrow(serviceException);
 
         // When & Then
         UsernameNotFoundException exception = assertThrows(UsernameNotFoundException.class,
                 () -> authUserDetailsService.loadUserByUsername(username));
-        assertTrue(exception.getMessage().contains("Error loading user: " + username));
+        assertTrue(exception.getMessage().contains("Error loading user: LOGIN " + username));
         assertEquals(serviceException, exception.getCause());
     }
 
@@ -196,9 +197,10 @@ class AuthUserDetailsServiceTest {
         String emptyUsername = "";
 
         // When & Then
-        UsernameNotFoundException exception = assertThrows(UsernameNotFoundException.class,
+        UsernameNotFoundException _ = assertThrows(UsernameNotFoundException.class,
                 () -> authUserDetailsService.loadUserByUsername(emptyUsername));
-        // Note: contains("@") будет false для пустой строки
+
+        // Пустая строка не содержит @ → идёт в findForAuthByUsername
         verify(userServiceClient).findForAuthByUsername(emptyUsername);
     }
 
@@ -208,7 +210,7 @@ class AuthUserDetailsServiceTest {
         UsernameNotFoundException exception = assertThrows(UsernameNotFoundException.class,
                 () -> authUserDetailsService.loadUserByUsername(null));
 
-        assertTrue(exception.getMessage().contains("Error loading user: null"));
+        assertTrue(exception.getMessage().contains("Error loading user: LOGIN null"));
         assertNotNull(exception.getCause());
         assertInstanceOf(NullPointerException.class, exception.getCause());
     }

@@ -11,7 +11,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -25,7 +24,7 @@ public class TagServicePublic {
     public Mono<Page<TagResponse>> getAllTags(Pageable pageable, Long currentUserId) {
         return userServiceClient.isAdmin(currentUserId)
                 .flatMap(isAdmin -> {
-                    if (!isAdmin) {
+                    if (!Boolean.TRUE.equals(isAdmin)) {
                         return Mono.error(new AccessDeniedException("Only ADMIN can view all tags"));
                     }
                     return tagService.getAllTags(pageable);
@@ -36,7 +35,7 @@ public class TagServicePublic {
         return tagService.getTagEntityById(id)
                 .flatMap(tag -> userServiceClient.isAdmin(currentUserId)
                         .flatMap(isAdmin -> {
-                            if (isAdmin) {
+                            if (Boolean.TRUE.equals(isAdmin)) {
                                 return Mono.just(tag);
                             }
                             return projectAccessCheckerLocal.requireAnyRoleMono(tag.getProjectId(), currentUserId)
@@ -48,51 +47,46 @@ public class TagServicePublic {
     public Mono<Page<TagResponse>> getTagsByProject(Long projectId, Pageable pageable, Long currentUserId) {
         return userServiceClient.isAdmin(currentUserId)
                 .flatMap(isAdmin -> {
-                    if (isAdmin) {
+                    if (Boolean.TRUE.equals(isAdmin)) {
                         return tagService.getTagsByProject(projectId, pageable);
                     }
                     return projectAccessCheckerLocal.requireAnyRoleMono(projectId, currentUserId)
-                            .then(Mono.defer(() -> tagService.getTagsByProject(projectId, pageable)));
+                            .then(tagService.getTagsByProject(projectId, pageable));
                 });
     }
 
-    @Transactional
     public Mono<TagResponse> createTag(CreateTagRequest request, Long currentUserId) {
         return userServiceClient.isAdmin(currentUserId)
                 .flatMap(isAdmin -> {
-                    if (isAdmin) {
+                    if (Boolean.TRUE.equals(isAdmin)) {
                         return tagService.createTag(request);
                     }
                     return projectAccessCheckerLocal.requireAtLeastEditorMono(request.projectId(), currentUserId)
-                            .then(Mono.defer(() -> tagService.createTag(request)));
+                            .then(tagService.createTag(request));
                 });
     }
 
-    @Transactional
     public Mono<TagResponse> updateTag(Long id, UpdateTagRequest request, Long currentUserId) {
         return tagService.getTagEntityById(id)
                 .flatMap(tag -> userServiceClient.isAdmin(currentUserId)
                         .flatMap(isAdmin -> {
-                            if (isAdmin) {
+                            if (Boolean.TRUE.equals(isAdmin)) {
                                 return tagService.updateTag(id, request);
                             }
                             return projectAccessCheckerLocal.requireAtLeastEditorMono(tag.getProjectId(), currentUserId)
-                                    .thenReturn(tag);
-                        }))
-                .flatMap(tag -> tagService.updateTag(id, request));
+                                    .then(tagService.updateTag(id, request));
+                        }));
     }
 
-    @Transactional
     public Mono<Void> deleteTag(Long id, Long currentUserId) {
         return tagService.getTagEntityById(id)
                 .flatMap(tag -> userServiceClient.isAdmin(currentUserId)
                         .flatMap(isAdmin -> {
-                            if (isAdmin) {
+                            if (Boolean.TRUE.equals(isAdmin)) {
                                 return tagService.deleteTag(id);
                             }
                             return projectAccessCheckerLocal.requireAtLeastEditorMono(tag.getProjectId(), currentUserId)
-                                    .thenReturn(tag);
-                        }))
-                .flatMap(tag -> tagService.deleteTag(id));
+                                    .then(tagService.deleteTag(id));
+                        }));
     }
 }

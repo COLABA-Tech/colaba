@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
 
@@ -24,17 +25,18 @@ public class ProjectInternalController {
 
     @GetMapping("/owner/{ownerId}")
     public Mono<List<ProjectResponse>> findByOwnerId(@PathVariable Long ownerId) {
-        return projectService.getProjectByOwnerId(ownerId);
+        return projectService.getProjectsByOwnerId(ownerId);
     }
 
     @DeleteMapping("/{id}")
-    public void deleteProject(@PathVariable Long id) {
-        projectService.deleteProject(id);
+    public Mono<Void> deleteProject(@PathVariable Long id) {
+        return projectService.deleteProject(id);
     }
 
     @GetMapping("/{id}/exists")
-    public boolean projectExists(@PathVariable Long id) {
-        return projectRepository.existsById(id);
+    public Mono<Boolean> projectExists(@PathVariable Long id) {
+        return Mono.fromCallable(() -> projectRepository.existsById(id))
+                .subscribeOn(Schedulers.boundedElastic());
     }
 
     @DeleteMapping("/user/{userId}/memberships")
@@ -44,29 +46,28 @@ public class ProjectInternalController {
 
     @GetMapping("/{projectId}/membership/{userId}")
     public Mono<Boolean> isMember(@PathVariable Long projectId, @PathVariable Long userId) {
-        return Mono.just(projectAccessCheckerLocal.hasAnyRole(projectId, userId));
+        return projectAccessCheckerLocal.hasAnyRoleMono(projectId, userId);
     }
 
     @GetMapping("/{projectId}/user/{userId}/any-role")
     public Mono<Boolean> hasAnyRole(@PathVariable Long projectId, @PathVariable Long userId) {
-        return Mono.just(projectAccessCheckerLocal.hasAnyRole(projectId, userId));
+        return projectAccessCheckerLocal.hasAnyRoleMono(projectId, userId);
     }
 
     @GetMapping("/{projectId}/user/{userId}/at-least-editor")
     public Mono<Boolean> isAtLeastEditor(@PathVariable Long projectId, @PathVariable Long userId) {
-        return Mono.just(projectAccessCheckerLocal.isAtLeastEditor(projectId, userId));
+        return projectAccessCheckerLocal.isAtLeastEditorMono(projectId, userId);
     }
 
     @GetMapping("/{projectId}/user/{userId}/owner")
     public Mono<Boolean> isOwner(@PathVariable Long projectId, @PathVariable Long userId) {
-        return Mono.just(projectAccessCheckerLocal.isOwner(projectId, userId));
+        return projectAccessCheckerLocal.isOwnerMono(projectId, userId);
     }
 
     @GetMapping("/{projectId}/user/{userId}/role")
     public Mono<String> getUserProjectRole(@PathVariable Long projectId, @PathVariable Long userId) {
-        return Mono.fromCallable(() -> {
-            ProjectRole role = projectAccessCheckerLocal.getUserProjectRole(projectId, userId);
-            return role != null ? role.name() : null;
-        });
+        return projectAccessCheckerLocal.getUserProjectRoleMono(projectId, userId)
+                .map(ProjectRole::name)
+                .defaultIfEmpty("");
     }
 }

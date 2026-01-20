@@ -3,8 +3,10 @@ package com.example.colaba.shared.webflux.circuit;
 import com.example.colaba.shared.webflux.client.TaskServiceClient;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import io.github.resilience4j.reactor.circuitbreaker.operator.CircuitBreakerOperator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
 
 @Component
 @RequiredArgsConstructor
@@ -17,19 +19,23 @@ public class TaskServiceClientWrapper {
         return registry.circuitBreaker("task-service");
     }
 
-    public void deleteTasksByProject(Long projectId) {
-        cb().executeRunnable(() -> client.deleteTasksByProject(projectId).block());
+    public Mono<Void> deleteTasksByProject(Long projectId) {
+        return client.deleteTasksByProject(projectId)
+                .transformDeferred(CircuitBreakerOperator.of(cb()));
     }
 
-    public void handleUserDeletion(Long userId) {
-        cb().executeRunnable(() -> client.handleUserDeletion(userId).block());
+    public Mono<Void> handleUserDeletion(Long userId) {
+        return client.handleUserDeletion(userId)
+                .transformDeferred(CircuitBreakerOperator.of(cb()));
     }
 
-    public boolean taskExists(Long taskId) {
-        return cb().executeSupplier(() -> client.taskExists(taskId).block());
+    public Mono<Boolean> taskExists(Long taskId) {
+        return client.taskExists(taskId)
+                .transformDeferred(CircuitBreakerOperator.of(cb()));
     }
 
-    public void deleteTaskTagsByTagId(Long tagId) {
-        cb().executeRunnable(() -> client.deleteTaskTagsByTagId(tagId).block());
+    public Mono<Void> deleteTaskTagsByTagId(Long tagId) {
+        return client.deleteTaskTagsByTagId(tagId)
+                .transformDeferred(CircuitBreakerOperator.of(cb()));
     }
 }

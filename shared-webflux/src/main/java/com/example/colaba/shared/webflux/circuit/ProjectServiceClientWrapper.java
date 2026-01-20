@@ -5,8 +5,10 @@ import com.example.colaba.shared.common.dto.tag.TagResponse;
 import com.example.colaba.shared.webflux.client.ProjectServiceClient;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import io.github.resilience4j.reactor.circuitbreaker.operator.CircuitBreakerOperator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 
@@ -21,51 +23,63 @@ public class ProjectServiceClientWrapper {
         return registry.circuitBreaker("project-service");
     }
 
-    public List<ProjectResponse> findByOwnerId(Long ownerId) {
-        return cb().executeSupplier(() -> client.findByOwnerId(ownerId).collectList().block());
+    public Mono<List<ProjectResponse>> findByOwnerId(Long ownerId) {
+        return client.findByOwnerId(ownerId)
+                .transformDeferred(CircuitBreakerOperator.of(cb()));
     }
 
-    public void deleteProject(Long projectId) {
-        cb().executeRunnable(() -> client.deleteProject(projectId).block());
+    public Mono<Void> deleteProject(Long projectId) {
+        return client.deleteProject(projectId)
+                .transformDeferred(CircuitBreakerOperator.of(cb()));
     }
 
-    public boolean projectExists(Long projectId) {
-        return cb().executeSupplier(() -> client.projectExists(projectId).block());
+    public Mono<Boolean> projectExists(Long projectId) {
+        return client.projectExists(projectId)
+                .transformDeferred(CircuitBreakerOperator.of(cb()));
     }
 
-    public void handleUserDeletion(Long userId) {
-        cb().executeRunnable(() -> client.handleUserDeletion(userId).block());
+    public Mono<Void> handleUserDeletion(Long userId) {
+        return client.handleUserDeletion(userId)
+                .transformDeferred(CircuitBreakerOperator.of(cb()));
     }
 
-    public boolean isMember(Long projectId, Long userId) {
-        return cb().executeSupplier(() -> client.isMember(projectId, userId).block());
+    public Mono<Boolean> isMember(Long projectId, Long userId) {
+        return client.isMember(projectId, userId)
+                .transformDeferred(CircuitBreakerOperator.of(cb()));
     }
 
-    public TagResponse getTagById(Long tagId) {
-        return cb().executeSupplier(() -> client.getTagById(tagId).block());
+    public Mono<TagResponse> getTagById(Long tagId) {
+        return client.getTagById(tagId)
+                .transformDeferred(CircuitBreakerOperator.of(cb()));
     }
 
-    public List<TagResponse> getTagsByIds(List<Long> tagIds) {
-        return cb().executeSupplier(() -> client.getTagsByIds(tagIds).collectList().block());
+    public Mono<List<TagResponse>> getTagsByIds(List<Long> tagIds) {
+        return client.getTagsByIds(tagIds)
+                .transformDeferred(CircuitBreakerOperator.of(cb()));
     }
 
-    public boolean tagExists(Long tagId) {
-        return cb().executeSupplier(() -> client.tagExists(tagId).block());
+    public Mono<Boolean> tagExists(Long tagId) {
+        return client.tagExists(tagId)
+                .transformDeferred(CircuitBreakerOperator.of(cb()));
     }
 
-    public boolean hasAnyRole(Long projectId, Long userId) {
-        return cb().executeSupplier(() -> client.hasAnyRole(projectId, userId).block());
+    public Mono<Boolean> hasAnyRole(Long projectId, Long userId) {
+        return client.hasAnyRole(projectId, userId)
+                .transformDeferred(CircuitBreakerOperator.of(cb()));
     }
 
-    public boolean isAtLeastEditor(Long projectId, Long userId) {
-        return cb().executeSupplier(() -> client.isAtLeastEditor(projectId, userId).block());
+    public Mono<Boolean> isAtLeastEditor(Long projectId, Long userId) {
+        return client.isAtLeastEditor(projectId, userId)
+                .transformDeferred(CircuitBreakerOperator.of(cb()));
     }
 
-    public boolean isOwner(Long projectId, Long userId) {
-        return cb().executeSupplier(() -> client.isOwner(projectId, userId).block());
+    public Mono<Boolean> isOwner(Long projectId, Long userId) {
+        return client.isOwner(projectId, userId)
+                .transformDeferred(CircuitBreakerOperator.of(cb()));
     }
 
-    public String getUserProjectRole(Long projectId, Long userId) {
-        return cb().executeSupplier(() -> client.getUserProjectRole(projectId, userId).block());
+    public Mono<String> getUserProjectRole(Long projectId, Long userId) {
+        return client.getUserProjectRole(projectId, userId)
+                .transformDeferred(CircuitBreakerOperator.of(cb()));
     }
 }

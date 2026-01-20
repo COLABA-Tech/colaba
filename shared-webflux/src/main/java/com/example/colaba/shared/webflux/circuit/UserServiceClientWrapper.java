@@ -4,8 +4,10 @@ import com.example.colaba.shared.common.entity.UserRole;
 import com.example.colaba.shared.webflux.client.UserServiceClient;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import io.github.resilience4j.reactor.circuitbreaker.operator.CircuitBreakerOperator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
 
 @Component
 @RequiredArgsConstructor
@@ -18,19 +20,23 @@ public class UserServiceClientWrapper {
         return registry.circuitBreaker("user-service");
     }
 
-    public boolean userExists(Long userId) {
-        return cb().executeSupplier(() -> client.userExists(userId).block());
+    public Mono<Boolean> userExists(Long userId) {
+        return client.userExists(userId)
+                .transformDeferred(CircuitBreakerOperator.of(cb()));
     }
 
-    public boolean isAdmin(Long id) {
-        return Boolean.TRUE.equals(cb().executeSupplier(() -> client.isAdmin(id)).block());
+    public Mono<Boolean> isAdmin(Long id) {
+        return client.isAdmin(id)
+                .transformDeferred(CircuitBreakerOperator.of(cb()));
     }
 
-    public UserRole getUserRole(Long id) {
-        return cb().executeSupplier(() -> client.getUserRole(id)).block();
+    public Mono<UserRole> getUserRole(Long id) {
+        return client.getUserRole(id)
+                .transformDeferred(CircuitBreakerOperator.of(cb()));
     }
 
-    public boolean canManageUser(Long currentUserId, Long targetUserId) {
-        return Boolean.TRUE.equals(cb().executeSupplier(() -> client.canManageUser(currentUserId, targetUserId)).block());
+    public Mono<Boolean> canManageUser(Long currentUserId, Long targetUserId) {
+        return client.canManageUser(currentUserId, targetUserId)
+                .transformDeferred(CircuitBreakerOperator.of(cb()));
     }
 }

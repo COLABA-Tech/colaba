@@ -22,21 +22,28 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.support.TransactionTemplate;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class ProjectMemberServiceTest {
 
     @Mock
@@ -50,6 +57,9 @@ class ProjectMemberServiceTest {
 
     @Mock
     private ProjectMemberMapper projectMemberMapper;
+
+    @Mock
+    private TransactionTemplate transactionTemplate;
 
     @InjectMocks
     private ProjectMemberService projectMemberService;
@@ -87,6 +97,18 @@ class ProjectMemberServiceTest {
 
         createRequest = new CreateProjectMemberRequest(testUserId, testRole);
         updateRequest = new UpdateProjectMemberRequest(ProjectRole.OWNER);
+
+        // Мок TransactionTemplate
+        when(transactionTemplate.execute(any(TransactionCallback.class))).thenAnswer(invocation -> {
+            TransactionCallback<?> callback = invocation.getArgument(0);
+            return callback.doInTransaction(mock(TransactionStatus.class));
+        });
+
+        doAnswer(invocation -> {
+            Consumer<TransactionStatus> consumer = invocation.getArgument(0);
+            consumer.accept(mock(TransactionStatus.class));
+            return null;
+        }).when(transactionTemplate).executeWithoutResult(any(Consumer.class));
     }
 
     @Test
@@ -107,8 +129,7 @@ class ProjectMemberServiceTest {
         StepVerifier.create(resultMono)
                 .expectNextMatches(page ->
                         page.getContent().size() == 1 &&
-                                page.getContent().get(0).projectId().equals(testProjectId)
-                )
+                                page.getContent().getFirst().projectId().equals(testProjectId))
                 .verifyComplete();
 
         verify(projectService).getProjectEntityById(testProjectId);
@@ -143,10 +164,10 @@ class ProjectMemberServiceTest {
         ProjectMemberId id = new ProjectMemberId(testProjectId, testUserId);
 
         when(projectService.getProjectEntityById(testProjectId)).thenReturn(Mono.just(testProject));
-        when(userServiceClient.userExists(testUserId)).thenReturn(true);
+        when(userServiceClient.userExists(testUserId)).thenReturn(Mono.just(true));
         when(projectMemberRepository.existsById(id)).thenReturn(false);
-        when(projectMemberRepository.save(any(ProjectMemberJpa.class))).thenReturn(savedMember);
-        when(projectMemberMapper.toProjectMemberResponse(savedMember)).thenReturn(memberResponse);
+        when(projectMemberRepository.save(any(ProjectMemberJpa.class))).thenAnswer(i -> i.getArgument(0));
+        when(projectMemberMapper.toProjectMemberResponse(any(ProjectMemberJpa.class))).thenReturn(memberResponse);
 
         // When
         Mono<ProjectMemberResponse> resultMono = projectMemberService.createMembership(testProjectId, createRequest);
@@ -166,7 +187,7 @@ class ProjectMemberServiceTest {
                 testProjectId.equals(member.getProjectId()) &&
                         testUserId.equals(member.getUserId()) &&
                         testRole.equals(member.getRole())));
-        verify(projectMemberMapper).toProjectMemberResponse(savedMember);
+        verify(projectMemberMapper).toProjectMemberResponse(any(ProjectMemberJpa.class));
     }
 
     @Test
@@ -176,17 +197,18 @@ class ProjectMemberServiceTest {
         ProjectMemberId id = new ProjectMemberId(testProjectId, testUserId);
         ProjectRole defaultRole = ProjectRole.getDefault();
 
-        ProjectMemberJpa defaultMember = ProjectMemberJpa.builder()
-                .projectId(testProjectId)
-                .userId(testUserId)
-                .role(defaultRole)
-                .build();
+        ProjectMemberResponse defaultResponse = new ProjectMemberResponse(
+                testProjectId,
+                testUserId,
+                defaultRole.getValue(),
+                OffsetDateTime.now()
+        );
 
         when(projectService.getProjectEntityById(testProjectId)).thenReturn(Mono.just(testProject));
-        when(userServiceClient.userExists(testUserId)).thenReturn(true);
+        when(userServiceClient.userExists(testUserId)).thenReturn(Mono.just(true));
         when(projectMemberRepository.existsById(id)).thenReturn(false);
-        when(projectMemberRepository.save(any(ProjectMemberJpa.class))).thenReturn(defaultMember);
-        when(projectMemberMapper.toProjectMemberResponse(defaultMember)).thenReturn(memberResponse);
+        when(projectMemberRepository.save(any(ProjectMemberJpa.class))).thenAnswer(i -> i.getArgument(0));
+        when(projectMemberMapper.toProjectMemberResponse(any(ProjectMemberJpa.class))).thenReturn(defaultResponse);
 
         // When
         Mono<ProjectMemberResponse> resultMono = projectMemberService.createMembership(testProjectId, defaultRequest);
@@ -206,7 +228,7 @@ class ProjectMemberServiceTest {
         ProjectMemberId id = new ProjectMemberId(testProjectId, testUserId);
 
         when(projectService.getProjectEntityById(testProjectId)).thenReturn(Mono.just(testProject));
-        when(userServiceClient.userExists(testUserId)).thenReturn(true);
+        when(userServiceClient.userExists(testUserId)).thenReturn(Mono.just(true));
         when(projectMemberRepository.existsById(id)).thenReturn(true);
 
         // When
@@ -251,7 +273,7 @@ class ProjectMemberServiceTest {
     void createMembership_userNotFound_throwsException() {
         // Given
         when(projectService.getProjectEntityById(testProjectId)).thenReturn(Mono.just(testProject));
-        when(userServiceClient.userExists(testUserId)).thenReturn(false);
+        when(userServiceClient.userExists(testUserId)).thenReturn(Mono.just(false));
 
         // When
         Mono<ProjectMemberResponse> resultMono = projectMemberService.createMembership(testProjectId, createRequest);
@@ -275,12 +297,6 @@ class ProjectMemberServiceTest {
         ProjectRole newRole = ProjectRole.OWNER;
         UpdateProjectMemberRequest changeRequest = new UpdateProjectMemberRequest(newRole);
 
-        ProjectMemberJpa updatedMember = ProjectMemberJpa.builder()
-                .projectId(testProjectId)
-                .userId(testUserId)
-                .role(newRole)
-                .build();
-
         ProjectMemberResponse updatedResponse = new ProjectMemberResponse(
                 testProjectId,
                 testUserId,
@@ -289,8 +305,8 @@ class ProjectMemberServiceTest {
         );
 
         when(projectMemberRepository.findById(id)).thenReturn(Optional.of(savedMember));
-        when(projectMemberRepository.save(any(ProjectMemberJpa.class))).thenReturn(updatedMember);
-        when(projectMemberMapper.toProjectMemberResponse(updatedMember)).thenReturn(updatedResponse);
+        when(projectMemberRepository.save(any(ProjectMemberJpa.class))).thenAnswer(i -> i.getArgument(0));
+        when(projectMemberMapper.toProjectMemberResponse(any(ProjectMemberJpa.class))).thenReturn(updatedResponse);
 
         // When
         Mono<ProjectMemberResponse> resultMono = projectMemberService.updateMembership(testProjectId, testUserId, changeRequest);
@@ -303,7 +319,7 @@ class ProjectMemberServiceTest {
 
         verify(projectMemberRepository).findById(id);
         verify(projectMemberRepository).save(argThat(member -> newRole.equals(member.getRole())));
-        verify(projectMemberMapper).toProjectMemberResponse(updatedMember);
+        verify(projectMemberMapper).toProjectMemberResponse(any(ProjectMemberJpa.class));
     }
 
     @Test
@@ -378,7 +394,6 @@ class ProjectMemberServiceTest {
         // Given
         ProjectMemberId id = new ProjectMemberId(testProjectId, testUserId);
         when(projectMemberRepository.existsById(id)).thenReturn(true);
-        doNothing().when(projectMemberRepository).deleteById(id);
 
         // When
         Mono<Void> resultMono = projectMemberService.deleteMembership(testProjectId, testUserId);
@@ -410,28 +425,6 @@ class ProjectMemberServiceTest {
 
         verify(projectMemberRepository).existsById(id);
         verify(projectMemberRepository, never()).deleteById(any(ProjectMemberId.class));
-    }
-
-    @Test
-    void createMembership_userServiceReturnsMonoBoolean() {
-        // Given
-        ProjectMemberId id = new ProjectMemberId(testProjectId, testUserId);
-
-        when(projectService.getProjectEntityById(testProjectId)).thenReturn(Mono.just(testProject));
-        when(userServiceClient.userExists(testUserId)).thenReturn(true);
-        when(projectMemberRepository.existsById(id)).thenReturn(false);
-        when(projectMemberRepository.save(any(ProjectMemberJpa.class))).thenReturn(savedMember);
-        when(projectMemberMapper.toProjectMemberResponse(savedMember)).thenReturn(memberResponse);
-
-        // When
-        Mono<ProjectMemberResponse> resultMono = projectMemberService.createMembership(testProjectId, createRequest);
-
-        // Then
-        StepVerifier.create(resultMono)
-                .expectNextCount(1)
-                .verifyComplete();
-
-        verify(userServiceClient).userExists(testUserId);
     }
 
     @Test

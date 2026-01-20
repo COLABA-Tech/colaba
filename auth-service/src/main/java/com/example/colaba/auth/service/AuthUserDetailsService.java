@@ -29,13 +29,13 @@ public class AuthUserDetailsService implements UserDetailsService {
                 user = userServiceClient.findForAuthByUsername(login);
             }
         } catch (FeignException.NotFound ex) {
-            throw new UsernameNotFoundException("User not found: USERNAME " + login);
+            throw new UsernameNotFoundException("User not found: LOGIN " + login);
         } catch (Exception ex) {
-            throw new UsernameNotFoundException("Error loading user: " + login, ex);
+            throw new UsernameNotFoundException("Error loading user: LOGIN " + login, ex);
         }
 
         if (user == null) {
-            throw new UsernameNotFoundException("User not found: " + login);
+            throw new UsernameNotFoundException("User not found: LOGIN " + login);
         }
 
         return new org.springframework.security.core.userdetails.User(

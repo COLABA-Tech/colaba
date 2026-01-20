@@ -17,7 +17,7 @@ public class UserAccessCheckerLocal {
     }
 
     public Mono<UserRole> getUserRoleMono(Long userId) {
-        return userRepository.findRoleById(userId);
+        return userRepository.findRoleById(userId).map(UserRole::valueOf);
     }
 
     public Mono<Void> requireAdminMono(Long userId) {
