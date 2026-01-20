@@ -5,6 +5,7 @@ import com.example.colaba.project.security.ProjectAccessCheckerLocal;
 import com.example.colaba.project.service.ProjectService;
 import com.example.colaba.shared.common.dto.project.ProjectResponse;
 import com.example.colaba.shared.common.entity.ProjectRole;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +17,7 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequestMapping("/api/projects/internal")
+@Tag(name = "Project Internal", description = "Internal Project API")
 @RequiredArgsConstructor
 public class ProjectInternalController {
 

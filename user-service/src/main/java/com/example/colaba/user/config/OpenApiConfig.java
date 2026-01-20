@@ -48,11 +48,6 @@ public class OpenApiConfig {
         // Добавляем информацию об internal API key, если он есть
         if (internalApiKey != null && !internalApiKey.trim().isEmpty()) {
             String description = openAPI.getInfo().getDescription();
-            openAPI.getInfo().setDescription(description +
-                    "\n\n**Internal Endpoints**\n" +
-                    "Для вызова internal эндпоинтов (`/api/users/internal/**`) требуется заголовок:\n" +
-                    "`X-Internal-Key: " + internalApiKey + "`\n" +
-                    "Этот заголовок автоматически подставляется в Swagger UI.");
         }
 
         return openAPI;
