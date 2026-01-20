@@ -74,7 +74,7 @@ class CommentServiceTest {
                 .createdAt(fixedCreatedAt.minusSeconds(1))
                 .build();
 
-        mockResponse = new CommentResponse(1L, 1L, 1L, "Test content", fixedCreatedAt, fixedCreatedAt);
+        mockResponse = new CommentResponse(1L, 1L, 1L, "Test content");
     }
 
     @Test

@@ -87,8 +87,7 @@ class ProjectServiceTest {
                 testId,
                 testProjectName,
                 testDescription,
-                testUserId,
-                OffsetDateTime.now()
+                testUserId
         );
 
         // Мок для execute(TransactionCallback<T>) — возвращает результат callback
@@ -258,7 +257,7 @@ class ProjectServiceTest {
         });
         when(projectMapper.toProjectResponse(any(ProjectJpa.class))).thenAnswer(i -> {
             ProjectJpa p = i.getArgument(0);
-            return new ProjectResponse(p.getId(), p.getName(), p.getDescription(), p.getOwnerId(), p.getCreatedAt());
+            return new ProjectResponse(p.getId(), p.getName(), p.getDescription(), p.getOwnerId());
         });
 
         // When
@@ -313,7 +312,7 @@ class ProjectServiceTest {
         when(projectMemberRepository.existsByProjectIdAndUserId(testId, newOwnerId)).thenReturn(true);
         when(projectMapper.toProjectResponse(any(ProjectJpa.class))).thenAnswer(i -> {
             ProjectJpa p = i.getArgument(0);
-            return new ProjectResponse(p.getId(), p.getName(), p.getDescription(), p.getOwnerId(), p.getCreatedAt());
+            return new ProjectResponse(p.getId(), p.getName(), p.getDescription(), p.getOwnerId());
         });
 
         // When
@@ -419,7 +418,7 @@ class ProjectServiceTest {
         when(projectMemberRepository.existsByProjectIdAndUserId(testId, newOwnerId)).thenReturn(true);
         when(projectMapper.toProjectResponse(any(ProjectJpa.class))).thenAnswer(i -> {
             ProjectJpa p = i.getArgument(0);
-            return new ProjectResponse(p.getId(), p.getName(), p.getDescription(), p.getOwnerId(), p.getCreatedAt());
+            return new ProjectResponse(p.getId(), p.getName(), p.getDescription(), p.getOwnerId());
         });
 
         // When

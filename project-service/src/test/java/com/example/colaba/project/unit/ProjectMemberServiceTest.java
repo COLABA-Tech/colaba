@@ -91,8 +91,7 @@ class ProjectMemberServiceTest {
         memberResponse = new ProjectMemberResponse(
                 testProjectId,
                 testUserId,
-                testRole.getValue(),
-                OffsetDateTime.now()
+                testRole.getValue()
         );
 
         createRequest = new CreateProjectMemberRequest(testUserId, testRole);
@@ -200,8 +199,7 @@ class ProjectMemberServiceTest {
         ProjectMemberResponse defaultResponse = new ProjectMemberResponse(
                 testProjectId,
                 testUserId,
-                defaultRole.getValue(),
-                OffsetDateTime.now()
+                defaultRole.getValue()
         );
 
         when(projectService.getProjectEntityById(testProjectId)).thenReturn(Mono.just(testProject));
@@ -300,8 +298,7 @@ class ProjectMemberServiceTest {
         ProjectMemberResponse updatedResponse = new ProjectMemberResponse(
                 testProjectId,
                 testUserId,
-                newRole.getValue(),
-                OffsetDateTime.now()
+                newRole.getValue()
         );
 
         when(projectMemberRepository.findById(id)).thenReturn(Optional.of(savedMember));

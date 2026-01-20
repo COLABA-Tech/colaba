@@ -48,8 +48,7 @@ class ProjectMemberServicePublicTest {
     private final ProjectMemberResponse testMemberResponse = new ProjectMemberResponse(
             testProjectId,
             testUserId,
-            "EDITOR",
-            OffsetDateTime.now()
+            "EDITOR"
     );
     private Page<ProjectMemberResponse> testPage;
     private CreateProjectMemberRequest createRequest;

@@ -385,8 +385,8 @@ public class UserServiceTest {
     @Test
     void deleteUser_success_withProjects() {
         // Given
-        ProjectResponse project1 = new ProjectResponse(1L, "Project 1", null, null, null);
-        ProjectResponse project2 = new ProjectResponse(2L, "Project 2", null, null, null);
+        ProjectResponse project1 = new ProjectResponse(1L, "Project 1", null, null);
+        ProjectResponse project2 = new ProjectResponse(2L, "Project 2", null, null);
 
         when(projectServiceClient.handleUserDeletion(test_id)).thenReturn(Mono.empty());
         when(taskServiceClient.handleUserDeletion(test_id)).thenReturn(Mono.empty());

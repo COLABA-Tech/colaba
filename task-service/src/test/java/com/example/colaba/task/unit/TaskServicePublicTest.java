@@ -85,8 +85,7 @@ class TaskServicePublicTest {
 
         taskResponse = new TaskResponse(
                 testTaskId, "Test Task", "Test Description", TaskStatus.TODO.name(), TaskPriority.LOW.name(),
-                testProjectId, testAssigneeId, currentUserId, LocalDate.now(),
-                OffsetDateTime.now(), OffsetDateTime.now()
+                testProjectId, testAssigneeId, currentUserId, LocalDate.now()
         );
 
         createRequest = new CreateTaskRequest(

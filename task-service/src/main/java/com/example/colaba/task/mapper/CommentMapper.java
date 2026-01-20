@@ -16,9 +16,7 @@ public class CommentMapper {
                 entity.getId(),
                 entity.getTaskId(),
                 entity.getUserId(),
-                entity.getContent(),
-                entity.getCreatedAt(),
-                entity.getUpdatedAt()
+                entity.getContent()
         );
     }
 

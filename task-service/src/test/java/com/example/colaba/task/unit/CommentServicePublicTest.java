@@ -74,8 +74,7 @@ class CommentServicePublicTest {
                 .build();
 
         mockCommentResponse = new CommentResponse(
-                1L, 1L, currentUserId, "Test content",
-                OffsetDateTime.now(), OffsetDateTime.now()
+                1L, 1L, currentUserId, "Test content"
         );
     }
 
@@ -220,8 +219,7 @@ class CommentServicePublicTest {
         // Arrange
         UpdateCommentRequest request = new UpdateCommentRequest("Updated content");
         CommentResponse updatedResponse = new CommentResponse(
-                1L, 1L, currentUserId, "Updated content",
-                OffsetDateTime.now(), OffsetDateTime.now()
+                1L, 1L, currentUserId, "Updated content"
         );
 
         when(commentService.getCommentEntityById(1L)).thenReturn(mockComment);

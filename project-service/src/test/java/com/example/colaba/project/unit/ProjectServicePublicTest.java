@@ -71,8 +71,7 @@ class ProjectServicePublicTest {
                 testId,
                 testProjectName,
                 testDescription,
-                currentUserId,
-                OffsetDateTime.now()
+                currentUserId
         );
     }
 
@@ -244,7 +243,7 @@ class ProjectServicePublicTest {
     void updateProject_admin_success() {
         // Given
         UpdateProjectRequest request = new UpdateProjectRequest("Updated Name", "Updated Desc", null);
-        ProjectResponse updatedResponse = new ProjectResponse(testId, "Updated Name", "Updated Desc", currentUserId, OffsetDateTime.now());
+        ProjectResponse updatedResponse = new ProjectResponse(testId, "Updated Name", "Updated Desc", currentUserId);
 
         when(userServiceClient.isAdmin(currentUserId)).thenReturn(Mono.just(true));
         when(projectService.updateProject(testId, request)).thenReturn(Mono.just(updatedResponse));
@@ -266,7 +265,7 @@ class ProjectServicePublicTest {
     void updateProject_nonAdmin_owner_success() {
         // Given
         UpdateProjectRequest request = new UpdateProjectRequest("Updated Name", null, null);
-        ProjectResponse updatedResponse = new ProjectResponse(testId, "Updated Name", testDescription, currentUserId, OffsetDateTime.now());
+        ProjectResponse updatedResponse = new ProjectResponse(testId, "Updated Name", testDescription, currentUserId);
 
         when(userServiceClient.isAdmin(currentUserId)).thenReturn(Mono.just(false));
         when(projectAccessCheckerLocal.requireOwnerMono(testId, currentUserId))
@@ -319,7 +318,7 @@ class ProjectServicePublicTest {
     void changeProjectOwner_admin_success() {
         // Given
         Long newOwnerId = 3L;
-        ProjectResponse updatedResponse = new ProjectResponse(testId, testProjectName, testDescription, newOwnerId, OffsetDateTime.now());
+        ProjectResponse updatedResponse = new ProjectResponse(testId, testProjectName, testDescription, newOwnerId);
 
         when(userServiceClient.isAdmin(currentUserId)).thenReturn(Mono.just(true));
         when(projectService.changeProjectOwner(testId, newOwnerId)).thenReturn(Mono.just(updatedResponse));
@@ -341,7 +340,7 @@ class ProjectServicePublicTest {
     void changeProjectOwner_nonAdmin_owner_success() {
         // Given
         Long newOwnerId = 3L;
-        ProjectResponse updatedResponse = new ProjectResponse(testId, testProjectName, testDescription, newOwnerId, OffsetDateTime.now());
+        ProjectResponse updatedResponse = new ProjectResponse(testId, testProjectName, testDescription, newOwnerId);
 
         when(userServiceClient.isAdmin(currentUserId)).thenReturn(Mono.just(false));
         when(projectAccessCheckerLocal.requireOwnerMono(testId, currentUserId))

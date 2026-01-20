@@ -79,7 +79,7 @@ class TaskControllerTest {
     @Test
     void getAllTasks_success_asAdmin() throws Exception {
         Page<TaskResponse> page = new PageImpl<>(List.of(
-                new TaskResponse(100L, "Title", "Desc", "TODO", "HIGH", 10L, 2L, 1L, null, null, null)
+                new TaskResponse(100L, "Title", "Desc", "TODO", "HIGH", 10L, 2L, 1L, null)
         ));
         when(taskService.getAllTasks(any(Pageable.class), eq(1L))).thenReturn(page);
 
@@ -107,7 +107,7 @@ class TaskControllerTest {
     // ----------- GET TASK BY ID -----------
     @Test
     void getTaskById_success() throws Exception {
-        TaskResponse response = new TaskResponse(100L, "Title", "Desc", "TODO", "HIGH", 10L, 2L, 1L, null, null, null);
+        TaskResponse response = new TaskResponse(100L, "Title", "Desc", "TODO", "HIGH", 10L, 2L, 1L, null);
         when(taskService.getTaskById(eq(100L), eq(1L))).thenReturn(response);
 
         mockMvc.perform(get("/api/tasks/{id}", 100L)
@@ -121,7 +121,7 @@ class TaskControllerTest {
     @Test
     void getTasksByProject_success() throws Exception {
         Page<TaskResponse> page = new PageImpl<>(List.of(
-                new TaskResponse(101L, "Task1", "Desc1", "TODO", "MEDIUM", 10L, 2L, 1L, null, null, null)
+                new TaskResponse(101L, "Task1", "Desc1", "TODO", "MEDIUM", 10L, 2L, 1L, null)
         ));
         when(taskService.getTasksByProject(eq(10L), any(Pageable.class), eq(1L))).thenReturn(page);
 
@@ -137,7 +137,7 @@ class TaskControllerTest {
     @Test
     void getTasksByAssignee_success_forSelf() throws Exception {
         Page<TaskResponse> page = new PageImpl<>(List.of(
-                new TaskResponse(100L, "T1", "D1", "TODO", "HIGH", 10L, 2L, 1L, null, null, null)
+                new TaskResponse(100L, "T1", "D1", "TODO", "HIGH", 10L, 2L, 1L, null)
         ));
         when(taskService.getTasksByAssignee(eq(2L), any(Pageable.class), eq(2L))).thenReturn(page);
 
@@ -165,7 +165,7 @@ class TaskControllerTest {
     @Test
     void createTask_success_asAdmin() throws Exception {
         CreateTaskRequest request = new CreateTaskRequest("Title", "Desc", null, null, 2L, 1L, null);
-        TaskResponse response = new TaskResponse(100L, "Title", "Desc", "TODO", "MEDIUM", 10L, 2L, 1L, null, null, null);
+        TaskResponse response = new TaskResponse(100L, "Title", "Desc", "TODO", "MEDIUM", 10L, 2L, 1L, null);
 
         when(taskService.createTask(any(CreateTaskRequest.class), eq(1L))).thenReturn(response);
 
@@ -195,7 +195,7 @@ class TaskControllerTest {
     @Test
     void updateTask_success() throws Exception {
         UpdateTaskRequest request = new UpdateTaskRequest("Updated", "Desc", null, null, null, null);
-        TaskResponse response = new TaskResponse(100L, "Updated", "Desc", "TODO", null, 10L, 2L, 1L, null, null, null);
+        TaskResponse response = new TaskResponse(100L, "Updated", "Desc", "TODO", null, 10L, 2L, 1L, null);
 
         when(taskService.updateTask(eq(100L), any(UpdateTaskRequest.class), eq(1L))).thenReturn(response);
 
