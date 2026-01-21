@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 
 @Service
@@ -73,21 +74,31 @@ public class CommentService {
         if (!taskRepository.existsById(taskId)) {
             throw new TaskNotFoundException(taskId);
         }
-        OffsetDateTime cursorTime = (cursor == null || cursor.isBlank())
-                ? OffsetDateTime.now()
-                : OffsetDateTime.parse(cursor);
-        Pageable pageable = PageRequest.of(
-                0, limit, Sort.by("createdAt").descending());
+
+        OffsetDateTime cursorTime;
+        if (cursor == null || cursor.isBlank()) {
+            cursorTime = OffsetDateTime.now();
+        } else {
+            try {
+                cursorTime = OffsetDateTime.parse(cursor);
+            } catch (DateTimeParseException e) {
+                throw new IllegalArgumentException(
+                        "Invalid cursor format. Expected ISO-8601 OffsetDateTime, e.g. 2025-01-20T18:54:56Z"
+                );
+            }
+        }
+
+        Pageable pageable = PageRequest.of(0, limit, Sort.by("createdAt").descending());
         Slice<CommentJpa> slice = commentRepository
                 .findByTaskIdAndCreatedAtBeforeOrderByCreatedAtDesc(taskId, cursorTime, pageable);
-        List<CommentResponse> responses = commentMapper
-                .toResponseList(slice.getContent());
-        String nextCursor = slice.isEmpty()
-                ? null
-                : slice.getContent()
-                .getLast().getCreatedAt().toString();
-        return new CommentScrollResponse(
-                responses, nextCursor, slice.hasNext());
+
+        List<CommentResponse> responses = commentMapper.toResponseList(slice.getContent());
+
+        String nextCursor = slice.hasContent()
+                ? slice.getContent().get(slice.getContent().size() - 1).getCreatedAt().toString()
+                : null;
+
+        return new CommentScrollResponse(responses, nextCursor, slice.hasNext());
     }
 
     @Transactional

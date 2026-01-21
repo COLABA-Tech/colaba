@@ -3,23 +3,28 @@ package com.example.colaba.shared.webmvc.exception;
 import com.example.colaba.shared.common.dto.common.ErrorResponseDto;
 import com.example.colaba.shared.common.exception.common.DuplicateEntityException;
 import com.example.colaba.shared.common.exception.common.NotFoundException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import feign.FeignException;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -135,6 +140,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDto> handleAccessDenied(AccessDeniedException e,
                                                                HttpServletRequest request) {
         log.warn("Access denied: {}", e.getMessage());
+
+        String msg = e.getMessage() != null && e.getMessage().contains("anonymous")
+                ? "Authentication required. Please log in."
+                : "You do not have permission to access this resource.";
+
         ErrorResponseDto dto = ErrorResponseDto.builder()
                 .error("AccessDenied")
                 .status(HttpStatus.FORBIDDEN.value())
@@ -182,6 +192,108 @@ public class GlobalExceptionHandler {
                 .timestamp(OffsetDateTime.now())
                 .build();
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(dto);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponseDto> handleHttpMessageNotReadable(
+            HttpMessageNotReadableException ex,
+            HttpServletRequest request) {
+
+        log.warn("Cannot read request body: {}", ex.getMostSpecificCause().getMessage());
+
+        String message = "Unable to read request body. Please check JSON format and Content-Type.";
+
+        if (ex.getCause() instanceof InvalidFormatException) {
+            return handleInvalidFormat((InvalidFormatException) ex.getCause(), request);
+        }
+
+        ErrorResponseDto dto = ErrorResponseDto.builder()
+                .error("InvalidRequestBody")
+                .status(HttpStatus.BAD_REQUEST.value())
+                .message(message)
+                .path(request.getRequestURI())
+                .timestamp(OffsetDateTime.now())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(dto);
+    }
+
+    @ExceptionHandler(InvalidFormatException.class)
+    public ResponseEntity<ErrorResponseDto> handleInvalidFormat(
+            InvalidFormatException ex,
+            HttpServletRequest request) {
+
+        log.warn("Invalid value format: {} → {}", ex.getValue(), ex.getTargetType().getSimpleName());
+
+        String message;
+        Map<String, Object> details = new HashMap<>();
+        String field = getFieldName(ex);
+
+        Class<?> targetType = ex.getTargetType();
+
+        if (targetType.isEnum()) {
+            String enumName = targetType.getSimpleName();
+            String invalid = String.valueOf(ex.getValue());
+            String allowed = String.join(", ",
+                    Arrays.stream(targetType.getEnumConstants())
+                            .map(Object::toString)
+                            .toList());
+
+            message = String.format(
+                    "Invalid value '%s' for field '%s' (enum %s). Allowed values: %s",
+                    invalid, field, enumName, allowed
+            );
+
+            details.put("field", field);
+            details.put("invalidValue", invalid);
+            details.put("allowedValues", allowed.split(", "));
+        }
+        else if (Number.class.isAssignableFrom(targetType) || targetType.isPrimitive()) {
+            message = String.format(
+                    "Invalid numeric format in field '%s': '%s' cannot be parsed as %s",
+                    field, ex.getValue(), targetType.getSimpleName()
+            );
+            details.put("field", field);
+            details.put("invalidValue", ex.getValue());
+        }
+        else if (targetType == OffsetDateTime.class ||
+                targetType.getName().contains("LocalDate") ||
+                targetType.getName().contains("ZonedDateTime")) {
+            message = String.format(
+                    "Invalid date/time format in field '%s': '%s'. Expected ISO-8601 (example: 2025-01-20T14:30:00Z)",
+                    field, ex.getValue()
+            );
+            details.put("field", field);
+            details.put("invalidValue", ex.getValue());
+            details.put("expectedFormat", "ISO-8601 Offset Date-Time");
+        }
+        else {
+            message = String.format(
+                    "Cannot convert value '%s' to type %s (field '%s')",
+                    ex.getValue(), targetType.getSimpleName(), field
+            );
+            details.put("field", field);
+            details.put("invalidValue", ex.getValue());
+        }
+
+        ErrorResponseDto dto = ErrorResponseDto.builder()
+                .error("InvalidFormat")
+                .status(HttpStatus.BAD_REQUEST.value())
+                .message(message)
+                .path(request.getRequestURI())
+                .timestamp(OffsetDateTime.now())
+                .details(details.isEmpty() ? null : details)
+                .build();
+
+        return ResponseEntity.badRequest().body(dto);
+    }
+
+    private String getFieldName(InvalidFormatException ex) {
+        if (!ex.getPath().isEmpty()) {
+            JsonMappingException.Reference ref = ex.getPath().get(ex.getPath().size() - 1);
+            return ref.getFieldName() != null ? ref.getFieldName() : "unknown";
+        }
+        return "unknown";
     }
 
     @ExceptionHandler(Exception.class)
