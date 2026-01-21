@@ -570,4 +570,105 @@ class ProjectServiceTest {
         verify(projectRepository).deleteById(testId);
         verify(projectMemberRepository).deleteByUserId(userId);
     }
+
+    @Test
+    void updateProject_changeOwner_newOwnerNotMember_createsNewMember() {
+        // Given
+        Long newOwnerId = 2L;
+        UpdateProjectRequest request = new UpdateProjectRequest(null, null, newOwnerId);
+
+        when(projectRepository.findById(testId)).thenReturn(Optional.of(testProject));
+        when(userServiceClient.userExists(newOwnerId)).thenReturn(Mono.just(true));
+        when(projectRepository.save(any(ProjectJpa.class))).thenAnswer(i -> i.getArgument(0));
+        when(projectMemberRepository.existsByProjectIdAndUserId(testId, newOwnerId)).thenReturn(false);
+        when(projectMemberRepository.save(any(ProjectMemberJpa.class))).thenAnswer(i -> i.getArgument(0));
+        when(projectMapper.toProjectResponse(any(ProjectJpa.class))).thenAnswer(i -> {
+            ProjectJpa p = i.getArgument(0);
+            return new ProjectResponse(p.getId(), p.getName(), p.getDescription(), p.getOwnerId());
+        });
+
+        // When
+        Mono<ProjectResponse> resultMono = projectService.updateProject(testId, request);
+
+        // Then
+        StepVerifier.create(resultMono)
+                .expectNextMatches(response ->
+                        response.ownerId().equals(newOwnerId))
+                .verifyComplete();
+
+        verify(projectRepository).findById(testId);
+        verify(userServiceClient).userExists(newOwnerId);
+        verify(projectRepository).save(any(ProjectJpa.class));
+        verify(projectMemberRepository).existsByProjectIdAndUserId(testId, newOwnerId);
+        verify(projectMemberRepository).updateRole(testId, testUserId, ProjectRole.EDITOR);
+        verify(projectMemberRepository).save(argThat(member ->
+                member.getProjectId().equals(testId) &&
+                        member.getUserId().equals(newOwnerId) &&
+                        member.getRole() == ProjectRole.OWNER));
+        verify(projectMemberRepository, never()).updateRole(testId, newOwnerId, ProjectRole.OWNER);
+        verify(projectMapper).toProjectResponse(any(ProjectJpa.class));
+    }
+
+    @Test
+    void changeProjectOwner_newOwnerNotFound_throwsException() {
+        // Given
+        Long newOwnerId = 2L;
+
+        when(userServiceClient.userExists(newOwnerId)).thenReturn(Mono.just(false));
+
+        // When
+        Mono<ProjectResponse> resultMono = projectService.changeProjectOwner(testId, newOwnerId);
+
+        // Then
+        StepVerifier.create(resultMono)
+                .expectErrorMatches(throwable ->
+                        throwable instanceof UserNotFoundException &&
+                                throwable.getMessage().contains(String.valueOf(newOwnerId)))
+                .verify();
+
+        verify(userServiceClient).userExists(newOwnerId);
+        verify(projectRepository, never()).findById(anyLong());
+        verify(projectRepository, never()).save(any(ProjectJpa.class));
+    }
+
+    @Test
+    void changeProjectOwner_newOwnerNotMember_createsNewMember() {
+        // Given
+        Long newOwnerId = 2L;
+
+        when(projectRepository.findById(testId)).thenReturn(Optional.of(testProject));
+        when(userServiceClient.userExists(newOwnerId)).thenReturn(Mono.just(true));
+        when(projectRepository.save(any(ProjectJpa.class))).thenAnswer(i -> {
+            ProjectJpa p = i.getArgument(0);
+            p.setOwnerId(newOwnerId);
+            return p;
+        });
+        when(projectMemberRepository.existsByProjectIdAndUserId(testId, newOwnerId)).thenReturn(false);
+        when(projectMemberRepository.save(any(ProjectMemberJpa.class))).thenAnswer(i -> i.getArgument(0));
+        when(projectMapper.toProjectResponse(any(ProjectJpa.class))).thenAnswer(i -> {
+            ProjectJpa p = i.getArgument(0);
+            return new ProjectResponse(p.getId(), p.getName(), p.getDescription(), p.getOwnerId());
+        });
+
+        // When
+        Mono<ProjectResponse> resultMono = projectService.changeProjectOwner(testId, newOwnerId);
+
+        // Then
+        StepVerifier.create(resultMono)
+                .expectNextMatches(response ->
+                        response.ownerId().equals(newOwnerId))
+                .verifyComplete();
+
+        verify(projectRepository).findById(testId);
+        verify(userServiceClient).userExists(newOwnerId);
+        verify(projectRepository).save(any(ProjectJpa.class));
+        verify(projectMemberRepository).existsByProjectIdAndUserId(testId, newOwnerId);
+        verify(projectMemberRepository).updateRole(testId, testUserId, ProjectRole.EDITOR);
+        verify(projectMemberRepository).save(argThat(member ->
+                member.getProjectId().equals(testId) &&
+                        member.getUserId().equals(newOwnerId) &&
+                        member.getRole() == ProjectRole.OWNER));
+        verify(projectMemberRepository, never()).updateRole(testId, newOwnerId, ProjectRole.OWNER);
+        verify(projectMapper).toProjectResponse(any(ProjectJpa.class));
+    }
 }
