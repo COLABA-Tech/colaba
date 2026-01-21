@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.jsonwebtoken.io.DecodingException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,9 +28,7 @@ import org.springframework.web.server.ServerWebInputException;
 import reactor.core.publisher.Mono;
 
 import java.time.OffsetDateTime;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -184,31 +183,14 @@ public class ReactiveGlobalExceptionHandler {
 
         Throwable cause = (ex.getCause() != null) ? ex.getCause() : ex;
 
-        if (cause instanceof InvalidFormatException ife) {
-            Class<?> targetType = ife.getTargetType();
-            String field = getFieldName(ife);
+        String reason = cause.getMessage();
 
-            if (targetType.isEnum()) {
-                String enumName = targetType.getSimpleName();
-                String invalidValue = String.valueOf(ife.getValue());
-                List<String> allowed = Arrays.stream(targetType.getEnumConstants())
-                        .map(Object::toString)
-                        .toList();
-
-                details.put("field", field);
-                details.put("invalidValue", invalidValue);
-                details.put("enumType", enumName);
-                details.put("allowedValues", allowed);
-            } else {
-                // Для других типов можно добавить позже
-                details.put("field", field);
-                details.put("invalidValue", ife.getValue());
-                details.put("targetType", targetType.getSimpleName());
-            }
-        } else {
-            message = "Failed to parse request body";
-            details.put("reason", cause.getMessage());
+        int startIndex = reason.indexOf("not one of the values accepted for Enum class:");
+        if (startIndex != -1) {
+            reason = reason.substring(startIndex);
         }
+
+        details.put("reason", reason.trim());
 
         ErrorResponseDto dto = ErrorResponseDto.builder()
                 .error("InvalidFormat")
@@ -267,6 +249,19 @@ public class ReactiveGlobalExceptionHandler {
                 .build();
 
         return Mono.just(ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(dto));
+    }
+
+    @ExceptionHandler(PropertyReferenceException.class)
+    public Mono<ResponseEntity<ErrorResponseDto>> handlePropertyReferenceException(PropertyReferenceException e, ServerWebExchange exchange) {
+        log.warn("Invalid sort parameter: {}", e.getMessage());
+        ErrorResponseDto dto = ErrorResponseDto.builder()
+                .error("BadRequest")
+                .status(HttpStatus.BAD_REQUEST.value())
+                .message("Invalid sort parameter: " + e.getMessage())
+                .path(exchange.getRequest().getPath().value())
+                .timestamp(OffsetDateTime.now())
+                .build();
+        return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(dto));
     }
 
     @ExceptionHandler(Exception.class)

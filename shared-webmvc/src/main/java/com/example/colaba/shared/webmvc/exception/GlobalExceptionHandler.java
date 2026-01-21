@@ -9,6 +9,7 @@ import feign.FeignException;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -17,7 +18,6 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
-import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -247,16 +247,14 @@ public class GlobalExceptionHandler {
             details.put("field", field);
             details.put("invalidValue", invalid);
             details.put("allowedValues", allowed.split(", "));
-        }
-        else if (Number.class.isAssignableFrom(targetType) || targetType.isPrimitive()) {
+        } else if (Number.class.isAssignableFrom(targetType) || targetType.isPrimitive()) {
             message = String.format(
                     "Invalid numeric format in field '%s': '%s' cannot be parsed as %s",
                     field, ex.getValue(), targetType.getSimpleName()
             );
             details.put("field", field);
             details.put("invalidValue", ex.getValue());
-        }
-        else if (targetType == OffsetDateTime.class ||
+        } else if (targetType == OffsetDateTime.class ||
                 targetType.getName().contains("LocalDate") ||
                 targetType.getName().contains("ZonedDateTime")) {
             message = String.format(
@@ -266,8 +264,7 @@ public class GlobalExceptionHandler {
             details.put("field", field);
             details.put("invalidValue", ex.getValue());
             details.put("expectedFormat", "ISO-8601 Offset Date-Time");
-        }
-        else {
+        } else {
             message = String.format(
                     "Cannot convert value '%s' to type %s (field '%s')",
                     ex.getValue(), targetType.getSimpleName(), field
@@ -294,6 +291,19 @@ public class GlobalExceptionHandler {
             return ref.getFieldName() != null ? ref.getFieldName() : "unknown";
         }
         return "unknown";
+    }
+
+    @ExceptionHandler(PropertyReferenceException.class)
+    public ResponseEntity<ErrorResponseDto> handlePropertyReferenceException(PropertyReferenceException e, HttpServletRequest request) {
+        log.warn("Invalid sort parameter: {}", e.getMessage());
+        ErrorResponseDto dto = ErrorResponseDto.builder()
+                .error("BadRequest")
+                .status(HttpStatus.BAD_REQUEST.value())
+                .message("Invalid sort parameter: " + e.getMessage())
+                .path(request.getRequestURI())
+                .timestamp(OffsetDateTime.now())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(dto);
     }
 
     @ExceptionHandler(Exception.class)
