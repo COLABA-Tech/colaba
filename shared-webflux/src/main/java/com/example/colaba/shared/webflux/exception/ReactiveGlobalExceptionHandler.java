@@ -3,8 +3,14 @@ package com.example.colaba.shared.webflux.exception;
 import com.example.colaba.shared.common.dto.common.ErrorResponseDto;
 import com.example.colaba.shared.common.exception.common.DuplicateEntityException;
 import com.example.colaba.shared.common.exception.common.NotFoundException;
+import com.example.colaba.shared.common.exception.user.UserPasswordSameAsOldException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
+import io.jsonwebtoken.io.DecodingException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.mapping.PropertyReferenceException;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -16,12 +22,15 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.support.WebExchangeBindException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.server.MethodNotAllowedException;
 import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.server.ServerWebInputException;
 import reactor.core.publisher.Mono;
 
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestControllerAdvice
@@ -160,6 +169,99 @@ public class ReactiveGlobalExceptionHandler {
                 .timestamp(OffsetDateTime.now())
                 .build();
         return Mono.just(ResponseEntity.status(HttpStatus.FORBIDDEN).body(dto));
+    }
+
+    @ExceptionHandler({ServerWebInputException.class, DecodingException.class})
+    public Mono<ResponseEntity<ErrorResponseDto>> handleDecodingError(
+            Throwable ex,
+            ServerWebExchange exchange) {
+
+        log.warn("Decoding/input error: {}", ex.getMessage());
+
+        String message = "Invalid value for enum field";
+        Map<String, Object> details = new HashMap<>();
+
+        Throwable cause = (ex.getCause() != null) ? ex.getCause() : ex;
+
+        String reason = cause.getMessage();
+
+        int startIndex = reason.indexOf("not one of the values accepted for Enum class:");
+        if (startIndex != -1) {
+            reason = reason.substring(startIndex);
+        }
+
+        details.put("reason", reason.trim());
+
+        ErrorResponseDto dto = ErrorResponseDto.builder()
+                .error("InvalidFormat")
+                .status(HttpStatus.BAD_REQUEST.value())
+                .message(message)
+                .path(exchange.getRequest().getPath().value())
+                .timestamp(OffsetDateTime.now())
+                .details(details.isEmpty() ? null : details)
+                .build();
+
+        return Mono.just(ResponseEntity.badRequest().body(dto));
+    }
+
+    private String getFieldName(InvalidFormatException ex) {
+        if (!ex.getPath().isEmpty()) {
+            JsonMappingException.Reference ref = ex.getPath().get(ex.getPath().size() - 1);
+            return ref.getFieldName() != null ? ref.getFieldName() : "unknown";
+        }
+        return "unknown";
+    }
+
+    @ExceptionHandler(UserPasswordSameAsOldException.class)
+    public Mono<ResponseEntity<ErrorResponseDto>> handlePasswordSameAsOld(
+            UserPasswordSameAsOldException ex,
+            ServerWebExchange exchange) {
+
+        log.warn("Attempt to set same password: {}", ex.getMessage());
+
+        ErrorResponseDto dto = ErrorResponseDto.builder()
+                .error("BadRequest")
+                .status(HttpStatus.BAD_REQUEST.value())
+                .message("New password cannot be the same as the current one")
+                .path(exchange.getRequest().getPath().value())
+                .timestamp(OffsetDateTime.now())
+                .build();
+
+        return Mono.just(ResponseEntity.badRequest().body(dto));
+    }
+
+    @ExceptionHandler(MethodNotAllowedException.class)
+    public Mono<ResponseEntity<ErrorResponseDto>> handleMethodNotAllowed(
+            MethodNotAllowedException ex,
+            ServerWebExchange exchange) {
+
+        String allowed = ex.getSupportedMethods().stream()
+                .map(HttpMethod::name)
+                .collect(Collectors.joining(", "));
+
+        ErrorResponseDto dto = ErrorResponseDto.builder()
+                .error("MethodNotAllowed")
+                .status(HttpStatus.METHOD_NOT_ALLOWED.value())
+                .message(String.format("Method %s is not allowed. Allowed methods: %s",
+                        ex.getHttpMethod(), allowed))
+                .path(exchange.getRequest().getPath().value())
+                .timestamp(OffsetDateTime.now())
+                .build();
+
+        return Mono.just(ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(dto));
+    }
+
+    @ExceptionHandler(PropertyReferenceException.class)
+    public Mono<ResponseEntity<ErrorResponseDto>> handlePropertyReferenceException(PropertyReferenceException e, ServerWebExchange exchange) {
+        log.warn("Invalid sort parameter: {}", e.getMessage());
+        ErrorResponseDto dto = ErrorResponseDto.builder()
+                .error("BadRequest")
+                .status(HttpStatus.BAD_REQUEST.value())
+                .message("Invalid sort parameter: " + e.getMessage())
+                .path(exchange.getRequest().getPath().value())
+                .timestamp(OffsetDateTime.now())
+                .build();
+        return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(dto));
     }
 
     @ExceptionHandler(Exception.class)
