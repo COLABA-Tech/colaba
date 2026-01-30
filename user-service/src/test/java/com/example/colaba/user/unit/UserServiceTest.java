@@ -6,6 +6,7 @@ import com.example.colaba.shared.common.entity.UserRole;
 import com.example.colaba.shared.common.exception.user.DuplicateUserEntityEmailException;
 import com.example.colaba.shared.common.exception.user.DuplicateUserEntityUsernameException;
 import com.example.colaba.shared.common.exception.user.UserNotFoundException;
+import com.example.colaba.shared.common.exception.user.UserPasswordSameAsOldException;
 import com.example.colaba.shared.webflux.circuit.ProjectServiceClientWrapper;
 import com.example.colaba.shared.webflux.circuit.TaskServiceClientWrapper;
 import com.example.colaba.user.dto.user.CreateUserRequest;
@@ -29,6 +30,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.data.relational.core.query.Query;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.reactive.TransactionalOperator;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -55,6 +57,9 @@ public class UserServiceTest {
 
     @Mock
     private UserMapper userMapper;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private R2dbcEntityTemplate r2dbcEntityTemplate;
@@ -698,6 +703,205 @@ public class UserServiceTest {
                         response.users().isEmpty() &&
                                 response.nextCursor().equals("1") &&
                                 !response.hasMore())
+                .verifyComplete();
+    }
+    @Test
+    void updateUser_duplicateUsername_throwsException() {
+        // Given
+        String duplicateUsername = "duplicate";
+        UpdateUserRequest updateRequest = new UpdateUserRequest(duplicateUsername, null, null);
+
+        when(userRepository.findById(test_id)).thenReturn(Mono.just(savedUser));
+        when(userRepository.existsByUsernameAndIdNot(duplicateUsername, test_id)).thenReturn(Mono.just(true));
+
+        // When & Then
+        StepVerifier.create(userService.updateUser(test_id, updateRequest))
+                .expectErrorMatches(throwable ->
+                        throwable instanceof DuplicateUserEntityUsernameException &&
+                                throwable.getMessage().equals("Duplicate user entity: USERNAME " + duplicateUsername))
+                .verify();
+
+        verify(userRepository, never()).existsByEmailAndIdNot(anyString(), anyLong());
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void updateUser_duplicateEmail_throwsException() {
+        // Given
+        String duplicateEmail = "duplicate@colaba.com";
+        UpdateUserRequest updateRequest = new UpdateUserRequest(null, duplicateEmail, null);
+
+        when(userRepository.findById(test_id)).thenReturn(Mono.just(savedUser));
+        when(userRepository.existsByEmailAndIdNot(duplicateEmail, test_id)).thenReturn(Mono.just(true));
+
+        // When & Then
+        StepVerifier.create(userService.updateUser(test_id, updateRequest))
+                .expectErrorMatches(throwable ->
+                        throwable instanceof DuplicateUserEntityEmailException &&
+                                throwable.getMessage().equals("Duplicate user entity: EMAIL " + duplicateEmail))
+                .verify();
+
+        verify(userRepository, never()).existsByUsernameAndIdNot(anyString(), anyLong());
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void updateUser_blankPassword_ignoresUpdate() {
+        // Given
+        UpdateUserRequest updateRequest = new UpdateUserRequest(null, null, "   ");
+
+        when(userRepository.findById(test_id)).thenReturn(Mono.just(savedUser));
+        when(userRepository.save(any(User.class))).thenReturn(Mono.just(savedUser));
+
+        // When
+        Mono<UserResponse> resultMono = userService.updateUser(test_id, updateRequest);
+
+        // Then
+        StepVerifier.create(resultMono)
+                .expectNextMatches(result ->
+                        result.id().equals(test_id) &&
+                                result.username().equals(test_username) &&
+                                result.email().equals(test_email))
+                .verifyComplete();
+
+        verify(passwordEncoder, never()).matches(anyString(), anyString());
+        verify(passwordEncoder, never()).encode(anyString());
+        verify(userRepository).save(any(User.class));
+    }
+
+    @Test
+    void updateUser_passwordSameAsOld_throwsException() {
+        // Given
+        String samePassword = "samePass";
+        UpdateUserRequest updateRequest = new UpdateUserRequest(null, null, samePassword);
+
+        User existingUser = User.builder()
+                .id(test_id)
+                .username(test_username)
+                .email(test_email)
+                .password("encodedSame")
+                .role(UserRole.USER)
+                .build();
+
+        when(userRepository.findById(test_id)).thenReturn(Mono.just(existingUser));
+        when(passwordEncoder.matches(samePassword, "encodedSame")).thenReturn(true);
+
+        // When & Then
+        StepVerifier.create(userService.updateUser(test_id, updateRequest))
+                .expectErrorMatches(throwable ->
+                        throwable instanceof UserPasswordSameAsOldException &&
+                                throwable.getMessage().equals("Password is the same as old: USER " + test_username))
+                .verify();
+
+        verify(passwordEncoder).matches(samePassword, "encodedSame");
+        verify(passwordEncoder, never()).encode(anyString());
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void updateUser_updatePassword_success() {
+        // Given
+        String newPassword = "newPass";
+        String encodedNewPassword = "encodedNewPass";
+        UpdateUserRequest updateRequest = new UpdateUserRequest(null, null, newPassword);
+
+        User existingUser = User.builder()
+                .id(test_id)
+                .username(test_username)
+                .email(test_email)
+                .password("oldEncoded")
+                .role(UserRole.USER)
+                .build();
+
+        User updatedUser = User.builder()
+                .id(test_id)
+                .username(test_username)
+                .email(test_email)
+                .password(encodedNewPassword)
+                .role(UserRole.USER)
+                .build();
+
+        when(userRepository.findById(test_id)).thenReturn(Mono.just(existingUser));
+        when(passwordEncoder.matches(newPassword, "oldEncoded")).thenReturn(false);
+        when(passwordEncoder.encode(newPassword)).thenReturn(encodedNewPassword);
+        when(userRepository.save(any(User.class))).thenReturn(Mono.just(updatedUser));
+
+        // When
+        Mono<UserResponse> resultMono = userService.updateUser(test_id, updateRequest);
+
+        // Then
+        StepVerifier.create(resultMono)
+                .expectNextMatches(result ->
+                        result.id().equals(test_id) &&
+                                result.username().equals(test_username) &&
+                                result.email().equals(test_email))
+                .verifyComplete();
+
+        verify(passwordEncoder).matches(newPassword, "oldEncoded");
+        verify(passwordEncoder).encode(newPassword);
+        verify(userRepository).save(any(User.class));
+    }
+
+    @Test
+    void getUsersScroll_nullCursor_returnsFirstPage() {
+        // Given
+        String cursor = null;
+        int limit = 10;
+
+        when(r2dbcEntityTemplate
+                .select(User.class)
+                .from("users")
+                .matching(any(Query.class))
+                .all()).thenReturn(Flux.just(savedUser));
+
+        // When
+        Mono<UserScrollResponse> resultMono = userService.getUsersScroll(cursor, limit);
+
+        // Then
+        StepVerifier.create(resultMono)
+                .expectNextMatches(response ->
+                        response.users().size() == 1 &&
+                                response.nextCursor().equals("1") &&
+                                !response.hasMore())
+                .verifyComplete();
+    }
+
+    @Test
+    void getUsersScroll_hasMore_returnsPartialWithHasMoreTrue() {
+        // Given
+        String cursor = "";
+        int limit = 1;
+
+        User user1 = User.builder()
+                .id(1L)
+                .username("user1")
+                .email("user1@colaba.com")
+                .role(UserRole.USER)
+                .build();
+
+        User user2 = User.builder()
+                .id(2L)
+                .username("user2")
+                .email("user2@colaba.com")
+                .role(UserRole.USER)
+                .build();
+
+        when(r2dbcEntityTemplate
+                .select(User.class)
+                .from("users")
+                .matching(any(Query.class))
+                .all()).thenReturn(Flux.just(user1, user2));
+
+        // When
+        Mono<UserScrollResponse> resultMono = userService.getUsersScroll(cursor, limit);
+
+        // Then
+        StepVerifier.create(resultMono)
+                .expectNextMatches(response ->
+                        response.users().size() == 1 &&
+                                response.users().getFirst().id().equals(1L) &&
+                                response.nextCursor().equals("1") &&
+                                response.hasMore())
                 .verifyComplete();
     }
 }

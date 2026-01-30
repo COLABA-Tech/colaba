@@ -1,7 +1,6 @@
 services:
   postgres:
     image: postgres:18-alpine
-    container_name: colaba-postgres
     env_file: .env
     ports:
       - "${DB_PORT:-5432}:5432"
@@ -20,7 +19,6 @@ services:
     build:
       context: .
       target: discovery-server
-    container_name: colaba-discovery
     environment:
       DISCOVERY_SERVER_PORT: ${DISCOVERY_SERVER_PORT:-8761}
       EUREKA_HOSTNAME: ${EUREKA_HOSTNAME:-discovery-server}
@@ -40,9 +38,6 @@ services:
     build:
       context: .
       target: config-server
-    container_name: colaba-config
-    environment:
-      EUREKA_CLIENT_ENABLED: false
     env_file: .env
     ports:
       - "${CONFIG_SERVER_PORT:-8888}:${CONFIG_SERVER_PORT:-8888}"
@@ -58,7 +53,6 @@ services:
     build:
       context: .
       target: api-gateway
-    container_name: colaba-gateway
     environment:
       API_GATEWAY_PORT: ${API_GATEWAY_PORT:-8080}
     ports:
@@ -80,7 +74,6 @@ services:
     build:
       context: .
       target: user-service
-    container_name: colaba-user-service
     hostname: user-service
     env_file: .env
     networks:
@@ -102,7 +95,6 @@ services:
     build:
       context: .
       target: project-service
-    container_name: colaba-project-service
     hostname: project-service
     env_file: .env
     networks:
@@ -124,7 +116,6 @@ services:
     build:
       context: .
       target: task-service
-    container_name: colaba-task-service
     hostname: task-service
     env_file: .env
     networks:
@@ -146,7 +137,6 @@ services:
     build:
       context: .
       target: auth-service
-    container_name: colaba-auth-service
     hostname: auth-service
     env_file: .env
     networks:

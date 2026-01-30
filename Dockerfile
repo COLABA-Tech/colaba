@@ -17,7 +17,7 @@ COPY project-service/pom.xml project-service/
 COPY task-service/pom.xml task-service/
 COPY auth-service/pom.xml auth-service/
 
-RUN --mount=type=cache,target=/root/.m2 ./mvnw dependency:go-offline -B -DskipTests -Dmaven.test.skip=true
+RUN --mount=type=cache,target=/root/.m2 ./mvnw dependency:go-offline -B
 
 COPY discovery-server/src discovery-server/src
 COPY config-server/src config-server/src
@@ -30,7 +30,7 @@ COPY project-service/src project-service/src
 COPY task-service/src task-service/src
 COPY auth-service/src auth-service/src
 
-RUN --mount=type=cache,target=/root/.m2 ./mvnw clean package -B -DskipTests -Dmaven.test.skip=true
+RUN --mount=type=cache,target=/root/.m2 ./mvnw clean package -B
 
 FROM eclipse-temurin:25-jre AS base
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*

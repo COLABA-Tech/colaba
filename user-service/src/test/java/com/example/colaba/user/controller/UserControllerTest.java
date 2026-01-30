@@ -7,6 +7,7 @@ import com.example.colaba.user.dto.user.UserScrollResponse;
 import com.example.colaba.user.repository.UserRepository;
 import com.example.colaba.user.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
@@ -15,6 +16,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -199,5 +201,120 @@ class UserControllerTest {
                 .uri("/api/users/" + OTHER_ID)
                 .exchange()
                 .expectStatus().isForbidden();
+    }
+
+    @Test
+    void getUsersPaginated_asAdmin_success() {
+        Page<UserResponse> page = new PageImpl<>(
+                List.of(sampleUser),
+                PageRequest.of(0, 10),
+                1
+        );
+        when(userService.getAllUsers(any(Pageable.class))).thenReturn(Mono.just(page));
+
+        authenticatedClient(ADMIN_ID)
+                .get()
+                .uri("/api/users?page=0&size=10")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.content[0].id").isEqualTo(USER_ID)
+                .jsonPath("$.content[0].username").isEqualTo("testuser")
+                .jsonPath("$.content[0].email").isEqualTo("test@example.com")
+                .jsonPath("$.content[0].role").isEqualTo("USER")
+                .jsonPath("$.totalElements").isEqualTo(1)
+                .jsonPath("$.totalPages").isEqualTo(1)
+                .jsonPath("$.number").isEqualTo(0)
+                .jsonPath("$.size").isEqualTo(10);
+    }
+
+    @Test
+    void getUsersPaginated_withSorting_asAdmin_success() {
+        Page<UserResponse> page = new PageImpl<>(
+                List.of(sampleUser),
+                PageRequest.of(0, 10, org.springframework.data.domain.Sort.by("username").ascending()),
+                1
+        );
+        when(userService.getAllUsers(any(Pageable.class))).thenReturn(Mono.just(page));
+
+        authenticatedClient(ADMIN_ID)
+                .get()
+                .uri("/api/users?page=0&size=10&sort=username,asc")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.content[0].username").isEqualTo("testuser");
+    }
+
+    @Test
+    void getUsersPaginated_emptyPage_asAdmin_success() {
+        Page<UserResponse> page = new PageImpl<>(
+                Collections.emptyList(),
+                PageRequest.of(0, 10),
+                0
+        );
+        when(userService.getAllUsers(any(Pageable.class))).thenReturn(Mono.just(page));
+
+        authenticatedClient(ADMIN_ID)
+                .get()
+                .uri("/api/users?page=0&size=10")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.content").isArray()
+                .jsonPath("$.content.length()").isEqualTo(0)
+                .jsonPath("$.totalElements").isEqualTo(0)
+                .jsonPath("$.totalPages").isEqualTo(0);
+    }
+
+    @Test
+    void getUsersPaginated_defaultPagination_asAdmin_success() {
+        Page<UserResponse> page = new PageImpl<>(
+                List.of(sampleUser),
+                PageRequest.of(0, 20),
+                1
+        );
+        when(userService.getAllUsers(any(Pageable.class))).thenReturn(Mono.just(page));
+
+        authenticatedClient(ADMIN_ID)
+                .get()
+                .uri("/api/users")
+                .exchange()
+                .expectStatus().isOk();
+    }
+
+    @Test
+    void getUsersPaginated_asNonAdmin_forbidden() {
+        authenticatedClient(USER_ID)
+                .get()
+                .uri("/api/users?page=0&size=10")
+                .exchange()
+                .expectStatus().isForbidden();
+    }
+
+    @Test
+    void getUsersPaginated_withMultipleUsers_asAdmin_success() {
+        List<UserResponse> users = List.of(
+                sampleUser,
+                UserResponse.builder()
+                        .id(OTHER_ID)
+                        .username("anotheruser")
+                        .email("another@example.com")
+                        .role("USER")
+                        .build()
+        );
+
+        Page<UserResponse> page = new PageImpl<>(users, PageRequest.of(0, 10), 2);
+        when(userService.getAllUsers(any(Pageable.class))).thenReturn(Mono.just(page));
+
+        authenticatedClient(ADMIN_ID)
+                .get()
+                .uri("/api/users?page=0&size=10")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.content.length()").isEqualTo(2)
+                .jsonPath("$.content[0].username").isEqualTo("testuser")
+                .jsonPath("$.content[1].username").isEqualTo("anotheruser");
     }
 }

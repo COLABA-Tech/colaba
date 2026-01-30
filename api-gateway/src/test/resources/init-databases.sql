@@ -1,0 +1,7 @@
+CREATE DATABASE user_db;
+CREATE DATABASE project_db;
+CREATE DATABASE task_db;
+
+GRANT ALL PRIVILEGES ON DATABASE user_db TO colaba_user;
+GRANT ALL PRIVILEGES ON DATABASE project_db TO colaba_user;
+GRANT ALL PRIVILEGES ON DATABASE task_db TO colaba_user;

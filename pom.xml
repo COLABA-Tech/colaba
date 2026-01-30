@@ -25,6 +25,9 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
+        <!-- Boot -->
+        <spring-boot.version>3.5.9</spring-boot.version>
+
         <!-- Spring -->
         <spring-cloud.version>2025.0.0</spring-cloud.version>
         <springdoc.version>2.8.14</springdoc.version>
@@ -53,6 +56,8 @@
         <junit5.version>5.12.2</junit5.version>
         <mockito.version>5.20.0</mockito.version>
         <reactor.version>3.8.2</reactor.version>
+        <rest-assured.version>6.0.0</rest-assured.version>
+        <docker-compose.version>0.9.9</docker-compose.version>
     </properties>
 
     <modules>
@@ -70,6 +75,15 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- Spring Boot BOM -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
             <!-- Spring Cloud -->
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
@@ -195,6 +209,18 @@
                 <groupId>io.projectreactor</groupId>
                 <artifactId>reactor-test</artifactId>
                 <version>${reactor.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.rest-assured</groupId>
+                <artifactId>rest-assured</artifactId>
+                <version>${rest-assured.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>docker-compose</artifactId>
+                <version>${docker-compose.version}</version>
                 <scope>test</scope>
             </dependency>
         </dependencies>
