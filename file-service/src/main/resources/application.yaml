@@ -1,0 +1,10 @@
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  application:
+    name: file-service
+  config:
+    import: "optional:configserver:http://config-server:8888"
+
+internal:
+  api-key: ${INTERNAL_API_KEY:tvulOBWkyfz+TfDMFKWxiZxsBXy8ODfzqX+4TnNSQD+Z+ihYaNS4n2j+1ios3rRM}
