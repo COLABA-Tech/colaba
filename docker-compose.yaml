@@ -164,8 +164,88 @@ services:
       timeout: 10s
       retries: 5
 
+  rabbitmq1:
+    image: rabbitmq:4-management-alpine
+    container_name: rabbitmq1
+    hostname: rabbitmq1
+    environment:
+      RABBITMQ_NODENAME: rabbit@rabbitmq1
+    env_file: .env
+    ports:
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+      - "${RABBITMQ_PORT:-5672}:5672"
+    volumes:
+      - rabbitmq1_data:/var/lib/rabbitmq
+      - ./.erlang.cookie:/var/lib/rabbitmq/.erlang.cookie
+    networks:
+      - colaba-network
+    healthcheck:
+      test: [ "CMD", "rabbitmqctl", "status" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  rabbitmq2:
+    image: rabbitmq:4-management-alpine
+    container_name: rabbitmq2
+    hostname: rabbitmq2
+    environment:
+      RABBITMQ_NODENAME: rabbit@rabbitmq2
+    env_file: .env
+    depends_on:
+      rabbitmq1:
+        condition: service_healthy
+    volumes:
+      - rabbitmq2_data:/var/lib/rabbitmq
+      - ./.erlang.cookie:/var/lib/rabbitmq/.erlang.cookie
+      - ./join-cluster.sh:/join-cluster.sh
+    entrypoint: >
+      sh -c "
+        docker-entrypoint.sh rabbitmq-server &
+        /join-cluster.sh
+        wait
+      "
+    networks:
+      - colaba-network
+    healthcheck:
+      test: [ "CMD", "rabbitmqctl", "status" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  rabbitmq3:
+    image: rabbitmq:4-management-alpine
+    container_name: rabbitmq3
+    hostname: rabbitmq3
+    environment:
+      RABBITMQ_NODENAME: rabbit@rabbitmq3
+    env_file: .env
+    depends_on:
+      rabbitmq1:
+        condition: service_healthy
+    volumes:
+      - rabbitmq3_data:/var/lib/rabbitmq
+      - ./.erlang.cookie:/var/lib/rabbitmq/.erlang.cookie
+      - ./join-cluster.sh:/join-cluster.sh
+    entrypoint: >
+      sh -c "
+        docker-entrypoint.sh rabbitmq-server &
+        /join-cluster.sh
+        wait
+      "
+    networks:
+      - colaba-network
+    healthcheck:
+      test: [ "CMD", "rabbitmqctl", "status" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
 volumes:
   postgres_data:
+  rabbitmq1_data:
+  rabbitmq2_data:
+  rabbitmq3_data:
 
 networks:
   colaba-network:
