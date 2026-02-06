@@ -164,6 +164,28 @@ services:
       timeout: 10s
       retries: 5
 
+  file-service:
+    build:
+      context: .
+      target: file-service
+    container_name: colaba-file-service
+    hostname: file-service
+    env_file: .env
+    networks:
+      - colaba-network
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:${MANAGEMENT_PORT:-8081}/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
   rabbitmq1:
     image: rabbitmq:4-management-alpine
     container_name: rabbitmq1
