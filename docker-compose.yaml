@@ -180,6 +180,8 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+    volumes:
+      - file_data:/uploads
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:${MANAGEMENT_PORT:-8081}/actuator/health" ]
       interval: 30s
@@ -268,6 +270,7 @@ volumes:
   rabbitmq1_data:
   rabbitmq2_data:
   rabbitmq3_data:
+  file_data:
 
 networks:
   colaba-network:
