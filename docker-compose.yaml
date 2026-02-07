@@ -92,6 +92,12 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+      rabbitmq1:
+        condition: service_healthy
+      rabbitmq2:
+        condition: service_healthy
+      rabbitmq3:
+        condition: service_healthy
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:${MANAGEMENT_PORT:-8081}/actuator/health" ]
       interval: 30s
@@ -113,6 +119,12 @@ services:
       discovery-server:
         condition: service_healthy
       postgres:
+        condition: service_healthy
+      rabbitmq1:
+        condition: service_healthy
+      rabbitmq2:
+        condition: service_healthy
+      rabbitmq3:
         condition: service_healthy
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:${MANAGEMENT_PORT:-8081}/actuator/health" ]
@@ -136,6 +148,12 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+      rabbitmq1:
+        condition: service_healthy
+      rabbitmq2:
+        condition: service_healthy
+      rabbitmq3:
+        condition: service_healthy
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:${MANAGEMENT_PORT:-8081}/actuator/health" ]
       interval: 30s
@@ -157,6 +175,12 @@ services:
       discovery-server:
         condition: service_healthy
       postgres:
+        condition: service_healthy
+      rabbitmq1:
+        condition: service_healthy
+      rabbitmq2:
+        condition: service_healthy
+      rabbitmq3:
         condition: service_healthy
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:${MANAGEMENT_PORT:-8081}/actuator/health" ]
