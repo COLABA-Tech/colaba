@@ -50,10 +50,10 @@ class TagServiceTest {
     private ProjectService projectService;
 
     @Mock
-    private TaskServiceClientWrapper taskServiceClient;
+    private TagMapper tagMapper;
 
     @Mock
-    private TagMapper tagMapper;
+    private EventPublisherReactive eventPublisherReactive;
 
     @Mock
     private TransactionTemplate transactionTemplate;
@@ -100,6 +100,9 @@ class TagServiceTest {
             consumer.accept(mock(TransactionStatus.class));
             return null;
         }).when(transactionTemplate).executeWithoutResult(any(Consumer.class));
+
+        when(eventPublisherReactive.publishTagDeleted(any()))
+                .thenReturn(Mono.empty());
     }
 
     @Test
@@ -471,7 +474,6 @@ class TagServiceTest {
     void deleteTag_success() {
         // Given
         when(tagRepository.existsById(testTagId)).thenReturn(true);
-        when(taskServiceClient.deleteTaskTagsByTagId(testTagId)).thenReturn(Mono.empty());
 
         // When
         Mono<Void> resultMono = tagService.deleteTag(testTagId);
@@ -481,7 +483,6 @@ class TagServiceTest {
                 .verifyComplete();
 
         verify(tagRepository).existsById(testTagId);
-        verify(taskServiceClient).deleteTaskTagsByTagId(testTagId);
         verify(tagRepository).deleteById(testTagId);
     }
 
@@ -501,7 +502,6 @@ class TagServiceTest {
                 .verify();
 
         verify(tagRepository).existsById(testTagId);
-        verify(taskServiceClient, never()).deleteTaskTagsByTagId(anyLong());
         verify(tagRepository, never()).deleteById(anyLong());
     }
 
@@ -509,7 +509,6 @@ class TagServiceTest {
     void deleteTag_callsTaskServiceClient() {
         // Given
         when(tagRepository.existsById(testTagId)).thenReturn(true);
-        when(taskServiceClient.deleteTaskTagsByTagId(testTagId)).thenReturn(Mono.empty());
 
         // When
         Mono<Void> resultMono = tagService.deleteTag(testTagId);
@@ -517,8 +516,6 @@ class TagServiceTest {
         // Then
         StepVerifier.create(resultMono)
                 .verifyComplete();
-
-        verify(taskServiceClient).deleteTaskTagsByTagId(testTagId);
     }
 
     @Test

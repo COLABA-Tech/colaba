@@ -16,6 +16,7 @@ import com.example.colaba.shared.common.domain.exception.project.ProjectNotFound
 import com.example.colaba.shared.common.domain.exception.user.UserNotFoundException;
 import com.example.colaba.shared.webflux.circuit.TaskServiceClientWrapper;
 import com.example.colaba.shared.webflux.circuit.UserServiceClientWrapper;
+import com.example.colaba.shared.webflux.rabbit.EventPublisherReactive;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,13 +56,13 @@ class ProjectServiceTest {
     private UserServiceClientWrapper userServiceClient;
 
     @Mock
-    private TaskServiceClientWrapper taskServiceClient;
-
-    @Mock
     private ProjectMapper projectMapper;
 
     @Mock
     private TransactionTemplate transactionTemplate;
+
+    @Mock
+    private EventPublisherReactive eventPublisherReactive;
 
     @InjectMocks
     private ProjectService projectService;
@@ -105,6 +106,9 @@ class ProjectServiceTest {
 
         // updateRole — void метод
         doNothing().when(projectMemberRepository).updateRole(anyLong(), anyLong(), any(ProjectRole.class));
+
+        when(eventPublisherReactive.publishProjectDeleted(any()))
+                .thenReturn(Mono.empty());
     }
 
     @Test
@@ -465,7 +469,6 @@ class ProjectServiceTest {
     void deleteProject_success() {
         // Given
         when(projectRepository.existsById(testId)).thenReturn(true);
-        when(taskServiceClient.deleteTasksByProject(testId)).thenReturn(Mono.empty());
 
         // When
         Mono<Void> resultMono = projectService.deleteProject(testId);
@@ -475,7 +478,6 @@ class ProjectServiceTest {
                 .verifyComplete();
 
         verify(projectRepository).existsById(testId);
-        verify(taskServiceClient).deleteTasksByProject(testId);
         verify(projectMemberRepository).deleteByProjectId(testId);
         verify(tagRepository).deleteByProjectId(testId);
         verify(projectRepository).deleteById(testId);
@@ -497,7 +499,6 @@ class ProjectServiceTest {
                 .verify();
 
         verify(projectRepository).existsById(testId);
-        verify(taskServiceClient, never()).deleteTasksByProject(anyLong());
         verify(projectMemberRepository, never()).deleteByProjectId(anyLong());
         verify(projectRepository, never()).deleteById(anyLong());
     }
@@ -554,7 +555,6 @@ class ProjectServiceTest {
 
         when(projectRepository.findByOwnerId(userId)).thenReturn(userProjects);
         when(projectRepository.existsById(testId)).thenReturn(true);
-        when(taskServiceClient.deleteTasksByProject(testId)).thenReturn(Mono.empty());
 
         // When
         Mono<Void> resultMono = projectService.handleUserDeletion(userId);
@@ -564,7 +564,6 @@ class ProjectServiceTest {
                 .verifyComplete();
 
         verify(projectRepository).findByOwnerId(userId);
-        verify(taskServiceClient).deleteTasksByProject(testId);
         verify(projectMemberRepository).deleteByProjectId(testId);
         verify(tagRepository).deleteByProjectId(testId);
         verify(projectRepository).deleteById(testId);

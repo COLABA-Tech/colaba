@@ -7,7 +7,7 @@ import com.example.colaba.shared.common.domain.exception.user.DuplicateUserEntit
 import com.example.colaba.shared.common.domain.exception.user.DuplicateUserEntityUsernameException;
 import com.example.colaba.shared.common.domain.exception.user.UserNotFoundException;
 import com.example.colaba.shared.webflux.circuit.ProjectServiceClientWrapper;
-import com.example.colaba.shared.webflux.circuit.TaskServiceClientWrapper;
+import com.example.colaba.shared.webflux.rabbit.EventPublisherReactive;
 import com.example.colaba.user.dto.user.CreateUserRequest;
 import com.example.colaba.user.dto.user.UpdateUserRequest;
 import com.example.colaba.user.dto.user.UserScrollResponse;
@@ -47,8 +47,6 @@ public class UserServiceTest {
     @Mock
     private ProjectServiceClientWrapper projectServiceClient;
 
-    @Mock
-    private TaskServiceClientWrapper taskServiceClient;
 
     @Mock
     private TransactionalOperator transactionalOperator;
@@ -58,6 +56,9 @@ public class UserServiceTest {
 
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private R2dbcEntityTemplate r2dbcEntityTemplate;
+
+    @Mock
+    private EventPublisherReactive eventPublisherReactive;
 
     @InjectMocks
     private UserService userService;
@@ -95,6 +96,8 @@ public class UserServiceTest {
                     String roleName = user.getRole() != null ? user.getRole().name() : "USER";
                     return new UserResponse(user.getId(), user.getUsername(), user.getEmail(), roleName);
                 });
+        when(eventPublisherReactive.publishUserDeleted(any()))
+                .thenReturn(Mono.empty());
     }
 
     @Test
@@ -346,8 +349,6 @@ public class UserServiceTest {
     @Test
     void deleteUser_success() {
         // Given
-        when(projectServiceClient.handleUserDeletion(test_id)).thenReturn(Mono.empty());
-        when(taskServiceClient.handleUserDeletion(test_id)).thenReturn(Mono.empty());
         when(userRepository.findById(test_id)).thenReturn(Mono.just(savedUser));
         when(userRepository.deleteById(test_id)).thenReturn(Mono.empty());
 
@@ -358,16 +359,12 @@ public class UserServiceTest {
         StepVerifier.create(resultMono)
                 .verifyComplete();
 
-        verify(projectServiceClient).handleUserDeletion(test_id);
-        verify(taskServiceClient).handleUserDeletion(test_id);
         verify(userRepository).deleteById(test_id);
     }
 
     @Test
     void deleteUser_notFound_throwsException() {
         // Given
-        when(projectServiceClient.handleUserDeletion(test_id)).thenReturn(Mono.empty());
-        when(taskServiceClient.handleUserDeletion(test_id)).thenReturn(Mono.empty());
         when(userRepository.findById(test_id)).thenReturn(Mono.empty());
 
         // When & Then
@@ -378,8 +375,6 @@ public class UserServiceTest {
                 .verify();
 
         verify(userRepository, never()).deleteById(test_id);
-        verify(projectServiceClient).handleUserDeletion(test_id);
-        verify(taskServiceClient).handleUserDeletion(test_id);
     }
 
     @Test
@@ -388,8 +383,6 @@ public class UserServiceTest {
         ProjectResponse project1 = new ProjectResponse(1L, "Project 1", null, null);
         ProjectResponse project2 = new ProjectResponse(2L, "Project 2", null, null);
 
-        when(projectServiceClient.handleUserDeletion(test_id)).thenReturn(Mono.empty());
-        when(taskServiceClient.handleUserDeletion(test_id)).thenReturn(Mono.empty());
         when(userRepository.findById(test_id)).thenReturn(Mono.just(savedUser));
         when(userRepository.deleteById(test_id)).thenReturn(Mono.empty());
 
@@ -401,8 +394,6 @@ public class UserServiceTest {
                 .verifyComplete();
 
         verify(userRepository).findById(test_id);
-        verify(projectServiceClient).handleUserDeletion(test_id);
-        verify(taskServiceClient).handleUserDeletion(test_id);
         verify(userRepository).deleteById(test_id);
     }
 
