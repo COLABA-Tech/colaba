@@ -1,12 +1,10 @@
 package com.example.colaba.shared.webmvc.client;
 
+import com.example.colaba.shared.common.dto.project.ProjectResponse;
 import com.example.colaba.shared.common.dto.tag.TagResponse;
 import com.example.colaba.shared.webmvc.feign.FeignConfig;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 

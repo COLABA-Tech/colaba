@@ -1,5 +1,7 @@
 package com.example.colaba.shared.webflux.circuit;
 
+import com.example.colaba.shared.common.dto.project.ProjectResponse;
+import com.example.colaba.shared.common.dto.tag.TagResponse;
 import com.example.colaba.shared.webflux.client.ProjectServiceClient;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
@@ -7,6 +9,8 @@ import io.github.resilience4j.reactor.circuitbreaker.operator.CircuitBreakerOper
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor

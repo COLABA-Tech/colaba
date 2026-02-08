@@ -1,6 +1,7 @@
 package com.example.colaba.task.service;
 
 import com.example.colaba.shared.webmvc.circuit.UserServiceClientWrapper;
+import com.example.colaba.shared.webmvc.client.UserServiceClient;
 import com.example.colaba.shared.webmvc.security.ProjectAccessChecker;
 import com.example.colaba.task.dto.comment.CommentResponse;
 import com.example.colaba.task.dto.comment.CommentScrollResponse;

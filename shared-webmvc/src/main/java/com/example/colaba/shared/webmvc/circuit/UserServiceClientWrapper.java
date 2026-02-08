@@ -1,6 +1,7 @@
 package com.example.colaba.shared.webmvc.circuit;
 
 import com.example.colaba.shared.common.dto.user.UserAuthDto;
+import com.example.colaba.shared.common.entity.UserRole;
 import com.example.colaba.shared.webmvc.client.UserServiceClient;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;

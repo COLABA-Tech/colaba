@@ -1,5 +1,6 @@
 package com.example.colaba.shared.webflux.circuit;
 
+import com.example.colaba.shared.common.entity.UserRole;
 import com.example.colaba.shared.webflux.client.UserServiceClient;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;

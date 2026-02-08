@@ -1,5 +1,6 @@
 package com.example.colaba.shared.webflux.client;
 
+import com.example.colaba.shared.common.entity.UserRole;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.client.loadbalancer.reactive.ReactorLoadBalancerExchangeFilterFunction;
 import org.springframework.stereotype.Component;

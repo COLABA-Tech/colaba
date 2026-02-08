@@ -6,9 +6,9 @@ import com.example.colaba.shared.common.events.UserEvents;
 import com.example.colaba.shared.common.rabbit.DomainEvent;
 import com.example.colaba.shared.common.rabbit.RabbitMQProperties;
 import com.example.colaba.task.service.TaskService;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
@@ -30,8 +30,7 @@ public class EventListener {
         try {
             DomainEvent<JsonNode> genericEvent = objectMapper.readValue(
                     body,
-                    new TypeReference<DomainEvent<JsonNode>>() {
-                    }
+                    new TypeReference<DomainEvent<JsonNode>>() {}
             );
 
             String eventType = genericEvent.getEventType();
