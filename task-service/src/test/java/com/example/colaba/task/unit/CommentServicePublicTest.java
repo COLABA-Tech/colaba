@@ -1,5 +1,6 @@
 package com.example.colaba.task.unit;
 
+import com.example.colaba.shared.webmvc.circuit.UserServiceClientWrapper;
 import com.example.colaba.shared.webmvc.client.UserServiceClient;
 import com.example.colaba.shared.webmvc.security.ProjectAccessChecker;
 import com.example.colaba.task.dto.comment.CommentResponse;
@@ -44,7 +45,7 @@ class CommentServicePublicTest {
     private TaskService taskService;
 
     @Mock
-    private UserServiceClient userServiceClient;
+    private UserServiceClientWrapper userServiceClient;
 
     @InjectMocks
     private CommentServicePublic commentServicePublic;
