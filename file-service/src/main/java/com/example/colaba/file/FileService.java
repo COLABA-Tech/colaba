@@ -1,8 +1,9 @@
 package com.example.colaba.file;
 
-import com.example.colaba.file.dto.FileDto;          // ← убедись, что импортируешь свой DTO
+
 import com.example.colaba.file.entity.FileJpa;
 import com.example.colaba.file.repository.FileRepository;
+import com.example.dto.FileDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;

@@ -117,4 +117,15 @@ public class TaskServicePublic {
         taskService.removeTagFromTask(taskId, tagId);
 
     }
+
+    public void checkTaskAccess(Long taskId, Long currentUserId) {
+        TaskJpa task = taskService.getTaskEntityById(taskId);
+
+        boolean isAdmin = userServiceClient.isAdmin(currentUserId);
+        if (isAdmin) {
+            return;
+        }
+
+        accessChecker.requireAnyRole(task.getProjectId(), currentUserId);
+    }
 }

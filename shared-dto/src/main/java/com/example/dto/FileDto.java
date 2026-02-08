@@ -1,4 +1,4 @@
-package com.example.colaba.file.dto;
+package com.example.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

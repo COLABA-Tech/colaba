@@ -1,7 +1,8 @@
 package com.example.colaba.file;
 
-import com.example.colaba.file.dto.FileDto;
-import com.example.colaba.file.FileService;
+
+
+import com.example.dto.FileDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;

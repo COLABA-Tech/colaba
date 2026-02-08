@@ -32,6 +32,16 @@
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
+        <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>user-service</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>shared-dto</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <!-- Security (Reactive) -->
         <dependency>

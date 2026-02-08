@@ -67,6 +67,7 @@
         <module>task-service</module>
         <module>auth-service</module>
         <module>file-service</module>
+        <module>shared-dto</module>
     </modules>
 
     <dependencyManagement>
