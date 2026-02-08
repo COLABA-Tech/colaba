@@ -36,12 +36,21 @@ public class FileJpa {
     @Size(max = 255)
     @Column(name = "original_filename", nullable = false)
     private String originalFilename;
+    @Column(name = "content_type", length = 100)
+    private String contentType;
+
+    @NotNull
+    @Column(name = "size", nullable = false)
+    private Long size;
+
 
     @NotNull
     @Column(name = "uploaded_by", nullable = false)
     private Long uploadedBy;
 
     @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "uploaded_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
+
+
 }
