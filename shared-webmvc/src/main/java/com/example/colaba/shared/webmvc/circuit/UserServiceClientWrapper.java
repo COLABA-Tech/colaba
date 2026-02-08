@@ -38,12 +38,4 @@ public class UserServiceClientWrapper {
     public boolean isAdmin(Long id) {
         return cb().executeSupplier(() -> client.isAdmin(id));
     }
-
-    public UserRole getUserRole(Long id) {
-        return cb().executeSupplier(() -> client.getUserRole(id));
-    }
-
-    public boolean canManageUser(Long currentUserId, Long targetUserId) {
-        return cb().executeSupplier(() -> client.canManageUser(currentUserId, targetUserId));
-    }
 }

@@ -1,12 +1,12 @@
 package com.example.colaba.user.service;
 
 import com.example.colaba.shared.common.dto.user.UserResponse;
+import com.example.colaba.shared.common.events.UserEvents.UserDeletedEvent;
 import com.example.colaba.shared.common.exception.user.DuplicateUserEntityEmailException;
 import com.example.colaba.shared.common.exception.user.DuplicateUserEntityUsernameException;
 import com.example.colaba.shared.common.exception.user.UserNotFoundException;
 import com.example.colaba.shared.common.exception.user.UserPasswordSameAsOldException;
-import com.example.colaba.shared.webflux.circuit.ProjectServiceClientWrapper;
-import com.example.colaba.shared.webflux.circuit.TaskServiceClientWrapper;
+import com.example.colaba.shared.webflux.rabbit.EventPublisherReactive;
 import com.example.colaba.user.dto.user.CreateUserRequest;
 import com.example.colaba.user.dto.user.UpdateUserRequest;
 import com.example.colaba.user.dto.user.UserScrollResponse;
@@ -31,13 +31,12 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class UserService {
-    private final ProjectServiceClientWrapper projectServiceClient;
-    private final TaskServiceClientWrapper taskServiceClient;
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final TransactionalOperator transactionalOperator;
     private final R2dbcEntityTemplate r2dbcEntityTemplate;
     private final PasswordEncoder passwordEncoder;
+    private final EventPublisherReactive eventPublisherReactive;
 
     public Mono<UserResponse> createUser(CreateUserRequest request) {
         return transactionalOperator.transactional(
@@ -130,13 +129,12 @@ public class UserService {
     }
 
     public Mono<Void> deleteUser(Long id) {
-        return projectServiceClient.handleUserDeletion(id)
-                .then(taskServiceClient.handleUserDeletion(id))
-                .then(transactionalOperator.transactional(
+        return transactionalOperator.transactional(
                         userRepository.findById(id)
                                 .switchIfEmpty(Mono.error(new UserNotFoundException(id)))
                                 .flatMap(_ -> userRepository.deleteById(id))
-                ))
+                )
+                .then(eventPublisherReactive.publishUserDeleted(new UserDeletedEvent(id)))
                 .onErrorResume(Mono::error);
     }
 

@@ -29,10 +29,4 @@ public interface UserServiceClient {
 
     @GetMapping("/{id}/is-admin")
     boolean isAdmin(@PathVariable Long id);
-
-    @GetMapping("/{id}/role")
-    UserRole getUserRole(@PathVariable Long id);
-
-    @GetMapping("/{currentUserId}/can-manage/{targetUserId}")
-    boolean canManageUser(@PathVariable Long currentUserId, @PathVariable Long targetUserId);
 }

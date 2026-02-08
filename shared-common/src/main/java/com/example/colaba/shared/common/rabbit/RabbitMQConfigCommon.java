@@ -1,12 +1,8 @@
 package com.example.colaba.shared.common.rabbit;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.*;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -18,12 +14,10 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class RabbitMQConfigCommon {
 
-    private final RabbitMQProperties properties;
-
     @Bean
     public TopicExchange notificationsExchange() {
         return ExchangeBuilder
-                .topicExchange(properties.getNotificationsExchange())
+                .topicExchange(RabbitMQProperties.NOTIFICATIONS_EXCHANGE)
                 .durable(true)
                 .build();
     }
@@ -40,72 +34,48 @@ public class RabbitMQConfigCommon {
 
     @Bean
     public Queue userEventsQueue() {
-        return createQuorumQueue(properties.getUserEventsQueue());
+        return createQuorumQueue(RabbitMQProperties.USER_EVENTS_QUEUE);
     }
 
     @Bean
     public Queue projectEventsQueue() {
-        return createQuorumQueue(properties.getProjectEventsQueue());
+        return createQuorumQueue(RabbitMQProperties.PROJECT_EVENTS_QUEUE);
     }
 
     @Bean
     public Queue taskEventsQueue() {
-        return createQuorumQueue(properties.getTaskEventsQueue());
+        return createQuorumQueue(RabbitMQProperties.TASK_EVENTS_QUEUE);
     }
 
     @Bean
-    public Queue tagEventsQueue() {
-        return createQuorumQueue(properties.getTagEventsQueue());
-    }
-
-    @Bean
-    public Binding userEventsBinding() {
-        return BindingBuilder
-                .bind(userEventsQueue())
-                .to(notificationsExchange())
-                .with("user.*");
-    }
-
-    @Bean
-    public Binding projectEventsBinding() {
+    public Binding projectEventsUserDeletedBinding() {
         return BindingBuilder
                 .bind(projectEventsQueue())
                 .to(notificationsExchange())
-                .with("project.*");
+                .with("user.deleted");
     }
 
     @Bean
-    public Binding taskEventsBinding() {
+    public Binding taskEventsUserDeletedBinding() {
         return BindingBuilder
                 .bind(taskEventsQueue())
                 .to(notificationsExchange())
-                .with("task.*");
+                .with("user.deleted");
     }
 
     @Bean
-    public Binding tagEventsBinding() {
+    public Binding taskEventsProjectDeletedBinding() {
         return BindingBuilder
-                .bind(tagEventsQueue())
+                .bind(taskEventsQueue())
                 .to(notificationsExchange())
-                .with("tag.*");
+                .with("project.deleted");
     }
 
     @Bean
-    public Jackson2JsonMessageConverter messageConverter() {
-        return new Jackson2JsonMessageConverter(new ObjectMapper());
-    }
-
-    @Bean
-    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory, Jackson2JsonMessageConverter converter) {
-        RabbitTemplate template = new RabbitTemplate(connectionFactory);
-        template.setMessageConverter(converter);
-        template.setMandatory(true);
-        template.setConfirmCallback((correlationData, ack, cause) -> {
-            if (!ack) {
-                log.error("Message nacked: {}", cause);
-            }
-        });
-        template.setReturnsCallback(returned -> log.warn("Message returned: {}", returned.getReplyText()));
-        return template;
+    public Binding taskEventsTagDeletedBinding() {
+        return BindingBuilder
+                .bind(taskEventsQueue())
+                .to(notificationsExchange())
+                .with("tag.deleted");
     }
 }

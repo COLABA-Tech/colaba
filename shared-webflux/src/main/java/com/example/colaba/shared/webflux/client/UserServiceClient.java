@@ -34,19 +34,4 @@ public class UserServiceClient {
                 .retrieve()
                 .bodyToMono(Boolean.class);
     }
-
-    public Mono<UserRole> getUserRole(Long id) {
-        return webClient.get()
-                .uri("lb://user-service/api/users/internal/{id}/role", id)
-                .retrieve()
-                .bodyToMono(UserRole.class);
-    }
-
-    public Mono<Boolean> canManageUser(Long currentUserId, Long targetUserId) {
-        return webClient.get()
-                .uri("lb://user-service/api/users/internal/{currentUserId}/can-manage/{targetUserId}",
-                        currentUserId, targetUserId)
-                .retrieve()
-                .bodyToMono(Boolean.class);
-    }
 }

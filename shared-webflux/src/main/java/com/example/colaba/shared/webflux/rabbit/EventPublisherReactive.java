@@ -45,7 +45,7 @@ public class EventPublisherReactive {
                     return objectMapper.writeValueAsBytes(domainEvent);
                 })
                 .flatMap(bytes -> {
-                    OutboundMessage message = new OutboundMessage(properties.getNotificationsExchange(), routingKey, bytes);
+                    OutboundMessage message = new OutboundMessage(RabbitMQProperties.NOTIFICATIONS_EXCHANGE, routingKey, bytes);
                     return sender.send(Mono.just(message));
                 })
                 .doOnSuccess(v -> log.info("Published event: {} from {}", routingKey, source))

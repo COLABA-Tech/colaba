@@ -29,14 +29,4 @@ public class UserServiceClientWrapper {
         return client.isAdmin(id)
                 .transformDeferred(CircuitBreakerOperator.of(cb()));
     }
-
-    public Mono<UserRole> getUserRole(Long id) {
-        return client.getUserRole(id)
-                .transformDeferred(CircuitBreakerOperator.of(cb()));
-    }
-
-    public Mono<Boolean> canManageUser(Long currentUserId, Long targetUserId) {
-        return client.canManageUser(currentUserId, targetUserId)
-                .transformDeferred(CircuitBreakerOperator.of(cb()));
-    }
 }

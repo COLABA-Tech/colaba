@@ -17,11 +17,10 @@ import org.springframework.stereotype.Component;
 public class EventPublisher {
 
     private final RabbitTemplate rabbitTemplate;
-    private final RabbitMQProperties properties;
 
     private <T> void publish(String routingKey, T payload, String source) {
         DomainEvent<T> domainEvent = new DomainEvent<>(routingKey, payload, source);
-        rabbitTemplate.convertAndSend(properties.getNotificationsExchange(), routingKey, domainEvent);
+        rabbitTemplate.convertAndSend(RabbitMQProperties.NOTIFICATIONS_EXCHANGE, routingKey, domainEvent);
         log.info("Published event: {} from {}", routingKey, source);
     }
 
