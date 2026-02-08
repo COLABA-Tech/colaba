@@ -56,53 +56,26 @@ public class RabbitMQConfigCommon {
     }
 
     @Bean
-    public Binding userEventsBinding() {
-        return BindingBuilder
-                .bind(userEventsQueue())
-                .to(notificationsExchange())
-                .with("user.*");
-    }
-
-    @Bean
-    public Binding projectEventsBinding() {
-        return BindingBuilder
-                .bind(projectEventsQueue())
-                .to(notificationsExchange())
-                .with("project.*");
-    }
-
-    @Bean
-    public Binding taskEventsBinding() {
+    public Binding taskEventsUserDeletedBinding() {
         return BindingBuilder
                 .bind(taskEventsQueue())
                 .to(notificationsExchange())
-                .with("task.*");
+                .with("user.deleted");
     }
 
     @Bean
-    public Binding tagEventsBinding() {
+    public Binding taskEventsProjectDeletedBinding() {
         return BindingBuilder
-                .bind(tagEventsQueue())
+                .bind(taskEventsQueue())
                 .to(notificationsExchange())
-                .with("tag.*");
+                .with("project.deleted");
     }
 
     @Bean
-    public Jackson2JsonMessageConverter messageConverter() {
-        return new Jackson2JsonMessageConverter(new ObjectMapper());
-    }
-
-    @Bean
-    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory, Jackson2JsonMessageConverter converter) {
-        RabbitTemplate template = new RabbitTemplate(connectionFactory);
-        template.setMessageConverter(converter);
-        template.setMandatory(true);
-        template.setConfirmCallback((correlationData, ack, cause) -> {
-            if (!ack) {
-                log.error("Message nacked: {}", cause);
-            }
-        });
-        template.setReturnsCallback(returned -> log.warn("Message returned: {}", returned.getReplyText()));
-        return template;
+    public Binding taskEventsTagDeletedBinding() {
+        return BindingBuilder
+                .bind(taskEventsQueue())
+                .to(notificationsExchange())
+                .with("tag.deleted");
     }
 }

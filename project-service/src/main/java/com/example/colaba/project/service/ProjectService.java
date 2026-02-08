@@ -10,11 +10,13 @@ import com.example.colaba.project.repository.ProjectRepository;
 import com.example.colaba.project.repository.TagRepository;
 import com.example.colaba.shared.common.dto.project.ProjectResponse;
 import com.example.colaba.shared.common.entity.ProjectRole;
+import com.example.colaba.shared.common.events.ProjectEvents;
 import com.example.colaba.shared.common.exception.project.DuplicateProjectNameException;
 import com.example.colaba.shared.common.exception.project.ProjectNotFoundException;
 import com.example.colaba.shared.common.exception.user.UserNotFoundException;
 import com.example.colaba.shared.webflux.circuit.TaskServiceClientWrapper;
 import com.example.colaba.shared.webflux.circuit.UserServiceClientWrapper;
+import com.example.colaba.shared.webflux.rabbit.EventPublisherReactive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -35,6 +37,7 @@ public class ProjectService {
     private final TaskServiceClientWrapper taskServiceClient;
     private final ProjectMapper projectMapper;
     private final TransactionTemplate transactionTemplate;
+    private final EventPublisherReactive eventPublisherReactive;
 
     public Mono<ProjectResponse> createProject(CreateProjectRequest request, Long ownerId) {
         return userServiceClient.userExists(ownerId)
@@ -168,19 +171,17 @@ public class ProjectService {
     }
 
     public Mono<Void> deleteProject(Long id) {
-        return Mono.fromCallable(() -> {
+        return Mono.fromRunnable(() -> transactionTemplate.executeWithoutResult(status -> {
                     if (!projectRepository.existsById(id)) {
                         throw new ProjectNotFoundException(id);
                     }
-                    return id;
-                })
-                .subscribeOn(Schedulers.boundedElastic())
-                .flatMap(_ -> taskServiceClient.deleteTasksByProject(id))
-                .then(Mono.fromRunnable(() -> transactionTemplate.executeWithoutResult(_ -> {
+
                     projectMemberRepository.deleteByProjectId(id);
                     tagRepository.deleteByProjectId(id);
                     projectRepository.deleteById(id);
-                })).subscribeOn(Schedulers.boundedElastic()))
+                }))
+                .subscribeOn(Schedulers.boundedElastic())
+                .then(eventPublisherReactive.publishProjectDeleted(new ProjectEvents.ProjectDeletedEvent(id)))
                 .then();
     }
 
