@@ -1,12 +1,8 @@
 package com.example.colaba.shared.common.rabbit;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.*;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -18,12 +14,10 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class RabbitMQConfigCommon {
 
-    private final RabbitMQProperties properties;
-
     @Bean
     public TopicExchange notificationsExchange() {
         return ExchangeBuilder
-                .topicExchange(properties.getNotificationsExchange())
+                .topicExchange(RabbitMQProperties.NOTIFICATIONS_EXCHANGE)
                 .durable(true)
                 .build();
     }
@@ -40,22 +34,25 @@ public class RabbitMQConfigCommon {
 
     @Bean
     public Queue userEventsQueue() {
-        return createQuorumQueue(properties.getUserEventsQueue());
+        return createQuorumQueue(RabbitMQProperties.USER_EVENTS_QUEUE);
     }
 
     @Bean
     public Queue projectEventsQueue() {
-        return createQuorumQueue(properties.getProjectEventsQueue());
+        return createQuorumQueue(RabbitMQProperties.PROJECT_EVENTS_QUEUE);
     }
 
     @Bean
     public Queue taskEventsQueue() {
-        return createQuorumQueue(properties.getTaskEventsQueue());
+        return createQuorumQueue(RabbitMQProperties.TASK_EVENTS_QUEUE);
     }
 
     @Bean
-    public Queue tagEventsQueue() {
-        return createQuorumQueue(properties.getTagEventsQueue());
+    public Binding projectEventsUserDeletedBinding() {
+        return BindingBuilder
+                .bind(projectEventsQueue())
+                .to(notificationsExchange())
+                .with("user.deleted");
     }
 
     @Bean
