@@ -1,6 +1,6 @@
 package com.example.colaba.file;
 
-import com.example.colaba.shared.webmvc.feign.FeignConfig;
+import com.example.colaba.shared.webmvc.infrastructure.feign.FeignConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
@@ -14,7 +14,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
         "com.example.colaba.shared.webmvc"
 })
 @EnableDiscoveryClient
-@EnableFeignClients(basePackages = "com.example.colaba.shared.webmvc.client")
+@EnableFeignClients(basePackages = "com.example.colaba.shared.webmvc.infrastructure.client")
 @Import(FeignConfig.class)
 @EnableJpaRepositories(basePackages = "com.example.colaba.file.repository")
 public class FileServiceApplication {

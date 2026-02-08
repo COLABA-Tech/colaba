@@ -1,15 +1,10 @@
 package com.example.colaba.shared.webflux.client;
 
-import com.example.colaba.shared.common.dto.project.ProjectResponse;
-import com.example.colaba.shared.common.dto.tag.TagResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.client.loadbalancer.reactive.ReactorLoadBalancerExchangeFilterFunction;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
-
-import java.util.List;
 
 @Component
 public class ProjectServiceClient {

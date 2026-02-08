@@ -1,6 +1,6 @@
 package com.example.colaba.shared.webflux.filter;
 
-import com.example.colaba.shared.common.security.JwtService;
+import com.example.colaba.shared.common.infrastructure.security.JwtService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;

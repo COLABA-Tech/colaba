@@ -1,6 +1,6 @@
 package com.example.colaba.user.service;
 
-import com.example.colaba.shared.common.dto.user.UserResponse;
+import com.example.colaba.shared.common.application.dto.user.UserResponse;
 import com.example.colaba.user.dto.user.CreateUserRequest;
 import com.example.colaba.user.dto.user.UpdateUserRequest;
 import com.example.colaba.user.dto.user.UserScrollResponse;

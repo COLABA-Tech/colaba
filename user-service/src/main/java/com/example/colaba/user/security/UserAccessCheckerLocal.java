@@ -1,6 +1,6 @@
 package com.example.colaba.user.security;
 
-import com.example.colaba.shared.common.entity.UserRole;
+import com.example.colaba.shared.common.domain.entity.UserRole;
 import com.example.colaba.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;

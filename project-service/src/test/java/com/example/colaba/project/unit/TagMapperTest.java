@@ -2,7 +2,7 @@ package com.example.colaba.project.unit;
 
 import com.example.colaba.project.entity.TagJpa;
 import com.example.colaba.project.mapper.TagMapper;
-import com.example.colaba.shared.common.dto.tag.TagResponse;
+import com.example.colaba.shared.common.application.dto.tag.TagResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;

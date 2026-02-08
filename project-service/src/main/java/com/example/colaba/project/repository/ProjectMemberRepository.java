@@ -2,7 +2,7 @@ package com.example.colaba.project.repository;
 
 import com.example.colaba.project.entity.projectmember.ProjectMemberId;
 import com.example.colaba.project.entity.projectmember.ProjectMemberJpa;
-import com.example.colaba.shared.common.entity.ProjectRole;
+import com.example.colaba.shared.common.domain.entity.ProjectRole;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

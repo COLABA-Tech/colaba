@@ -1,8 +1,8 @@
 package com.example.colaba.auth.config;
 
-import com.example.colaba.shared.common.dto.common.ErrorResponseDto;
-import com.example.colaba.shared.common.security.JwtService;
-import com.example.colaba.shared.webmvc.filter.JwtAuthenticationFilter;
+import com.example.colaba.shared.common.application.dto.common.ErrorResponseDto;
+import com.example.colaba.shared.common.infrastructure.security.JwtService;
+import com.example.colaba.shared.webmvc.infrastructure.filter.JwtAuthenticationFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;

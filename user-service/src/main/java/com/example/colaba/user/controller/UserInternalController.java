@@ -1,8 +1,8 @@
 package com.example.colaba.user.controller;
 
-import com.example.colaba.shared.common.dto.user.UserAuthDto;
-import com.example.colaba.shared.common.entity.UserRole;
-import com.example.colaba.shared.common.exception.user.UserNotFoundException;
+import com.example.colaba.shared.common.application.dto.user.UserAuthDto;
+import com.example.colaba.shared.common.domain.entity.UserRole;
+import com.example.colaba.shared.common.domain.exception.user.UserNotFoundException;
 import com.example.colaba.user.dto.user.CreateUserRequest;
 import com.example.colaba.user.repository.UserRepository;
 import com.example.colaba.user.service.UserService;

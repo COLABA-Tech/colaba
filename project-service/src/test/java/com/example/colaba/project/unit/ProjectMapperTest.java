@@ -2,7 +2,7 @@ package com.example.colaba.project.unit;
 
 import com.example.colaba.project.entity.ProjectJpa;
 import com.example.colaba.project.mapper.ProjectMapper;
-import com.example.colaba.shared.common.dto.project.ProjectResponse;
+import com.example.colaba.shared.common.application.dto.project.ProjectResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;

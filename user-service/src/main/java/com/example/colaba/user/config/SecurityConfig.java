@@ -1,7 +1,7 @@
 package com.example.colaba.user.config;
 
-import com.example.colaba.shared.common.dto.common.ErrorResponseDto;
-import com.example.colaba.shared.common.security.JwtService;
+import com.example.colaba.shared.common.application.dto.common.ErrorResponseDto;
+import com.example.colaba.shared.common.infrastructure.security.JwtService;
 import com.example.colaba.shared.webflux.filter.ReactiveInternalAuthenticationFilter;
 import com.example.colaba.shared.webflux.filter.ReactiveJwtAuthenticationFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;

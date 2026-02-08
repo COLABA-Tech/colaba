@@ -1,11 +1,11 @@
 package com.example.colaba.user.service;
 
-import com.example.colaba.shared.common.dto.user.UserResponse;
-import com.example.colaba.shared.common.events.UserEvents.UserDeletedEvent;
-import com.example.colaba.shared.common.exception.user.DuplicateUserEntityEmailException;
-import com.example.colaba.shared.common.exception.user.DuplicateUserEntityUsernameException;
-import com.example.colaba.shared.common.exception.user.UserNotFoundException;
-import com.example.colaba.shared.common.exception.user.UserPasswordSameAsOldException;
+import com.example.colaba.shared.common.application.dto.user.UserResponse;
+import com.example.colaba.shared.common.domain.events.UserEvents.UserDeletedEvent;
+import com.example.colaba.shared.common.domain.exception.user.DuplicateUserEntityEmailException;
+import com.example.colaba.shared.common.domain.exception.user.DuplicateUserEntityUsernameException;
+import com.example.colaba.shared.common.domain.exception.user.UserNotFoundException;
+import com.example.colaba.shared.common.domain.exception.user.UserPasswordSameAsOldException;
 import com.example.colaba.shared.webflux.rabbit.EventPublisherReactive;
 import com.example.colaba.user.dto.user.CreateUserRequest;
 import com.example.colaba.user.dto.user.UpdateUserRequest;

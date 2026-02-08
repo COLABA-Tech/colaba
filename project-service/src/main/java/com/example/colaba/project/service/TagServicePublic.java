@@ -4,7 +4,7 @@ import com.example.colaba.project.dto.tag.CreateTagRequest;
 import com.example.colaba.project.dto.tag.UpdateTagRequest;
 import com.example.colaba.project.mapper.TagMapper;
 import com.example.colaba.project.security.ProjectAccessCheckerLocal;
-import com.example.colaba.shared.common.dto.tag.TagResponse;
+import com.example.colaba.shared.common.application.dto.tag.TagResponse;
 import com.example.colaba.shared.webflux.client.UserServiceClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

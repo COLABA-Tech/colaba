@@ -1,7 +1,7 @@
 package com.example.colaba.auth.service;
 
-import com.example.colaba.shared.common.dto.user.UserAuthDto;
-import com.example.colaba.shared.webmvc.client.UserServiceClient;
+import com.example.colaba.shared.common.application.dto.user.UserAuthDto;
+import com.example.colaba.shared.webmvc.infrastructure.client.UserServiceClient;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;

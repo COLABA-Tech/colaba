@@ -7,7 +7,7 @@ import com.example.colaba.project.entity.ProjectJpa;
 import com.example.colaba.project.mapper.ProjectMapper;
 import com.example.colaba.project.repository.ProjectRepository;
 import com.example.colaba.project.security.ProjectAccessCheckerLocal;
-import com.example.colaba.shared.common.dto.project.ProjectResponse;
+import com.example.colaba.shared.common.application.dto.project.ProjectResponse;
 import com.example.colaba.shared.webflux.client.UserServiceClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
