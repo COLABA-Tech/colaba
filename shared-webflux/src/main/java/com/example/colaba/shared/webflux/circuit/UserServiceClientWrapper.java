@@ -1,6 +1,5 @@
 package com.example.colaba.shared.webflux.circuit;
 
-import com.example.colaba.shared.common.entity.UserRole;
 import com.example.colaba.shared.webflux.client.UserServiceClient;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
@@ -27,16 +26,6 @@ public class UserServiceClientWrapper {
 
     public Mono<Boolean> isAdmin(Long id) {
         return client.isAdmin(id)
-                .transformDeferred(CircuitBreakerOperator.of(cb()));
-    }
-
-    public Mono<UserRole> getUserRole(Long id) {
-        return client.getUserRole(id)
-                .transformDeferred(CircuitBreakerOperator.of(cb()));
-    }
-
-    public Mono<Boolean> canManageUser(Long currentUserId, Long targetUserId) {
-        return client.canManageUser(currentUserId, targetUserId)
                 .transformDeferred(CircuitBreakerOperator.of(cb()));
     }
 }

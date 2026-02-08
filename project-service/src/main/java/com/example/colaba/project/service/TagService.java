@@ -9,7 +9,6 @@ import com.example.colaba.shared.common.dto.tag.TagResponse;
 import com.example.colaba.shared.common.events.TagEvents;
 import com.example.colaba.shared.common.exception.tag.DuplicateTagException;
 import com.example.colaba.shared.common.exception.tag.TagNotFoundException;
-import com.example.colaba.shared.webflux.circuit.TaskServiceClientWrapper;
 import com.example.colaba.shared.webflux.rabbit.EventPublisherReactive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -25,7 +24,6 @@ public class TagService {
 
     private final TagRepository tagRepository;
     private final ProjectService projectService;
-    private final TaskServiceClientWrapper taskServiceClient;
     private final TagMapper tagMapper;
     private final TransactionTemplate transactionTemplate;
     private final EventPublisherReactive eventPublisherReactive;

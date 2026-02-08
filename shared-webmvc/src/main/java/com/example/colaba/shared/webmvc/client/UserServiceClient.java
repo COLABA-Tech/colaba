@@ -1,7 +1,6 @@
 package com.example.colaba.shared.webmvc.client;
 
 import com.example.colaba.shared.common.dto.user.UserAuthDto;
-import com.example.colaba.shared.common.entity.UserRole;
 import com.example.colaba.shared.webmvc.feign.FeignConfig;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,10 +28,4 @@ public interface UserServiceClient {
 
     @GetMapping("/{id}/is-admin")
     boolean isAdmin(@PathVariable Long id);
-
-    @GetMapping("/{id}/role")
-    UserRole getUserRole(@PathVariable Long id);
-
-    @GetMapping("/{currentUserId}/can-manage/{targetUserId}")
-    boolean canManageUser(@PathVariable Long currentUserId, @PathVariable Long targetUserId);
 }

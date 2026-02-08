@@ -14,7 +14,6 @@ import com.example.colaba.shared.common.events.ProjectEvents;
 import com.example.colaba.shared.common.exception.project.DuplicateProjectNameException;
 import com.example.colaba.shared.common.exception.project.ProjectNotFoundException;
 import com.example.colaba.shared.common.exception.user.UserNotFoundException;
-import com.example.colaba.shared.webflux.circuit.TaskServiceClientWrapper;
 import com.example.colaba.shared.webflux.circuit.UserServiceClientWrapper;
 import com.example.colaba.shared.webflux.rabbit.EventPublisherReactive;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +33,6 @@ public class ProjectService {
     private final ProjectMemberRepository projectMemberRepository;
     private final TagRepository tagRepository;
     private final UserServiceClientWrapper userServiceClient;
-    private final TaskServiceClientWrapper taskServiceClient;
     private final ProjectMapper projectMapper;
     private final TransactionTemplate transactionTemplate;
     private final EventPublisherReactive eventPublisherReactive;
