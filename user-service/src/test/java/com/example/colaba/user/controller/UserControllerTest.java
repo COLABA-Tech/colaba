@@ -2,6 +2,7 @@ package com.example.colaba.user.controller;
 
 import com.example.colaba.shared.common.dto.user.UserResponse;
 import com.example.colaba.shared.common.entity.UserRole;
+import com.example.colaba.shared.webflux.rabbit.EventPublisherReactive;
 import com.example.colaba.user.dto.user.UpdateUserRequest;
 import com.example.colaba.user.dto.user.UserScrollResponse;
 import com.example.colaba.user.repository.UserRepository;
@@ -43,7 +44,11 @@ import static org.mockito.Mockito.when;
         "spring.r2dbc.url=r2dbc:h2:mem:///testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
         "spring.r2dbc.username=sa",
         "spring.r2dbc.password=",
-        "spring.r2dbc.driver-class-name=io.r2dbc.h2.H2ConnectionFactory"
+        "spring.r2dbc.driver-class-name=io.r2dbc.h2.H2ConnectionFactory",
+        "spring.rabbitmq.host=localhost",
+        "spring.rabbitmq.port=5672",
+        "spring.rabbitmq.username=guest",
+        "spring.rabbitmq.password=guest"
 })
 @SpringBootTest
 @AutoConfigureWebTestClient
@@ -57,6 +62,9 @@ class UserControllerTest {
 
     @MockitoBean
     private UserRepository userRepository;
+
+    @MockitoBean
+    private EventPublisherReactive eventPublisherReactive;
 
     private static final Long ADMIN_ID = 1L;
     private static final Long USER_ID = 2L;
@@ -75,6 +83,8 @@ class UserControllerTest {
         when(userRepository.existsByIdAndRole(ADMIN_ID, UserRole.ADMIN)).thenReturn(Mono.just(true));
         when(userRepository.existsByIdAndRole(USER_ID, UserRole.ADMIN)).thenReturn(Mono.just(false));
         when(userRepository.existsByIdAndRole(OTHER_ID, UserRole.ADMIN)).thenReturn(Mono.just(false));
+
+        when(eventPublisherReactive.publishUserDeleted(any())).thenReturn(Mono.empty());
     }
 
     private WebTestClient authenticatedClient(Long userId) {
