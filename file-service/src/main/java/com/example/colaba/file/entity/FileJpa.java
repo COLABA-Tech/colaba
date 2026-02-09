@@ -49,6 +49,6 @@ public class FileJpa {
     private Long uploadedBy;
 
     @CreationTimestamp
-    @Column(name = "uploaded_at", nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 }
