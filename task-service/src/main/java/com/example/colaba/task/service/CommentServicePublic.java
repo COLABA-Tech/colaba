@@ -1,5 +1,6 @@
 package com.example.colaba.task.service;
 
+import com.example.colaba.shared.webmvc.circuit.UserServiceClientWrapper;
 import com.example.colaba.shared.webmvc.client.UserServiceClient;
 import com.example.colaba.shared.webmvc.security.ProjectAccessChecker;
 import com.example.colaba.task.dto.comment.CommentResponse;
@@ -21,7 +22,7 @@ public class CommentServicePublic {
     private final ProjectAccessChecker accessChecker;
     private final CommentService commentService;
     private final TaskService taskService;
-    private final UserServiceClient userServiceClient;
+    private final UserServiceClientWrapper userServiceClient;
 
     @Transactional
     public CommentResponse createComment(CreateCommentRequest request, Long currentUserId) {

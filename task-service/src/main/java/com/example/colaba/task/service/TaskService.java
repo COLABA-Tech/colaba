@@ -18,13 +18,14 @@ import com.example.colaba.task.repository.CommentRepository;
 import com.example.colaba.task.repository.TaskRepository;
 import com.example.colaba.task.repository.TaskTagRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TaskService {
@@ -211,5 +212,17 @@ public class TaskService {
     @Transactional
     public void deleteTaskTagsByTagId(Long tagId) {
         taskTagRepository.deleteByTagId(tagId);
+    }
+
+    @Transactional
+    public void handleProjectDeletion(Long projectId) {
+        deleteTasksByProject(projectId);
+        log.info("Deleted all tasks and related entities for projectId={}", projectId);
+    }
+
+    @Transactional
+    public void handleTagDeletion(Long tagId) {
+        deleteTaskTagsByTagId(tagId);
+        log.info("Deleted all task-tag links for deleted tagId={}", tagId);
     }
 }

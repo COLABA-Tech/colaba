@@ -21,24 +21,8 @@ public class ProjectServiceClientWrapper {
         return registry.circuitBreaker("project-service");
     }
 
-    public List<ProjectResponse> findByOwnerId(Long ownerId) {
-        return cb().executeSupplier(() -> client.findByOwnerId(ownerId));
-    }
-
-    public void deleteProject(Long projectId) {
-        cb().executeRunnable(() -> client.deleteProject(projectId));
-    }
-
     public boolean projectExists(Long projectId) {
         return cb().executeSupplier(() -> client.projectExists(projectId));
-    }
-
-    public void handleUserDeletion(Long userId) {
-        cb().executeRunnable(() -> client.handleUserDeletion(userId));
-    }
-
-    public boolean isMember(Long projectId, Long userId) {
-        return cb().executeSupplier(() -> client.isMember(projectId, userId));
     }
 
     public TagResponse getTagById(Long tagId) {
@@ -47,10 +31,6 @@ public class ProjectServiceClientWrapper {
 
     public List<TagResponse> getTagsByIds(List<Long> tagIds) {
         return cb().executeSupplier(() -> client.getTagsByIds(tagIds));
-    }
-
-    public boolean tagExists(Long tagId) {
-        return cb().executeSupplier(() -> client.tagExists(tagId));
     }
 
     public boolean hasAnyRole(Long projectId, Long userId) {
