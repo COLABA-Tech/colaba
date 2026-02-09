@@ -1,7 +1,7 @@
-package com.example.colaba.shared.webmvc.circuit;
+package com.example.colaba.shared.webmvc.infrastructure.circuit;
 
-import com.example.colaba.shared.common.dto.file.FileDto;
-import com.example.colaba.shared.webmvc.client.FileServiceClient;
+import com.example.colaba.shared.common.application.dto.file.FileDto;
+import com.example.colaba.shared.webmvc.infrastructure.client.FileServiceClient;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import lombok.RequiredArgsConstructor;

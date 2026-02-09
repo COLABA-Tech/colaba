@@ -1,4 +1,4 @@
-package com.example.colaba.shared.webmvc.feign;
+package com.example.colaba.shared.webmvc.infrastructure.feign;
 
 import feign.codec.Encoder;
 import feign.form.spring.SpringFormEncoder;

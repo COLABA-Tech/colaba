@@ -3,7 +3,6 @@ package com.example.colaba.auth.infrastructure.controller;
 import com.example.colaba.auth.application.dto.AuthResponse;
 import com.example.colaba.auth.application.dto.LoginRequest;
 import com.example.colaba.auth.application.dto.RegisterRequest;
-import com.example.colaba.auth.application.service.AuthService;
 import com.example.colaba.auth.infrastructure.service.AuthServiceFacade;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

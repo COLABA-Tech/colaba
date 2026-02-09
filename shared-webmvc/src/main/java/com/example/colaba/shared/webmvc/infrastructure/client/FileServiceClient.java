@@ -1,7 +1,7 @@
-package com.example.colaba.shared.webmvc.client;
+package com.example.colaba.shared.webmvc.infrastructure.client;
 
-import com.example.colaba.shared.common.dto.file.FileDto;
-import com.example.colaba.shared.webmvc.feign.FileServiceFeignConfig;
+import com.example.colaba.shared.common.application.dto.file.FileDto;
+import com.example.colaba.shared.webmvc.infrastructure.feign.FileServiceFeignConfig;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;

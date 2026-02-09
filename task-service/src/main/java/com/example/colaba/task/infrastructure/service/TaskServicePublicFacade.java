@@ -2,14 +2,18 @@ package com.example.colaba.task.infrastructure.service;
 
 import com.example.colaba.shared.common.application.dto.common.PagedResult;
 import com.example.colaba.shared.common.application.dto.common.PaginationRequest;
+import com.example.colaba.shared.common.application.dto.file.FileDto;
 import com.example.colaba.shared.common.application.dto.tag.TagResponse;
 import com.example.colaba.task.application.dto.task.CreateTaskRequest;
 import com.example.colaba.task.application.dto.task.TaskResponse;
 import com.example.colaba.task.application.dto.task.UpdateTaskRequest;
 import com.example.colaba.task.application.service.TaskServicePublic;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -66,5 +70,20 @@ public class TaskServicePublicFacade {
     @Transactional
     public void removeTagFromTask(Long taskId, Long tagId, Long currentUserId) {
         taskServicePublic.removeTagFromTask(taskId, tagId, currentUserId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<FileDto> getTaskAttachments(Long taskId, Long currentUserId) {
+        return taskServicePublic.getTaskAttachments(taskId, currentUserId);
+    }
+
+    @Transactional
+    public List<FileDto> uploadTaskAttachments(Long taskId, Long currentUserId, List<MultipartFile> files) {
+        return taskServicePublic.uploadTaskAttachments(taskId, currentUserId, files);
+    }
+
+    @Transactional(readOnly = true)
+    public ResponseEntity<Resource> downloadAttachment(Long taskId, Long fileId, Long currentUserId) {
+        return taskServicePublic.downloadAttachment(taskId, fileId, currentUserId);
     }
 }

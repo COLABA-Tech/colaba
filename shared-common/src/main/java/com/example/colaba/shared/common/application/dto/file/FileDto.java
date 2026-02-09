@@ -1,4 +1,4 @@
-package com.example.colaba.shared.common.dto.file;
+package com.example.colaba.shared.common.application.dto.file;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

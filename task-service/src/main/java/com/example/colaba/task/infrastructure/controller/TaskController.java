@@ -2,6 +2,7 @@ package com.example.colaba.task.infrastructure.controller;
 
 import com.example.colaba.shared.common.application.dto.common.PagedResult;
 import com.example.colaba.shared.common.application.dto.common.PaginationRequest;
+import com.example.colaba.shared.common.application.dto.file.FileDto;
 import com.example.colaba.shared.common.infrastructure.controller.BaseController;
 import com.example.colaba.task.application.dto.task.CreateTaskRequest;
 import com.example.colaba.task.application.dto.task.TaskResponse;

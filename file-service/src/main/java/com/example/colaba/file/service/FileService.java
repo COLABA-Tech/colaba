@@ -2,7 +2,7 @@ package com.example.colaba.file.service;
 
 import com.example.colaba.file.entity.FileJpa;
 import com.example.colaba.file.repository.FileRepository;
-import com.example.colaba.shared.common.dto.file.FileDto;
+import com.example.colaba.shared.common.application.dto.file.FileDto;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;

@@ -17,4 +17,8 @@ public record PaginationRequest(
     public PaginationRequest withSize(int size) {
         return new PaginationRequest(page, size, sortBy, sortDirection);
     }
+
+    public PaginationRequest withPageAndSize(int page, int size) {
+        return new PaginationRequest(page, size, sortBy, sortDirection);
+    }
 }

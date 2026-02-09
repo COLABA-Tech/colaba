@@ -1,5 +1,6 @@
 package com.example.colaba.task.infrastructure.config;
 
+import com.example.colaba.shared.webmvc.application.ports.FileServicePort;
 import com.example.colaba.shared.webmvc.application.ports.ProjectServicePort;
 import com.example.colaba.shared.webmvc.application.ports.UserServicePort;
 import com.example.colaba.shared.webmvc.application.security.ProjectAccessService;
@@ -37,12 +38,14 @@ public class TaskServicePublicConfig {
     public TaskServicePublic taskServicePublic(
             ProjectAccessService projectAccessService,
             TaskService taskService,
-            UserServicePort userService
+            UserServicePort userService,
+            FileServicePort fileServicePort
     ) {
         return new TaskServicePublic(
                 projectAccessService,
                 taskService,
-                userService
+                userService,
+                fileServicePort
         );
     }
 }
