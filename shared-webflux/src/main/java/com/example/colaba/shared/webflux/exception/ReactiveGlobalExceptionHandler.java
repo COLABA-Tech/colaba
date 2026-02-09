@@ -132,6 +132,19 @@ public class ReactiveGlobalExceptionHandler {
         return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(dto));
     }
 
+    @ExceptionHandler(com.example.colaba.shared.common.domain.exception.common.AuthenticationException.class)
+    public Mono<ResponseEntity<ErrorResponseDto>> handleAuthenticationException(com.example.colaba.shared.common.domain.exception.common.AuthenticationException e, ServerWebExchange exchange) {
+        log.error("Authentication failed: {}", e.getMessage());
+        ErrorResponseDto dto = ErrorResponseDto.builder()
+                .error("Authentication failed")
+                .status(HttpStatus.UNAUTHORIZED.value())
+                .message("Invalid username or password")
+                .path(exchange.getRequest().getPath().value())
+                .timestamp(OffsetDateTime.now())
+                .build();
+        return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(dto));
+    }
+
     @ExceptionHandler(UsernameNotFoundException.class)
     public Mono<ResponseEntity<ErrorResponseDto>> handleUserNotFound(UsernameNotFoundException e, ServerWebExchange exchange) {
         log.error("Username not found: {}", e.getMessage());

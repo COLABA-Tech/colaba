@@ -1,8 +1,8 @@
 package com.example.colaba.auth.unit;
 
-import com.example.colaba.auth.service.AuthUserDetailsService;
+import com.example.colaba.auth.infrastructure.security.AuthUserDetailsService;
 import com.example.colaba.shared.common.application.dto.user.UserAuthDto;
-import com.example.colaba.shared.webmvc.infrastructure.client.UserServiceClient;
+import com.example.colaba.shared.webmvc.application.ports.UserServicePort;
 import feign.FeignException;
 import feign.Request;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,7 +22,7 @@ import static org.mockito.Mockito.*;
 class AuthUserDetailsServiceTest {
 
     @Mock
-    private UserServiceClient userServiceClient;
+    private UserServicePort userServiceClient;
 
     @InjectMocks
     private AuthUserDetailsService authUserDetailsService;

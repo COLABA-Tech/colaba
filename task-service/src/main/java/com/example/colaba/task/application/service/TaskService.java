@@ -1,28 +1,27 @@
 package com.example.colaba.task.application.service;
 
+import com.example.colaba.shared.common.application.dto.common.PagedResult;
+import com.example.colaba.shared.common.application.dto.common.PaginationRequest;
 import com.example.colaba.shared.common.application.dto.tag.TagResponse;
 import com.example.colaba.shared.common.domain.exception.project.ProjectNotFoundException;
 import com.example.colaba.shared.common.domain.exception.tag.TagNotFoundException;
 import com.example.colaba.shared.common.domain.exception.task.TaskNotFoundException;
 import com.example.colaba.shared.common.domain.exception.user.UserNotFoundException;
+import com.example.colaba.shared.webmvc.application.ports.ProjectServicePort;
+import com.example.colaba.shared.webmvc.application.ports.UserServicePort;
 import com.example.colaba.task.application.dto.task.CreateTaskRequest;
 import com.example.colaba.task.application.dto.task.TaskResponse;
 import com.example.colaba.task.application.dto.task.UpdateTaskRequest;
-import com.example.colaba.task.application.ports.*;
+import com.example.colaba.task.application.mapper.TaskMapper;
+import com.example.colaba.task.application.ports.CommentRepositoryPort;
+import com.example.colaba.task.application.ports.TaskRepositoryPort;
+import com.example.colaba.task.application.ports.TaskTagRepositoryPort;
 import com.example.colaba.task.domain.entity.Task;
 import com.example.colaba.task.domain.enums.TaskPriority;
-import com.example.colaba.task.infrastructure.persistence.mapper.TaskMapper;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-@Slf4j
-@Service
 @RequiredArgsConstructor
 public class TaskService {
     private final TaskRepositoryPort taskRepository;
@@ -32,14 +31,14 @@ public class TaskService {
     private final UserServicePort userServiceClient;
     private final TaskMapper taskMapper;
 
-    public Page<TaskResponse> getAllTasks(Pageable pageable) {
-        return taskMapper.toTaskResponsePage(taskRepository.findAll(pageable));
+    public PagedResult<TaskResponse> getAllTasks(PaginationRequest pageable) {
+        return taskMapper.toResponsePage(taskRepository.findAll(pageable));
     }
 
     public TaskResponse getTaskById(Long id) {
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new TaskNotFoundException(id));
-        return taskMapper.toTaskResponse(task);
+        return taskMapper.toResponse(task);
     }
 
     public Task getTaskEntityById(Long id) {
@@ -47,15 +46,14 @@ public class TaskService {
                 .orElseThrow(() -> new TaskNotFoundException(id));
     }
 
-    public Page<TaskResponse> getTasksByProject(Long projectId, Pageable pageable) {
+    public PagedResult<TaskResponse> getTasksByProject(Long projectId, PaginationRequest pageable) {
         boolean projectExists = projectServiceClient.projectExists(projectId);
         if (!projectExists) {
             throw new ProjectNotFoundException(projectId);
         }
-        return taskMapper.toTaskResponsePage(taskRepository.findByProjectId(projectId, pageable));
+        return taskMapper.toResponsePage(taskRepository.findByProjectId(projectId, pageable));
     }
 
-    @Transactional
     public TaskResponse createTask(CreateTaskRequest request, Long reporterId) {
         boolean projectExists = projectServiceClient.projectExists(request.projectId());
         if (!projectExists) {
@@ -88,10 +86,9 @@ public class TaskService {
                 .build();
 
         Task savedTask = taskRepository.save(task);
-        return taskMapper.toTaskResponse(savedTask);
+        return taskMapper.toResponse(savedTask);
     }
 
-    @Transactional
     public TaskResponse updateTask(Long id, UpdateTaskRequest request) {
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new TaskNotFoundException(id));
@@ -128,10 +125,9 @@ public class TaskService {
         }
 
         Task updatedTask = hasChanges ? taskRepository.save(task) : task;
-        return taskMapper.toTaskResponse(updatedTask);
+        return taskMapper.toResponse(updatedTask);
     }
 
-    @Transactional
     public void deleteTask(Long id) {
         if (!taskRepository.existsById(id)) {
             throw new TaskNotFoundException(id);
@@ -141,12 +137,12 @@ public class TaskService {
         taskRepository.deleteById(id);
     }
 
-    public Page<TaskResponse> getTasksByAssignee(Long userId, Pageable pageable) {
+    public PagedResult<TaskResponse> getTasksByAssignee(Long userId, PaginationRequest pageable) {
         boolean userExists = userServiceClient.userExists(userId);
         if (!userExists) {
             throw new UserNotFoundException(userId);
         }
-        return taskMapper.toTaskResponsePage(taskRepository.findByAssigneeId(userId, pageable));
+        return taskMapper.toResponsePage(taskRepository.findByAssigneeId(userId, pageable));
     }
 
     public List<TagResponse> getTagsByTask(Long taskId) {
@@ -160,7 +156,6 @@ public class TaskService {
         return projectServiceClient.getTagsByIds(tagIds);
     }
 
-    @Transactional
     public void assignTagToTask(Long taskId, Long tagId) {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new TaskNotFoundException(taskId));
@@ -180,7 +175,6 @@ public class TaskService {
         taskTagRepository.saveTaskTag(taskId, tagId);
     }
 
-    @Transactional
     public void removeTagFromTask(Long taskId, Long tagId) {
         if (!taskRepository.existsById(taskId)) {
             throw new TaskNotFoundException(taskId);
@@ -188,33 +182,26 @@ public class TaskService {
         taskTagRepository.deleteByTaskIdAndTagId(taskId, tagId);
     }
 
-    @Transactional
     public void deleteTasksByProject(Long projectId) {
         List<Task> tasks = taskRepository.findAllByProjectId(projectId);
         tasks.forEach(task -> deleteTask(task.getId()));
     }
 
-    @Transactional
     public void handleUserDeletion(Long userId) {
         taskRepository.setReporterIdToNull(userId);
         taskRepository.setAssigneeIdToNull(userId);
         commentRepository.deleteByUserId(userId);
     }
 
-    @Transactional
     public void deleteTaskTagsByTagId(Long tagId) {
         taskTagRepository.deleteByTagId(tagId);
     }
 
-    @Transactional
     public void handleProjectDeletion(Long projectId) {
         deleteTasksByProject(projectId);
-        log.info("Deleted all tasks and related entities for projectId={}", projectId);
     }
 
-    @Transactional
     public void handleTagDeletion(Long tagId) {
         deleteTaskTagsByTagId(tagId);
-        log.info("Deleted all task-tag links for deleted tagId={}", tagId);
     }
 }

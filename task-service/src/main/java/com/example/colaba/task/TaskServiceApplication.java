@@ -11,6 +11,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication(scanBasePackages = {
         "com.example.colaba.task",
+        "com.example.colaba.task.application",
+        "com.example.colaba.task.infrastructure",
         "com.example.colaba.shared.common",
         "com.example.colaba.shared.webmvc"
 })

@@ -1,7 +1,7 @@
 package com.example.colaba.task.infrastructure.controller;
 
-import com.example.colaba.task.application.service.TaskService;
 import com.example.colaba.task.infrastructure.persistence.repository.TaskRepository;
+import com.example.colaba.task.infrastructure.service.TaskServiceFacade;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "Tasks Internal", description = "Internal Tasks API")
 public class TaskInternalController {
     private final TaskRepository taskRepository;
-    private final TaskService taskService;
+    private final TaskServiceFacade taskService;
 
     @DeleteMapping("/project/{projectId}")
     public void deleteTasksByProject(@PathVariable Long projectId) {

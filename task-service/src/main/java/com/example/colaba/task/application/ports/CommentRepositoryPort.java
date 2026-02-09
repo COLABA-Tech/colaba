@@ -1,11 +1,9 @@
 package com.example.colaba.task.application.ports;
 
+import com.example.colaba.shared.common.application.dto.common.PagedResult;
+import com.example.colaba.shared.common.application.dto.common.PaginationRequest;
 import com.example.colaba.task.domain.entity.Comment;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Slice;
 
-import java.time.OffsetDateTime;
 import java.util.Optional;
 
 public interface CommentRepositoryPort {
@@ -17,10 +15,7 @@ public interface CommentRepositoryPort {
 
     void deleteById(Long id);
 
-    Page<Comment> findByTaskIdOrderByCreatedAtDesc(Long taskId, Pageable pageable);
-
-    Slice<Comment> findByTaskIdAndCreatedAtBeforeOrderByCreatedAtDesc(
-            Long taskId, OffsetDateTime cursorTime, Pageable pageable);
+    PagedResult<Comment> findByTaskIdOrderByCreatedAtDesc(Long taskId, PaginationRequest pageable);
 
     void deleteByTaskId(Long taskId);
 

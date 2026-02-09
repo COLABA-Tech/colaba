@@ -1,14 +1,15 @@
 package com.example.colaba.auth.unit;
 
-import com.example.colaba.auth.dto.AuthResponse;
-import com.example.colaba.auth.dto.LoginRequest;
-import com.example.colaba.auth.dto.RegisterRequest;
-import com.example.colaba.auth.service.AuthService;
+import com.example.colaba.auth.application.dto.AuthResponse;
+import com.example.colaba.auth.application.dto.LoginRequest;
+import com.example.colaba.auth.application.dto.RegisterRequest;
+import com.example.colaba.auth.application.port.PasswordEncoderPort;
+import com.example.colaba.auth.application.service.AuthService;
 import com.example.colaba.shared.common.application.dto.user.UserAuthDto;
 import com.example.colaba.shared.common.application.dto.user.UserResponse;
+import com.example.colaba.shared.common.application.security.JwtTokenService;
 import com.example.colaba.shared.common.domain.entity.UserRole;
-import com.example.colaba.shared.common.infrastructure.security.JwtService;
-import com.example.colaba.shared.webmvc.infrastructure.circuit.UserServiceClientWrapper;
+import com.example.colaba.shared.webmvc.application.ports.UserServicePort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -23,7 +24,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 
@@ -38,13 +38,13 @@ class AuthServiceTest {
     private AuthenticationManager authenticationManager;
 
     @Mock
-    private JwtService jwtService;
+    private JwtTokenService jwtService;
 
     @Mock
-    private PasswordEncoder passwordEncoder;
+    private PasswordEncoderPort passwordEncoder;
 
     @Mock
-    private UserServiceClientWrapper userServiceClient;
+    private UserServicePort userServiceClient;
 
     @InjectMocks
     private AuthService authService;

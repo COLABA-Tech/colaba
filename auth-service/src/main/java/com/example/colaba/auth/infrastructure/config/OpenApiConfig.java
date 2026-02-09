@@ -1,4 +1,4 @@
-package com.example.colaba.auth.config;
+package com.example.colaba.auth.infrastructure.config;
 
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;

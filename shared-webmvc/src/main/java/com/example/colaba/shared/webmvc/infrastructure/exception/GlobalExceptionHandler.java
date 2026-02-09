@@ -155,8 +155,40 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(dto);
     }
 
+    @ExceptionHandler(com.example.colaba.shared.common.domain.exception.common.AccessDeniedException.class)
+    public ResponseEntity<ErrorResponseDto> handleAccessDenied(com.example.colaba.shared.common.domain.exception.common.AccessDeniedException e,
+                                                               HttpServletRequest request) {
+        log.warn("Access denied: {}", e.getMessage());
+
+        String msg = e.getMessage() != null && e.getMessage().contains("anonymous")
+                ? "Authentication required. Please log in."
+                : "You do not have permission to access this resource.";
+
+        ErrorResponseDto dto = ErrorResponseDto.builder()
+                .error("AccessDenied")
+                .status(HttpStatus.FORBIDDEN.value())
+                .message(e.getMessage())
+                .path(request.getRequestURI())
+                .timestamp(OffsetDateTime.now())
+                .build();
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(dto);
+    }
+
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ErrorResponseDto> handleAuthenticationException(AuthenticationException e, HttpServletRequest request) {
+        log.error("Authentication failed: {}", e.getMessage());
+        ErrorResponseDto dto = ErrorResponseDto.builder()
+                .error("Authentication failed")
+                .status(HttpStatus.UNAUTHORIZED.value())
+                .message("Invalid username or password")
+                .path(request.getRequestURI())
+                .timestamp(OffsetDateTime.now())
+                .build();
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(dto);
+    }
+
+    @ExceptionHandler(com.example.colaba.shared.common.domain.exception.common.AuthenticationException.class)
+    public ResponseEntity<ErrorResponseDto> handleCommonAuthenticationException(com.example.colaba.shared.common.domain.exception.common.AuthenticationException e, HttpServletRequest request) {
         log.error("Authentication failed: {}", e.getMessage());
         ErrorResponseDto dto = ErrorResponseDto.builder()
                 .error("Authentication failed")

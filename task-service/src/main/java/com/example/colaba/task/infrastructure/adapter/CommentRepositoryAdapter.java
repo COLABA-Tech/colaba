@@ -1,17 +1,20 @@
 package com.example.colaba.task.infrastructure.adapter;
 
+import com.example.colaba.shared.common.application.dto.common.PagedResult;
+import com.example.colaba.shared.common.application.dto.common.PaginationRequest;
 import com.example.colaba.task.application.ports.CommentRepositoryPort;
 import com.example.colaba.task.domain.entity.Comment;
 import com.example.colaba.task.infrastructure.persistence.entity.CommentJpa;
-import com.example.colaba.task.infrastructure.persistence.mapper.CommentMapper;
+import com.example.colaba.task.infrastructure.persistence.mapper.CommentMapperJpa;
 import com.example.colaba.task.infrastructure.persistence.repository.CommentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
-import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -19,7 +22,7 @@ import java.util.Optional;
 public class CommentRepositoryAdapter implements CommentRepositoryPort {
 
     private final CommentRepository jpaRepo;
-    private final CommentMapper mapper;
+    private final CommentMapperJpa mapper;
 
     @Override
     public Comment save(Comment comment) {
@@ -44,16 +47,18 @@ public class CommentRepositoryAdapter implements CommentRepositoryPort {
     }
 
     @Override
-    public Page<Comment> findByTaskIdOrderByCreatedAtDesc(Long taskId, Pageable pageable) {
-        return jpaRepo.findByTaskIdOrderByCreatedAtDesc(taskId, pageable)
-                .map(mapper::toDomain);
-    }
-
-    @Override
-    public Slice<Comment> findByTaskIdAndCreatedAtBeforeOrderByCreatedAtDesc(
-            Long taskId, OffsetDateTime cursorTime, Pageable pageable) {
-        return jpaRepo.findByTaskIdAndCreatedAtBeforeOrderByCreatedAtDesc(taskId, cursorTime, pageable)
-                .map(mapper::toDomain);
+    public PagedResult<Comment> findByTaskIdOrderByCreatedAtDesc(Long taskId, PaginationRequest pageable) {
+        Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
+        Pageable springPageable = PageRequest.of(pageable.page(), pageable.size(), sort);
+        Page<CommentJpa> springPage = jpaRepo.findByTaskIdOrderByCreatedAtDesc(taskId, springPageable);
+        List<Comment> domainList = springPage.map(mapper::toDomain).getContent();
+        return new PagedResult<>(
+                domainList,
+                springPage.getTotalElements(),
+                springPage.getTotalPages(),
+                pageable.page(),
+                pageable.size()
+        );
     }
 
     @Override

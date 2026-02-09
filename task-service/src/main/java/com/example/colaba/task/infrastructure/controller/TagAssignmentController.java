@@ -2,7 +2,7 @@ package com.example.colaba.task.infrastructure.controller;
 
 import com.example.colaba.shared.common.application.dto.tag.TagResponse;
 import com.example.colaba.shared.common.infrastructure.controller.BaseController;
-import com.example.colaba.task.application.service.TaskServicePublic;
+import com.example.colaba.task.infrastructure.service.TaskServicePublicFacade;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +17,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(name = "Task Assignment Public", description = "API for managing task-tag associations")
 public class TagAssignmentController extends BaseController {
-    private final TaskServicePublic taskService;
+    private final TaskServicePublicFacade taskService;
 
     @GetMapping("/task/{taskId}")
     @Operation(summary = "Get tags for a task", description = "Returns all tags assigned to the specified task. Requires any role in the project.")
