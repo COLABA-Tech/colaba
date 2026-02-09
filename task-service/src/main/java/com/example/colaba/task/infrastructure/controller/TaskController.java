@@ -8,17 +8,23 @@ import com.example.colaba.task.application.dto.task.TaskResponse;
 import com.example.colaba.task.application.dto.task.UpdateTaskRequest;
 import com.example.colaba.task.infrastructure.service.TaskServicePublicFacade;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/tasks")
@@ -152,5 +158,73 @@ public class TaskController extends BaseController {
 
         taskService.deleteTask(id, currentUserId);
         return ResponseEntity.noContent().build();
+    }
+
+
+    @GetMapping("/{taskId}/attachments")
+    @Operation(
+            summary = "Get task attachments",
+            description = "Retrieve metadata of all files attached to a specific task"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Files retrieved successfully"),
+            @ApiResponse(responseCode = "403", description = "No access to task"),
+            @ApiResponse(responseCode = "404", description = "Task not found"),
+            @ApiResponse(responseCode = "200", description = "No files found (returns empty list)")
+    })
+    public ResponseEntity<List<FileDto>> getTaskAttachments(
+            @PathVariable Long taskId,
+            @AuthenticationPrincipal Long currentUserId
+    ) {
+        List<FileDto> attachments = taskService.getTaskAttachments(taskId, currentUserId);
+        return ResponseEntity.ok(attachments);
+    }
+
+    @PostMapping(
+            value = "/{taskId}/attachments",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    @Operation(
+            summary = "Upload task attachments",
+            description = "Upload one or multiple files (png, pdf, docx, etc.) to a task"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Files uploaded successfully"),
+            @ApiResponse(responseCode = "403", description = "No permission to upload files"),
+            @ApiResponse(responseCode = "404", description = "Task not found")
+    })
+    public ResponseEntity<List<FileDto>> uploadAttachments(
+            @PathVariable Long taskId,
+
+            @Parameter(
+                    description = "Files to upload",
+                    required = true
+            )
+            @RequestPart("files") List<MultipartFile> files,
+
+            @AuthenticationPrincipal Long currentUserId
+    ) {
+        List<FileDto> uploaded = taskService.uploadTaskAttachments(taskId, currentUserId, files);
+        return ResponseEntity.ok(uploaded);
+    }
+
+    @GetMapping("/{taskId}/attachments/{attachmentId}")
+    @Operation(
+            summary = "Download attachment",
+            description = "Download a specific attachment by its ID. Returns the file content with appropriate headers."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "File downloaded successfully"),
+            @ApiResponse(responseCode = "403", description = "No access to task or attachment"),
+            @ApiResponse(responseCode = "404", description = "Attachment or task not found"),
+            @ApiResponse(responseCode = "410", description = "File content is no longer available"),
+            @ApiResponse(responseCode = "500", description = "Error reading file from storage")
+    })
+    public ResponseEntity<Resource> downloadAttachment(
+            @PathVariable Long taskId,
+            @PathVariable Long attachmentId,
+            @AuthenticationPrincipal Long currentUserId
+    ) {
+        return taskService.downloadAttachment(taskId, attachmentId, currentUserId);
     }
 }

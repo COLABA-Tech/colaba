@@ -1,33 +1,26 @@
 package com.example.colaba.shared.webmvc.infrastructure.feign;
 
-import feign.Logger;
 import feign.RequestInterceptor;
-import feign.codec.ErrorDecoder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.MediaType;
 
 @Slf4j
 public class FeignConfig {
 
     @Bean
-    public Logger.Level feignLoggerLevel() {
-        return Logger.Level.FULL;
-    }
-
-    @Bean
-    public ErrorDecoder errorDecoder() {
-        return new FeignErrorDecoder();
-    }
-
-    @Bean
     public RequestInterceptor requestInterceptor(@Value("${internal.api-key}") String internalApiKey) {
-        log.info("Feign Config - Internal API Key configured: {}",
-                internalApiKey != null ? "SET" : "NOT SET");
-
         return template -> {
-            template.header("Content-Type", "application/json");
-            template.header("Accept", "application/json");
+            boolean isMultipartRequest = template.headers().containsKey("Content-Type") &&
+                    template.headers().get("Content-Type").stream()
+                            .anyMatch(header -> header.contains(MediaType.MULTIPART_FORM_DATA_VALUE));
+
+            if (!isMultipartRequest) {
+                template.header("Content-Type", MediaType.APPLICATION_JSON_VALUE);
+            }
+
+            template.header("Accept", MediaType.APPLICATION_JSON_VALUE);
             template.header("X-Internal-Key", internalApiKey);
         };
     }

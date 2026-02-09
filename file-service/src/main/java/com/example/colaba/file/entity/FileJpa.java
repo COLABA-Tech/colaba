@@ -37,6 +37,13 @@ public class FileJpa {
     @Column(name = "original_filename", nullable = false)
     private String originalFilename;
 
+    @Column(name = "content_type", length = 100, nullable = false)
+    private String contentType;
+
+    @NotNull
+    @Column(name = "size", nullable = false)
+    private Long size;
+
     @NotNull
     @Column(name = "uploaded_by", nullable = false)
     private Long uploadedBy;
