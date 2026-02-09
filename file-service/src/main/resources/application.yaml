@@ -1,53 +1,10 @@
 spring:
   main:
     allow-bean-definition-overriding: true
-
   application:
     name: file-service
-
   config:
     import: "optional:configserver:http://config-server:8888"
-
-  datasource:
-    url: jdbc:tc:postgresql:16:///testdb?TC_TMPFS=true
-    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
-    username: test
-    password: test
-    hikari:
-      maximum-pool-size: 10
-
-  jpa:
-    hibernate:
-      ddl-auto: none
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
-
-  liquibase:
-    change-log: classpath:db/changelog/db.changelog-master.yaml
-    enabled: true
-    drop-first: false
-
-  cloud:
-    discovery:
-      enabled: false
-
-eureka:
-  client:
-    enabled: false
-    register-with-eureka: false
-    fetch-registry: false
-
-server:
-  port: 0
-logging:
-  level:
-    org.springframework: WARN
-    org.hibernate: WARN
-    com.zaxxer.hikari: WARN
-    org.testcontainers: WARN
-
 
 internal:
   api-key: ${INTERNAL_API_KEY:tvulOBWkyfz+TfDMFKWxiZxsBXy8ODfzqX+4TnNSQD+Z+ihYaNS4n2j+1ios3rRM}

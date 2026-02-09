@@ -105,18 +105,11 @@
             <artifactId>json-path</artifactId>
             <scope>test</scope>
         </dependency>
+
         <!-- Testcontainers + PostgreSQL -->
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>postgresql</artifactId>
-            <version>1.21.4</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>1.21.4</version>
             <scope>test</scope>
         </dependency>
 
@@ -125,18 +118,6 @@
             <artifactId>spring-boot-testcontainers</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>com.example</groupId>
-            <artifactId>shared-common</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-
 
         <dependency>
             <groupId>org.hamcrest</groupId>
