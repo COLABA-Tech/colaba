@@ -37,7 +37,7 @@ public class FileJpa {
     @Column(name = "original_filename", nullable = false)
     private String originalFilename;
 
-    @Column(name = "content_type", length = 100)
+    @Column(name = "content_type", length = 100, nullable = false)
     private String contentType;
 
     @NotNull
