@@ -1,14 +1,16 @@
 package com.example.colaba.task.unit;
 
-import com.example.colaba.shared.webmvc.circuit.UserServiceClientWrapper;
+import com.example.colaba.shared.webmvc.application.security.ProjectAccessService;
+import com.example.colaba.shared.webmvc.infrastructure.circuit.UserServiceClientWrapper;
 import com.example.colaba.shared.webmvc.infrastructure.client.UserServiceClient;
-import com.example.colaba.shared.webmvc.infrastructure.security.ProjectAccessChecker;
+import com.example.colaba.shared.webmvc.infrastructure.security.ProjectAccessServiceImpl;
 import com.example.colaba.task.application.dto.comment.CommentResponse;
 import com.example.colaba.task.application.dto.comment.CommentScrollResponse;
 import com.example.colaba.task.application.dto.comment.CreateCommentRequest;
 import com.example.colaba.task.application.dto.comment.UpdateCommentRequest;
-import com.example.colaba.task.infrastructure.persistence.entity.CommentJpa;
-import com.example.colaba.task.infrastructure.persistence.entity.task.TaskJpa;
+import com.example.colaba.task.application.ports.UserServicePort;
+import com.example.colaba.task.domain.entity.Comment;
+import com.example.colaba.task.domain.entity.Task;
 import com.example.colaba.task.application.service.CommentService;
 import com.example.colaba.task.application.service.CommentServicePublic;
 import com.example.colaba.task.application.service.TaskService;
@@ -36,7 +38,7 @@ import static org.mockito.Mockito.*;
 class CommentServicePublicTest {
 
     @Mock
-    private ProjectAccessServiceImpl accessChecker;
+    private ProjectAccessService accessChecker;
 
     @Mock
     private CommentService commentService;
@@ -45,13 +47,13 @@ class CommentServicePublicTest {
     private TaskService taskService;
 
     @Mock
-    private UserServiceClient userServiceClient;
+    private UserServicePort userServiceClient;
 
     @InjectMocks
     private CommentServicePublic commentServicePublic;
 
-    private TaskJpa mockTask;
-    private CommentJpa mockComment;
+    private Task mockTask;
+    private Comment mockComment;
     private CommentResponse mockCommentResponse;
     private final Long currentUserId = 1L;
     private final Long otherUserId = 2L;
@@ -59,13 +61,13 @@ class CommentServicePublicTest {
 
     @BeforeEach
     void setUp() {
-        mockTask = TaskJpa.builder()
+        mockTask = Task.builder()
                 .id(1L)
                 .projectId(100L)
                 .title("Test Task")
                 .build();
 
-        mockComment = CommentJpa.builder()
+        mockComment = Comment.builder()
                 .id(1L)
                 .taskId(1L)
                 .userId(currentUserId)
@@ -286,7 +288,7 @@ class CommentServicePublicTest {
     @Test
     void deleteComment_ShouldThrowAccessDenied_WhenUserIsNotAdminAndNotAuthor() {
         // Arrange
-        CommentJpa otherUserComment = CommentJpa.builder()
+        Comment otherUserComment = Comment.builder()
                 .id(2L)
                 .taskId(1L)
                 .userId(otherUserId)
@@ -309,7 +311,7 @@ class CommentServicePublicTest {
     @Test
     void deleteComment_ShouldThrowAccessDeniedWithCorrectMessage_WhenAuthorizationFails() {
         // Arrange
-        CommentJpa otherUserComment = CommentJpa.builder()
+        Comment otherUserComment = Comment.builder()
                 .id(2L)
                 .taskId(1L)
                 .userId(otherUserId)
@@ -404,7 +406,7 @@ class CommentServicePublicTest {
     @Test
     void deleteComment_ShouldHandleAdminFlagCorrectly() {
         // Arrange
-        CommentJpa adminDeletableComment = CommentJpa.builder()
+        Comment adminDeletableComment = Comment.builder()
                 .id(3L)
                 .userId(otherUserId)
                 .build();

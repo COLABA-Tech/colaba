@@ -14,7 +14,6 @@ import com.example.colaba.shared.common.domain.entity.ProjectRole;
 import com.example.colaba.shared.common.domain.exception.project.DuplicateProjectNameException;
 import com.example.colaba.shared.common.domain.exception.project.ProjectNotFoundException;
 import com.example.colaba.shared.common.domain.exception.user.UserNotFoundException;
-import com.example.colaba.shared.webflux.circuit.TaskServiceClientWrapper;
 import com.example.colaba.shared.webflux.circuit.UserServiceClientWrapper;
 import com.example.colaba.shared.webflux.rabbit.EventPublisherReactive;
 import org.junit.jupiter.api.BeforeEach;

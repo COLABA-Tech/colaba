@@ -12,7 +12,7 @@ import com.example.colaba.shared.common.application.dto.tag.TagResponse;
 import com.example.colaba.shared.common.domain.exception.project.ProjectNotFoundException;
 import com.example.colaba.shared.common.domain.exception.tag.DuplicateTagException;
 import com.example.colaba.shared.common.domain.exception.tag.TagNotFoundException;
-import com.example.colaba.shared.webflux.circuit.TaskServiceClientWrapper;
+import com.example.colaba.shared.webflux.rabbit.EventPublisherReactive;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
