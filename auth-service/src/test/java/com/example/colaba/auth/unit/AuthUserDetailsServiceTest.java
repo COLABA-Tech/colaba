@@ -1,8 +1,8 @@
 package com.example.colaba.auth.unit;
 
 import com.example.colaba.auth.service.AuthUserDetailsService;
-import com.example.colaba.shared.common.dto.user.UserAuthDto;
-import com.example.colaba.shared.webmvc.client.UserServiceClient;
+import com.example.colaba.shared.common.application.dto.user.UserAuthDto;
+import com.example.colaba.shared.webmvc.infrastructure.client.UserServiceClient;
 import feign.FeignException;
 import feign.Request;
 import org.junit.jupiter.api.BeforeEach;

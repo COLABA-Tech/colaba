@@ -1,20 +1,22 @@
 package com.example.colaba.task.unit;
 
-import com.example.colaba.shared.common.dto.tag.TagResponse;
-import com.example.colaba.shared.common.exception.project.ProjectNotFoundException;
-import com.example.colaba.shared.common.exception.tag.TagNotFoundException;
-import com.example.colaba.shared.common.exception.task.TaskNotFoundException;
-import com.example.colaba.shared.common.exception.user.UserNotFoundException;
-import com.example.colaba.shared.webmvc.client.UserServiceClient;
-import com.example.colaba.shared.webmvc.security.ProjectAccessChecker;
-import com.example.colaba.task.dto.task.CreateTaskRequest;
-import com.example.colaba.task.dto.task.TaskResponse;
-import com.example.colaba.task.dto.task.UpdateTaskRequest;
-import com.example.colaba.task.entity.task.TaskJpa;
-import com.example.colaba.task.entity.task.TaskPriority;
-import com.example.colaba.task.entity.task.TaskStatus;
-import com.example.colaba.task.service.TaskService;
-import com.example.colaba.task.service.TaskServicePublic;
+import com.example.colaba.shared.common.application.dto.tag.TagResponse;
+import com.example.colaba.shared.common.domain.exception.project.ProjectNotFoundException;
+import com.example.colaba.shared.common.domain.exception.tag.TagNotFoundException;
+import com.example.colaba.shared.common.domain.exception.task.TaskNotFoundException;
+import com.example.colaba.shared.common.domain.exception.user.UserNotFoundException;
+import com.example.colaba.shared.webmvc.application.security.ProjectAccessService;
+import com.example.colaba.shared.webmvc.infrastructure.client.UserServiceClient;
+import com.example.colaba.shared.webmvc.infrastructure.security.ProjectAccessServiceImpl;
+import com.example.colaba.task.application.dto.task.CreateTaskRequest;
+import com.example.colaba.task.application.dto.task.TaskResponse;
+import com.example.colaba.task.application.dto.task.UpdateTaskRequest;
+import com.example.colaba.task.application.ports.UserServicePort;
+import com.example.colaba.task.domain.entity.Task;
+import com.example.colaba.task.domain.enums.TaskPriority;
+import com.example.colaba.task.domain.enums.TaskStatus;
+import com.example.colaba.task.application.service.TaskService;
+import com.example.colaba.task.application.service.TaskServicePublic;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,13 +42,13 @@ import static org.mockito.Mockito.*;
 class TaskServicePublicTest {
 
     @Mock
-    private ProjectAccessChecker accessChecker;
+    private ProjectAccessService accessChecker;
 
     @Mock
     private TaskService taskService;
 
     @Mock
-    private UserServiceClient userServiceClient;
+    private UserServicePort userServiceClient;
 
     @InjectMocks
     private TaskServicePublic taskServicePublic;
@@ -58,7 +60,7 @@ class TaskServicePublicTest {
     private final Long testAssigneeId = 2L;
     private final Long testTagId = 3L;
 
-    private TaskJpa taskJpa;
+    private Task task;
     private TaskResponse taskResponse;
     private CreateTaskRequest createRequest;
     private UpdateTaskRequest updateRequest;
@@ -69,7 +71,7 @@ class TaskServicePublicTest {
     void setUp() {
         pageable = PageRequest.of(0, 10);
 
-        taskJpa = TaskJpa.builder()
+        task = Task.builder()
                 .id(testTaskId)
                 .title("Test Task")
                 .description("Test Description")
@@ -79,8 +81,6 @@ class TaskServicePublicTest {
                 .assigneeId(testAssigneeId)
                 .reporterId(currentUserId)
                 .dueDate(LocalDate.now())
-                .createdAt(OffsetDateTime.now())
-                .updatedAt(OffsetDateTime.now())
                 .build();
 
         taskResponse = new TaskResponse(
@@ -134,7 +134,7 @@ class TaskServicePublicTest {
     void getTaskById_adminUser_success() {
         // Given
         when(userServiceClient.isAdmin(adminUserId)).thenReturn(true);
-        when(taskService.getTaskEntityById(testTaskId)).thenReturn(taskJpa);
+        when(taskService.getTaskEntityById(testTaskId)).thenReturn(task);
         when(taskService.getTaskById(testTaskId)).thenReturn(taskResponse);
 
         // When
@@ -153,7 +153,7 @@ class TaskServicePublicTest {
     void getTaskById_nonAdminWithAccess_success() {
         // Given
         when(userServiceClient.isAdmin(currentUserId)).thenReturn(false);
-        when(taskService.getTaskEntityById(testTaskId)).thenReturn(taskJpa);
+        when(taskService.getTaskEntityById(testTaskId)).thenReturn(task);
         doNothing().when(accessChecker).requireAnyRole(testProjectId, currentUserId);
         when(taskService.getTaskById(testTaskId)).thenReturn(taskResponse);
 
@@ -173,7 +173,7 @@ class TaskServicePublicTest {
     void getTaskById_nonAdminWithoutAccess_throwsAccessDenied() {
         // Given
         when(userServiceClient.isAdmin(currentUserId)).thenReturn(false);
-        when(taskService.getTaskEntityById(testTaskId)).thenReturn(taskJpa);
+        when(taskService.getTaskEntityById(testTaskId)).thenReturn(task);
         doThrow(new AccessDeniedException("Access denied"))
                 .when(accessChecker).requireAnyRole(testProjectId, currentUserId);
 
@@ -314,7 +314,7 @@ class TaskServicePublicTest {
     void updateTask_adminUser_success() {
         // Given
         when(userServiceClient.isAdmin(adminUserId)).thenReturn(true);
-        when(taskService.getTaskEntityById(testTaskId)).thenReturn(taskJpa);
+        when(taskService.getTaskEntityById(testTaskId)).thenReturn(task);
         when(taskService.updateTask(testTaskId, updateRequest)).thenReturn(taskResponse);
 
         // When
@@ -333,7 +333,7 @@ class TaskServicePublicTest {
     void updateTask_nonAdminEditor_success() {
         // Given
         when(userServiceClient.isAdmin(currentUserId)).thenReturn(false);
-        when(taskService.getTaskEntityById(testTaskId)).thenReturn(taskJpa);
+        when(taskService.getTaskEntityById(testTaskId)).thenReturn(task);
         doNothing().when(accessChecker).requireAtLeastEditor(testProjectId, currentUserId);
         when(taskService.updateTask(testTaskId, updateRequest)).thenReturn(taskResponse);
 
@@ -353,7 +353,7 @@ class TaskServicePublicTest {
     void updateTask_nonAdminNonEditor_throwsAccessDenied() {
         // Given
         when(userServiceClient.isAdmin(currentUserId)).thenReturn(false);
-        when(taskService.getTaskEntityById(testTaskId)).thenReturn(taskJpa);
+        when(taskService.getTaskEntityById(testTaskId)).thenReturn(task);
         doThrow(new AccessDeniedException("Editor role required"))
                 .when(accessChecker).requireAtLeastEditor(testProjectId, currentUserId);
 
@@ -381,7 +381,7 @@ class TaskServicePublicTest {
     void deleteTask_adminUser_success() {
         // Given
         when(userServiceClient.isAdmin(adminUserId)).thenReturn(true);
-        when(taskService.getTaskEntityById(testTaskId)).thenReturn(taskJpa);
+        when(taskService.getTaskEntityById(testTaskId)).thenReturn(task);
         doNothing().when(taskService).deleteTask(testTaskId);
 
         // When
@@ -398,7 +398,7 @@ class TaskServicePublicTest {
     void deleteTask_nonAdminEditor_success() {
         // Given
         when(userServiceClient.isAdmin(currentUserId)).thenReturn(false);
-        when(taskService.getTaskEntityById(testTaskId)).thenReturn(taskJpa);
+        when(taskService.getTaskEntityById(testTaskId)).thenReturn(task);
         doNothing().when(accessChecker).requireAtLeastEditor(testProjectId, currentUserId);
         doNothing().when(taskService).deleteTask(testTaskId);
 
@@ -416,7 +416,7 @@ class TaskServicePublicTest {
     void deleteTask_nonAdminNonEditor_throwsAccessDenied() {
         // Given
         when(userServiceClient.isAdmin(currentUserId)).thenReturn(false);
-        when(taskService.getTaskEntityById(testTaskId)).thenReturn(taskJpa);
+        when(taskService.getTaskEntityById(testTaskId)).thenReturn(task);
         doThrow(new AccessDeniedException("Editor role required"))
                 .when(accessChecker).requireAtLeastEditor(testProjectId, currentUserId);
 
@@ -512,7 +512,7 @@ class TaskServicePublicTest {
         );
 
         when(userServiceClient.isAdmin(adminUserId)).thenReturn(true);
-        when(taskService.getTaskEntityById(testTaskId)).thenReturn(taskJpa);
+        when(taskService.getTaskEntityById(testTaskId)).thenReturn(task);
         when(taskService.getTagsByTask(testTaskId)).thenReturn(tags);
 
         // When
@@ -533,7 +533,7 @@ class TaskServicePublicTest {
         List<TagResponse> tags = List.of(new TagResponse(testTagId, "Tag 1", testProjectId));
 
         when(userServiceClient.isAdmin(currentUserId)).thenReturn(false);
-        when(taskService.getTaskEntityById(testTaskId)).thenReturn(taskJpa);
+        when(taskService.getTaskEntityById(testTaskId)).thenReturn(task);
         doNothing().when(accessChecker).requireAnyRole(testProjectId, currentUserId);
         when(taskService.getTagsByTask(testTaskId)).thenReturn(tags);
 
@@ -553,7 +553,7 @@ class TaskServicePublicTest {
     void getTagsByTask_noTags_returnsEmptyList() {
         // Given
         when(userServiceClient.isAdmin(currentUserId)).thenReturn(false);
-        when(taskService.getTaskEntityById(testTaskId)).thenReturn(taskJpa);
+        when(taskService.getTaskEntityById(testTaskId)).thenReturn(task);
         doNothing().when(accessChecker).requireAnyRole(testProjectId, currentUserId);
         when(taskService.getTagsByTask(testTaskId)).thenReturn(List.of());
 
@@ -570,7 +570,7 @@ class TaskServicePublicTest {
     void assignTagToTask_adminUser_success() {
         // Given
         when(userServiceClient.isAdmin(adminUserId)).thenReturn(true);
-        when(taskService.getTaskEntityById(testTaskId)).thenReturn(taskJpa);
+        when(taskService.getTaskEntityById(testTaskId)).thenReturn(task);
         doNothing().when(taskService).assignTagToTask(testTaskId, testTagId);
 
         // When
@@ -587,7 +587,7 @@ class TaskServicePublicTest {
     void assignTagToTask_nonAdminEditor_success() {
         // Given
         when(userServiceClient.isAdmin(currentUserId)).thenReturn(false);
-        when(taskService.getTaskEntityById(testTaskId)).thenReturn(taskJpa);
+        when(taskService.getTaskEntityById(testTaskId)).thenReturn(task);
         doNothing().when(accessChecker).requireAtLeastEditor(testProjectId, currentUserId);
         doNothing().when(taskService).assignTagToTask(testTaskId, testTagId);
 
@@ -605,7 +605,7 @@ class TaskServicePublicTest {
     void assignTagToTask_tagNotFound_throwsException() {
         // Given
         when(userServiceClient.isAdmin(currentUserId)).thenReturn(false);
-        when(taskService.getTaskEntityById(testTaskId)).thenReturn(taskJpa);
+        when(taskService.getTaskEntityById(testTaskId)).thenReturn(task);
         doNothing().when(accessChecker).requireAtLeastEditor(testProjectId, currentUserId);
         doThrow(new TagNotFoundException(testTagId))
                 .when(taskService).assignTagToTask(testTaskId, testTagId);
@@ -621,7 +621,7 @@ class TaskServicePublicTest {
     void removeTagFromTask_adminUser_success() {
         // Given
         when(userServiceClient.isAdmin(adminUserId)).thenReturn(true);
-        when(taskService.getTaskEntityById(testTaskId)).thenReturn(taskJpa);
+        when(taskService.getTaskEntityById(testTaskId)).thenReturn(task);
         doNothing().when(taskService).removeTagFromTask(testTaskId, testTagId);
 
         // When
@@ -638,7 +638,7 @@ class TaskServicePublicTest {
     void removeTagFromTask_nonAdminEditor_success() {
         // Given
         when(userServiceClient.isAdmin(currentUserId)).thenReturn(false);
-        when(taskService.getTaskEntityById(testTaskId)).thenReturn(taskJpa);
+        when(taskService.getTaskEntityById(testTaskId)).thenReturn(task);
         doNothing().when(accessChecker).requireAtLeastEditor(testProjectId, currentUserId);
         doNothing().when(taskService).removeTagFromTask(testTaskId, testTagId);
 

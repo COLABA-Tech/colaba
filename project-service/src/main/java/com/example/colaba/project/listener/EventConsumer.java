@@ -1,9 +1,10 @@
 package com.example.colaba.project.listener;
 
 import com.example.colaba.project.service.ProjectService;
-import com.example.colaba.shared.common.events.UserEvents.UserDeletedEvent;
-import com.example.colaba.shared.common.rabbit.DomainEvent;
-import com.example.colaba.shared.common.rabbit.RabbitMQProperties;
+import com.example.colaba.shared.common.application.events.DomainEvent;
+import com.example.colaba.shared.common.application.events.EventTypes;
+import com.example.colaba.shared.common.domain.events.UserEvents.UserDeletedEvent;
+import com.example.colaba.shared.common.infrastructure.rabbit.RabbitMQProperties;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +35,7 @@ public class EventConsumer {
                                 }
                         );
 
-                        if ("user.deleted".equals(event.getEventType())) {
+                        if (EventTypes.USER_DELETED.equals(event.getEventType())) {
                             Long userId = event.getPayload().userId();
                             return projectService.handleUserDeletion(userId)
                                     .doOnSuccess(v -> log.info("ProjectService handled UserDeletedEvent for userId={}", userId))

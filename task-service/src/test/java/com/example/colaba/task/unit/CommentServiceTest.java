@@ -1,18 +1,20 @@
 package com.example.colaba.task.unit;
 
-import com.example.colaba.shared.common.exception.comment.CommentNotFoundException;
-import com.example.colaba.shared.common.exception.task.TaskNotFoundException;
-import com.example.colaba.shared.common.exception.user.UserNotFoundException;
-import com.example.colaba.shared.webmvc.circuit.UserServiceClientWrapper;
-import com.example.colaba.task.dto.comment.CommentResponse;
-import com.example.colaba.task.dto.comment.CommentScrollResponse;
-import com.example.colaba.task.dto.comment.CreateCommentRequest;
-import com.example.colaba.task.dto.comment.UpdateCommentRequest;
-import com.example.colaba.task.entity.CommentJpa;
-import com.example.colaba.task.mapper.CommentMapper;
-import com.example.colaba.task.repository.CommentRepository;
-import com.example.colaba.task.repository.TaskRepository;
-import com.example.colaba.task.service.CommentService;
+import com.example.colaba.shared.common.domain.exception.comment.CommentNotFoundException;
+import com.example.colaba.shared.common.domain.exception.task.TaskNotFoundException;
+import com.example.colaba.shared.common.domain.exception.user.UserNotFoundException;
+import com.example.colaba.shared.webmvc.infrastructure.circuit.UserServiceClientWrapper;
+import com.example.colaba.task.application.dto.comment.CommentResponse;
+import com.example.colaba.task.application.dto.comment.CommentScrollResponse;
+import com.example.colaba.task.application.dto.comment.CreateCommentRequest;
+import com.example.colaba.task.application.dto.comment.UpdateCommentRequest;
+import com.example.colaba.task.application.ports.CommentRepositoryPort;
+import com.example.colaba.task.application.ports.TaskRepositoryPort;
+import com.example.colaba.task.application.ports.UserServicePort;
+import com.example.colaba.task.domain.entity.Comment;
+import com.example.colaba.task.infrastructure.persistence.mapper.CommentMapper;
+import com.example.colaba.task.application.service.CommentService;
+import com.example.colaba.task.infrastructure.persistence.repository.TaskRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,13 +36,13 @@ import static org.mockito.Mockito.*;
 class CommentServiceTest {
 
     @Mock
-    private CommentRepository commentRepository;
+    private CommentRepositoryPort commentRepository;
 
     @Mock
-    private UserServiceClientWrapper userServiceClient;
+    private UserServicePort userServiceClient;
 
     @Mock
-    private TaskRepository taskRepository;
+    private TaskRepositoryPort taskRepository;
 
     @Mock
     private CommentMapper commentMapper;
@@ -48,8 +50,8 @@ class CommentServiceTest {
     @InjectMocks
     private CommentService commentService;
 
-    private CommentJpa mockComment;
-    private CommentJpa mockComment2;
+    private Comment mockComment;
+    private Comment mockComment2;
     private CommentResponse mockResponse;
     private OffsetDateTime fixedCreatedAt = OffsetDateTime.now();
 
@@ -57,7 +59,7 @@ class CommentServiceTest {
     void setUp() {
         fixedCreatedAt = OffsetDateTime.now();
 
-        mockComment = CommentJpa.builder()
+        mockComment = Comment.builder()
                 .id(1L)
                 .taskId(1L)
                 .userId(1L)
@@ -66,7 +68,7 @@ class CommentServiceTest {
                 .updatedAt(fixedCreatedAt)
                 .build();
 
-        mockComment2 = CommentJpa.builder()
+        mockComment2 = Comment.builder()
                 .id(2L)
                 .taskId(1L)
                 .userId(1L)
@@ -83,7 +85,7 @@ class CommentServiceTest {
 
         when(userServiceClient.userExists(1L)).thenReturn(true);
         when(taskRepository.existsById(1L)).thenReturn(true);
-        when(commentRepository.save(any(CommentJpa.class))).thenReturn(mockComment);
+        when(commentRepository.save(any(Comment.class))).thenReturn(mockComment);
         when(commentMapper.toResponse(mockComment)).thenReturn(mockResponse);
 
         CommentResponse result = commentService.createComment(request, 1L);
@@ -91,7 +93,7 @@ class CommentServiceTest {
         assertEquals(mockResponse, result);
         verify(userServiceClient).userExists(1L);
         verify(taskRepository).existsById(1L);
-        verify(commentRepository).save(any(CommentJpa.class));
+        verify(commentRepository).save(any(Comment.class));
         verify(commentMapper).toResponse(mockComment);
     }
 
@@ -107,7 +109,7 @@ class CommentServiceTest {
 
         verify(userServiceClient).userExists(999L);
         verify(taskRepository, never()).existsById(anyLong());
-        verify(commentRepository, never()).save(any(CommentJpa.class));
+        verify(commentRepository, never()).save(any(Comment.class));
     }
 
     @Test
@@ -123,7 +125,7 @@ class CommentServiceTest {
 
         verify(userServiceClient).userExists(1L);
         verify(taskRepository).existsById(999L);
-        verify(commentRepository, never()).save(any(CommentJpa.class));
+        verify(commentRepository, never()).save(any(Comment.class));
     }
 
     @Test
@@ -148,7 +150,7 @@ class CommentServiceTest {
     @Test
     void getCommentsByTask_ShouldReturnPage_WhenValidTaskId() {
         Pageable pageable = PageRequest.of(0, 10);
-        Page<CommentJpa> mockPage = new PageImpl<>(List.of(mockComment));
+        Page<Comment> mockPage = new PageImpl<>(List.of(mockComment));
         Page<CommentResponse> mockRespPage = new PageImpl<>(List.of(mockResponse));
 
         when(taskRepository.existsById(1L)).thenReturn(true);
@@ -178,8 +180,8 @@ class CommentServiceTest {
         String cursor = null;
         int limit = 2;
         Pageable pageable = PageRequest.of(0, limit, Sort.by("createdAt").descending());
-        List<CommentJpa> content = List.of(mockComment);
-        Slice<CommentJpa> mockSlice = new SliceImpl<>(content, pageable, false);
+        List<Comment> content = List.of(mockComment);
+        Slice<Comment> mockSlice = new SliceImpl<>(content, pageable, false);
         List<CommentResponse> mockResponses = List.of(mockResponse);
 
         when(taskRepository.existsById(1L)).thenReturn(true);
@@ -199,8 +201,8 @@ class CommentServiceTest {
     void getCommentsByTaskScroll_ShouldReturnHasMoreTrue_WhenBatchFull() {
         int limit = 2;
         Pageable pageable = PageRequest.of(0, limit, Sort.by("createdAt").descending());
-        List<CommentJpa> fullContent = List.of(mockComment, mockComment2);
-        Slice<CommentJpa> mockSlice = new SliceImpl<>(fullContent, pageable, true);
+        List<Comment> fullContent = List.of(mockComment, mockComment2);
+        Slice<Comment> mockSlice = new SliceImpl<>(fullContent, pageable, true);
         List<CommentResponse> mockResponses = List.of(mockResponse, mockResponse);
 
         when(taskRepository.existsById(1L)).thenReturn(true);
@@ -220,8 +222,8 @@ class CommentServiceTest {
         String cursor = "2025-11-12T10:00:00Z";
         int limit = 2;
         Pageable pageable = PageRequest.of(0, limit, Sort.by("createdAt").descending());
-        List<CommentJpa> content = List.of(mockComment);
-        Slice<CommentJpa> mockSlice = new SliceImpl<>(content, pageable, false);
+        List<Comment> content = List.of(mockComment);
+        Slice<Comment> mockSlice = new SliceImpl<>(content, pageable, false);
         List<CommentResponse> mockResponses = List.of(mockResponse);
 
         when(taskRepository.existsById(1L)).thenReturn(true);
@@ -242,7 +244,7 @@ class CommentServiceTest {
         String cursor = null;
         int limit = 2;
         Pageable pageable = PageRequest.of(0, limit, Sort.by("createdAt").descending());
-        Slice<CommentJpa> emptySlice = new SliceImpl<>(List.of(), pageable, false);
+        Slice<Comment> emptySlice = new SliceImpl<>(List.of(), pageable, false);
 
         when(taskRepository.existsById(1L)).thenReturn(true);
         when(commentRepository.findByTaskIdAndCreatedAtBeforeOrderByCreatedAtDesc(eq(1L), any(OffsetDateTime.class), eq(pageable)))
@@ -276,8 +278,8 @@ class CommentServiceTest {
         String cursor = "";
         int limit = 2;
         Pageable pageable = PageRequest.of(0, limit, Sort.by("createdAt").descending());
-        List<CommentJpa> content = List.of(mockComment);
-        Slice<CommentJpa> mockSlice = new SliceImpl<>(content, pageable, false);
+        List<Comment> content = List.of(mockComment);
+        Slice<Comment> mockSlice = new SliceImpl<>(content, pageable, false);
         List<CommentResponse> mockResponses = List.of(mockResponse);
 
         when(taskRepository.existsById(1L)).thenReturn(true);
@@ -331,7 +333,7 @@ class CommentServiceTest {
         CommentResponse _ = commentService.updateComment(1L, request);
 
         assertEquals("Test content", mockComment.getContent());
-        verify(commentRepository, never()).save(any(CommentJpa.class));
+        verify(commentRepository, never()).save(any(Comment.class));
     }
 
     @Test
@@ -343,7 +345,7 @@ class CommentServiceTest {
         CommentResponse result = commentService.updateComment(1L, request);
 
         assertEquals("Test content", mockComment.getContent());
-        verify(commentRepository, never()).save(any(CommentJpa.class));
+        verify(commentRepository, never()).save(any(Comment.class));
         assertEquals(mockResponse, result);
     }
 
@@ -366,7 +368,7 @@ class CommentServiceTest {
         CommentResponse _ = commentService.updateComment(1L, request);
 
         assertEquals("Test content", mockComment.getContent());
-        verify(commentRepository, never()).save(any(CommentJpa.class));
+        verify(commentRepository, never()).save(any(Comment.class));
     }
 
     @Test
@@ -378,7 +380,7 @@ class CommentServiceTest {
         CommentResponse _ = commentService.updateComment(1L, request);
 
         assertEquals("Test content", mockComment.getContent());
-        verify(commentRepository, never()).save(any(CommentJpa.class));
+        verify(commentRepository, never()).save(any(Comment.class));
     }
 
     @Test
@@ -415,6 +417,6 @@ class CommentServiceTest {
 
         commentService.createComment(request, 456L);
 
-        verify(commentRepository).save(any(CommentJpa.class));
+        verify(commentRepository).save(any(Comment.class));
     }
 }

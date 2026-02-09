@@ -3,7 +3,7 @@ package com.example.colaba.project.unit;
 import com.example.colaba.project.entity.projectmember.ProjectMemberJpa;
 import com.example.colaba.project.repository.ProjectMemberRepository;
 import com.example.colaba.project.security.ProjectAccessCheckerLocal;
-import com.example.colaba.shared.common.entity.ProjectRole;
+import com.example.colaba.shared.common.domain.entity.ProjectRole;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -2,7 +2,7 @@ package com.example.colaba.project.security;
 
 import com.example.colaba.project.entity.projectmember.ProjectMemberJpa;
 import com.example.colaba.project.repository.ProjectMemberRepository;
-import com.example.colaba.shared.common.entity.ProjectRole;
+import com.example.colaba.shared.common.domain.entity.ProjectRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;

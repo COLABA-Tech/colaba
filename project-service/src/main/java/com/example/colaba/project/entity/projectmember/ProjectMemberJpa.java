@@ -1,6 +1,6 @@
 package com.example.colaba.project.entity.projectmember;
 
-import com.example.colaba.shared.common.entity.ProjectRole;
+import com.example.colaba.shared.common.domain.entity.ProjectRole;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;

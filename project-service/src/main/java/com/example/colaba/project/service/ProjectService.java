@@ -8,12 +8,12 @@ import com.example.colaba.project.mapper.ProjectMapper;
 import com.example.colaba.project.repository.ProjectMemberRepository;
 import com.example.colaba.project.repository.ProjectRepository;
 import com.example.colaba.project.repository.TagRepository;
-import com.example.colaba.shared.common.dto.project.ProjectResponse;
-import com.example.colaba.shared.common.entity.ProjectRole;
-import com.example.colaba.shared.common.events.ProjectEvents;
-import com.example.colaba.shared.common.exception.project.DuplicateProjectNameException;
-import com.example.colaba.shared.common.exception.project.ProjectNotFoundException;
-import com.example.colaba.shared.common.exception.user.UserNotFoundException;
+import com.example.colaba.shared.common.application.dto.project.ProjectResponse;
+import com.example.colaba.shared.common.domain.entity.ProjectRole;
+import com.example.colaba.shared.common.domain.events.ProjectEvents.ProjectDeletedEvent;
+import com.example.colaba.shared.common.domain.exception.project.DuplicateProjectNameException;
+import com.example.colaba.shared.common.domain.exception.project.ProjectNotFoundException;
+import com.example.colaba.shared.common.domain.exception.user.UserNotFoundException;
 import com.example.colaba.shared.webflux.circuit.UserServiceClientWrapper;
 import com.example.colaba.shared.webflux.rabbit.EventPublisherReactive;
 import lombok.RequiredArgsConstructor;
@@ -179,7 +179,7 @@ public class ProjectService {
                     projectRepository.deleteById(id);
                 }))
                 .subscribeOn(Schedulers.boundedElastic())
-                .then(eventPublisherReactive.publishProjectDeleted(new ProjectEvents.ProjectDeletedEvent(id)))
+                .then(eventPublisherReactive.publishProjectDeleted(new ProjectDeletedEvent(id)))
                 .then();
     }
 

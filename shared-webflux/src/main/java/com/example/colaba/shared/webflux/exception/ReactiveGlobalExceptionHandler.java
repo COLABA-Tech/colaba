@@ -1,9 +1,9 @@
 package com.example.colaba.shared.webflux.exception;
 
-import com.example.colaba.shared.common.dto.common.ErrorResponseDto;
-import com.example.colaba.shared.common.exception.common.DuplicateEntityException;
-import com.example.colaba.shared.common.exception.common.NotFoundException;
-import com.example.colaba.shared.common.exception.user.UserPasswordSameAsOldException;
+import com.example.colaba.shared.common.application.dto.common.ErrorResponseDto;
+import com.example.colaba.shared.common.domain.exception.common.DuplicateEntityException;
+import com.example.colaba.shared.common.domain.exception.common.NotFoundException;
+import com.example.colaba.shared.common.domain.exception.user.UserPasswordSameAsOldException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;

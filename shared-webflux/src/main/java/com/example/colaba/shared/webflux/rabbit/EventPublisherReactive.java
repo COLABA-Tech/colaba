@@ -1,11 +1,12 @@
 package com.example.colaba.shared.webflux.rabbit;
 
-import com.example.colaba.shared.common.events.ProjectEvents.ProjectDeletedEvent;
-import com.example.colaba.shared.common.events.TagEvents.TagDeletedEvent;
-import com.example.colaba.shared.common.events.TaskEvents.TaskDeletedEvent;
-import com.example.colaba.shared.common.events.UserEvents.UserDeletedEvent;
-import com.example.colaba.shared.common.rabbit.DomainEvent;
-import com.example.colaba.shared.common.rabbit.RabbitMQProperties;
+import com.example.colaba.shared.common.application.events.DomainEvent;
+import com.example.colaba.shared.common.application.events.EventTypes;
+import com.example.colaba.shared.common.domain.events.ProjectEvents.ProjectDeletedEvent;
+import com.example.colaba.shared.common.domain.events.TagEvents.TagDeletedEvent;
+import com.example.colaba.shared.common.domain.events.TaskEvents.TaskDeletedEvent;
+import com.example.colaba.shared.common.domain.events.UserEvents.UserDeletedEvent;
+import com.example.colaba.shared.common.infrastructure.rabbit.RabbitMQProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,19 +25,19 @@ public class EventPublisherReactive {
     private final RabbitMQProperties properties;
 
     public Mono<Void> publishUserDeleted(UserDeletedEvent event) {
-        return publish("user.deleted", event, "user-service");
+        return publish(EventTypes.USER_DELETED, event, "user-service");
     }
 
     public Mono<Void> publishProjectDeleted(ProjectDeletedEvent event) {
-        return publish("project.deleted", event, "project-service");
+        return publish(EventTypes.PROJECT_DELETED, event, "project-service");
     }
 
     public Mono<Void> publishTaskDeleted(TaskDeletedEvent event) {
-        return publish("task.deleted", event, "task-service");
+        return publish(EventTypes.TASK_DELETED, event, "task-service");
     }
 
     public Mono<Void> publishTagDeleted(TagDeletedEvent event) {
-        return publish("tag.deleted", event, "project-service");
+        return publish(EventTypes.TAG_DELETED, event, "project-service");
     }
 
     private <T> Mono<Void> publish(String routingKey, T payload, String source) {

@@ -1,6 +1,6 @@
 package com.example.colaba.shared.webflux.security;
 
-import com.example.colaba.shared.common.entity.ProjectRole;
+import com.example.colaba.shared.common.domain.entity.ProjectRole;
 import com.example.colaba.shared.webflux.circuit.ProjectServiceClientWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;

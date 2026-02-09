@@ -2,9 +2,9 @@ package com.example.colaba.project.unit;
 
 import com.example.colaba.project.listener.EventConsumer;
 import com.example.colaba.project.service.ProjectService;
-import com.example.colaba.shared.common.events.UserEvents.UserDeletedEvent;
-import com.example.colaba.shared.common.rabbit.DomainEvent;
-import com.example.colaba.shared.common.rabbit.RabbitMQProperties;
+import com.example.colaba.shared.common.application.events.DomainEvent;
+import com.example.colaba.shared.common.domain.events.UserEvents;
+import com.example.colaba.shared.common.infrastructure.rabbit.RabbitMQProperties;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,8 +51,8 @@ class EventConsumerTest {
         // Arrange
         Long userId = 123L;
 
-        UserDeletedEvent userDeletedEvent = new UserDeletedEvent(userId);
-        DomainEvent<UserDeletedEvent> domainEvent = new DomainEvent<>(
+        UserEvents.UserDeletedEvent userDeletedEvent = new UserEvents.UserDeletedEvent(userId);
+        DomainEvent<UserEvents.UserDeletedEvent> domainEvent = new DomainEvent<>(
                 "user.deleted",
                 userDeletedEvent,
                 SOURCE_SERVICE
@@ -86,9 +86,9 @@ class EventConsumerTest {
     @Test
     void startConsuming_shouldIgnoreUnknownEventType() throws Exception {
         // Arrange
-        DomainEvent<UserDeletedEvent> domainEvent = new DomainEvent<>(
+        DomainEvent<UserEvents.UserDeletedEvent> domainEvent = new DomainEvent<>(
                 "user.updated",
-                new UserDeletedEvent(123L),
+                new UserEvents.UserDeletedEvent(123L),
                 SOURCE_SERVICE
         );
 
@@ -119,8 +119,8 @@ class EventConsumerTest {
         // Arrange
         Long userId = 123L;
 
-        UserDeletedEvent userDeletedEvent = new UserDeletedEvent(userId);
-        DomainEvent<UserDeletedEvent> domainEvent = new DomainEvent<>(
+        UserEvents.UserDeletedEvent userDeletedEvent = new UserEvents.UserDeletedEvent(userId);
+        DomainEvent<UserEvents.UserDeletedEvent> domainEvent = new DomainEvent<>(
                 "user.deleted",
                 userDeletedEvent,
                 SOURCE_SERVICE

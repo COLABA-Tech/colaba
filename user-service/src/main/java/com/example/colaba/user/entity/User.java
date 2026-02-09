@@ -1,6 +1,6 @@
 package com.example.colaba.user.entity;
 
-import com.example.colaba.shared.common.entity.UserRole;
+import com.example.colaba.shared.common.domain.entity.UserRole;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;

@@ -4,7 +4,7 @@ import com.example.colaba.project.dto.projectmember.CreateProjectMemberRequest;
 import com.example.colaba.project.dto.projectmember.ProjectMemberResponse;
 import com.example.colaba.project.dto.projectmember.UpdateProjectMemberRequest;
 import com.example.colaba.project.service.ProjectMemberServicePublic;
-import com.example.colaba.shared.common.controller.BaseController;
+import com.example.colaba.shared.common.infrastructure.controller.BaseController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;

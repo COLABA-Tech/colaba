@@ -6,7 +6,7 @@ import com.example.colaba.project.dto.projectmember.UpdateProjectMemberRequest;
 import com.example.colaba.project.security.ProjectAccessCheckerLocal;
 import com.example.colaba.project.service.ProjectMemberService;
 import com.example.colaba.project.service.ProjectMemberServicePublic;
-import com.example.colaba.shared.common.entity.ProjectRole;
+import com.example.colaba.shared.common.domain.entity.ProjectRole;
 import com.example.colaba.shared.webflux.client.UserServiceClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

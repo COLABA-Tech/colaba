@@ -1,6 +1,6 @@
 package com.example.colaba.project.dto.project;
 
-import com.example.colaba.shared.common.dto.project.ProjectResponse;
+import com.example.colaba.shared.common.application.dto.project.ProjectResponse;
 
 import java.util.List;
 

@@ -1,6 +1,6 @@
 package com.example.colaba.user.dto.user;
 
-import com.example.colaba.shared.common.entity.UserRole;
+import com.example.colaba.shared.common.domain.entity.UserRole;
 import jakarta.validation.constraints.*;
 
 public record CreateUserRequest(

@@ -1,7 +1,7 @@
 package com.example.colaba.user.controller;
 
-import com.example.colaba.shared.common.controller.BaseController;
-import com.example.colaba.shared.common.dto.user.UserResponse;
+import com.example.colaba.shared.common.application.dto.user.UserResponse;
+import com.example.colaba.shared.common.infrastructure.controller.BaseController;
 import com.example.colaba.user.dto.user.UpdateUserRequest;
 import com.example.colaba.user.dto.user.UserScrollResponse;
 import com.example.colaba.user.service.UserServicePublic;

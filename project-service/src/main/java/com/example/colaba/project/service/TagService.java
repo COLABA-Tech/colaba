@@ -5,10 +5,10 @@ import com.example.colaba.project.dto.tag.UpdateTagRequest;
 import com.example.colaba.project.entity.TagJpa;
 import com.example.colaba.project.mapper.TagMapper;
 import com.example.colaba.project.repository.TagRepository;
-import com.example.colaba.shared.common.dto.tag.TagResponse;
-import com.example.colaba.shared.common.events.TagEvents;
-import com.example.colaba.shared.common.exception.tag.DuplicateTagException;
-import com.example.colaba.shared.common.exception.tag.TagNotFoundException;
+import com.example.colaba.shared.common.application.dto.tag.TagResponse;
+import com.example.colaba.shared.common.domain.events.TagEvents.TagDeletedEvent;
+import com.example.colaba.shared.common.domain.exception.tag.DuplicateTagException;
+import com.example.colaba.shared.common.domain.exception.tag.TagNotFoundException;
 import com.example.colaba.shared.webflux.rabbit.EventPublisherReactive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -96,7 +96,7 @@ public class TagService {
                     tagRepository.deleteById(id);
                 }))
                 .subscribeOn(Schedulers.boundedElastic())
-                .then(eventPublisherReactive.publishTagDeleted(new TagEvents.TagDeletedEvent(id)))
+                .then(eventPublisherReactive.publishTagDeleted(new TagDeletedEvent(id)))
                 .then();
     }
 }

@@ -2,8 +2,8 @@ package com.example.colaba.project.unit;
 
 import com.example.colaba.project.dto.projectmember.ProjectMemberResponse;
 import com.example.colaba.project.entity.projectmember.ProjectMemberJpa;
-import com.example.colaba.shared.common.entity.ProjectRole;
 import com.example.colaba.project.mapper.ProjectMemberMapper;
+import com.example.colaba.shared.common.domain.entity.ProjectRole;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
