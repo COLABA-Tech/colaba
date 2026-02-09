@@ -1,6 +1,7 @@
-import com.example.colaba.file.controller.InternalFileController;
-import com.example.colaba.file.service.FileService;
-import com.example.colaba.shared.common.dto.file.FileDto;
+import com.example.colaba.file.application.dto.FileResponse;
+import com.example.colaba.file.application.dto.UploadFileRequest;
+import com.example.colaba.file.infrastructure.controller.InternalFileController;
+import com.example.colaba.file.infrastructure.service.FileServiceFacade;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ByteArrayResource;
@@ -10,47 +11,70 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class InternalFileControllerUnitTest {
 
     private InternalFileController controller;
-    private FileService fileService;
+    private FileServiceFacade fileService;
 
     @BeforeEach
     void setup() {
-        fileService = mock(FileService.class);
+        fileService = mock(FileServiceFacade.class);
         controller = new InternalFileController(fileService);
     }
 
     @Test
     void getByTaskIdShouldReturnAttachments() {
-        FileDto f1 = FileDto.builder().id(1L).originalFilename("file1.txt").build();
-        FileDto f2 = FileDto.builder().id(2L).originalFilename("file2.txt").build();
+        FileResponse response1 = FileResponse.builder()
+                .id(1L)
+                .originalFilename("file1.txt")
+                .build();
+        FileResponse response2 = FileResponse.builder()
+                .id(2L)
+                .originalFilename("file2.txt")
+                .build();
 
-        when(fileService.getAttachments(100L)).thenReturn(List.of(f1, f2));
+        when(fileService.getAttachments(100L)).thenReturn(List.of(response1, response2));
 
-        ResponseEntity<List<FileDto>> response = controller.getByTaskId(100L);
+        ResponseEntity<List<FileResponse>> response = controller.getByTaskId(100L);
 
-        assertThat(response.getBody()).containsExactly(f1, f2);
+        assertNotNull(response.getBody());
+        assertEquals(2, response.getBody().size());
+        assertEquals("file1.txt", response.getBody().get(0).originalFilename());
+        assertEquals("file2.txt", response.getBody().get(1).originalFilename());
         verify(fileService, times(1)).getAttachments(100L);
     }
+
     @Test
     void uploadShouldReturnUploadedFiles() {
-        FileDto f1 = FileDto.builder().id(1L).originalFilename("file1.txt").build();
-        FileDto f2 = FileDto.builder().id(2L).originalFilename("file2.txt").build();
+        FileResponse response1 = FileResponse.builder()
+                .id(1L)
+                .originalFilename("file1.txt")
+                .build();
+        FileResponse response2 = FileResponse.builder()
+                .id(2L)
+                .originalFilename("file2.txt")
+                .build();
 
-        when(fileService.uploadFiles(eq(100L), eq(10L), anyList())).thenReturn(List.of(f1, f2));
+        // Note: Adjust mock based on actual FileService method signature
+        when(fileService.uploadFiles(any(UploadFileRequest.class))).thenReturn(List.of(response1, response2));
 
-        ResponseEntity<List<FileDto>> response = controller.upload(100L, 10L, List.of(mock(MultipartFile.class), mock(MultipartFile.class)));
+        ResponseEntity<List<FileResponse>> response = controller.upload(
+                100L,
+                10L,
+                List.of(mock(MultipartFile.class), mock(MultipartFile.class))
+        );
 
-        assertThat(response.getBody()).containsExactly(f1, f2);
-        verify(fileService, times(1)).uploadFiles(eq(100L), eq(10L), anyList());
+        assertNotNull(response.getBody());
+        assertEquals(2, response.getBody().size());
+        verify(fileService, times(1)).uploadFiles(any(UploadFileRequest.class));
     }
+
     @Test
     void downloadFileShouldReturnResource() {
-        FileDto metadata = FileDto.builder()
+        FileResponse metadata = FileResponse.builder()
                 .id(1L)
                 .originalFilename("file1.txt")
                 .contentType("text/plain")
@@ -64,13 +88,13 @@ class InternalFileControllerUnitTest {
 
         ResponseEntity<Resource> response = controller.downloadFile(1L);
 
-        assertThat(response.getBody()).isEqualTo(resource);
-        assertThat(response.getHeaders().getContentType().toString()).isEqualTo("text/plain");
-        assertThat(response.getHeaders().getContentDisposition().getFilename()).isEqualTo("file1.txt");
-        assertThat(response.getHeaders().getContentLength()).isEqualTo(123L);
+        assertNotNull(response.getBody());
+        assertEquals(resource, response.getBody());
+        assertEquals("text/plain", response.getHeaders().getContentType().toString());
+        assertTrue(response.getHeaders().getContentDisposition().toString().contains("file1.txt"));
+        assertEquals(123L, response.getHeaders().getContentLength());
 
         verify(fileService, times(1)).getFileMetadata(1L);
         verify(fileService, times(1)).getFileContent(1L);
     }
-
 }

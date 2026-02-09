@@ -22,17 +22,14 @@ import java.util.List;
 public class TaskServicePublicFacade {
     private final TaskServicePublic taskServicePublic;
 
-    @Transactional
     public PagedResult<TaskResponse> getAllTasks(PaginationRequest paginationRequest, Long currentUserId) {
         return taskServicePublic.getAllTasks(paginationRequest, currentUserId);
     }
 
-    @Transactional
     public TaskResponse getTaskById(Long id, Long currentUserId) {
         return taskServicePublic.getTaskById(id, currentUserId);
     }
 
-    @Transactional
     public PagedResult<TaskResponse> getTasksByProject(Long projectId, PaginationRequest paginationRequest, Long currentUserId) {
         return taskServicePublic.getTasksByProject(projectId, paginationRequest, currentUserId);
     }
@@ -52,12 +49,10 @@ public class TaskServicePublicFacade {
         taskServicePublic.deleteTask(id, currentUserId);
     }
 
-    @Transactional
     public PagedResult<TaskResponse> getTasksByAssignee(Long assigneeId, PaginationRequest paginationRequest, Long currentUserId) {
         return taskServicePublic.getTasksByAssignee(assigneeId, paginationRequest, currentUserId);
     }
 
-    @Transactional
     public List<TagResponse> getTagsByTask(Long taskId, Long currentUserId) {
         return taskServicePublic.getTagsByTask(taskId, currentUserId);
     }
@@ -72,7 +67,6 @@ public class TaskServicePublicFacade {
         taskServicePublic.removeTagFromTask(taskId, tagId, currentUserId);
     }
 
-    @Transactional(readOnly = true)
     public List<FileDto> getTaskAttachments(Long taskId, Long currentUserId) {
         return taskServicePublic.getTaskAttachments(taskId, currentUserId);
     }
@@ -82,7 +76,6 @@ public class TaskServicePublicFacade {
         return taskServicePublic.uploadTaskAttachments(taskId, currentUserId, files);
     }
 
-    @Transactional(readOnly = true)
     public ResponseEntity<Resource> downloadAttachment(Long taskId, Long fileId, Long currentUserId) {
         return taskServicePublic.downloadAttachment(taskId, fileId, currentUserId);
     }

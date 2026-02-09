@@ -1,0 +1,75 @@
+package com.example.colaba.file.infrastructure.config;
+
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
+import io.swagger.v3.oas.annotations.security.SecurityScheme;
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.servers.Server;
+import org.springdoc.core.models.GroupedOpenApi;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import java.util.List;
+
+@Configuration
+@SecurityScheme(
+        name = "bearerAuth",
+        type = SecuritySchemeType.HTTP,
+        scheme = "bearer",
+        bearerFormat = "JWT"
+)
+public class OpenApiConfig {
+
+    @Value("${internal.api-key:}")
+    private String internalApiKey;
+
+    @Bean
+    public OpenAPI customOpenAPI() {
+        OpenAPI openAPI = new OpenAPI()
+                .info(new Info()
+                        .title("File Service API")
+                        .version("1.0")
+                        .description("API для управления файлами"))
+                .servers(List.of(
+                        new Server()
+                                .url("/")
+                                .description("API Gateway")))
+                .components(new Components()
+                        .addSecuritySchemes("bearerAuth", new io.swagger.v3.oas.models.security.SecurityScheme()
+                                .type(io.swagger.v3.oas.models.security.SecurityScheme.Type.HTTP)
+                                .scheme("bearer")
+                                .bearerFormat("JWT")
+                                .description("Введите JWT-токен в формате: Bearer <token>")))
+                .addSecurityItem(new SecurityRequirement().addList("bearerAuth"));
+
+        if (internalApiKey != null && !internalApiKey.trim().isEmpty()) {
+            String description = openAPI.getInfo().getDescription();
+        }
+
+        return openAPI;
+    }
+
+    @Bean
+    public GroupedOpenApi publicFileApi() {
+        return GroupedOpenApi.builder()
+                .group("public-file-api")
+                .pathsToMatch("/api/files/**")
+                .pathsToExclude("/api/files/internal/**")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi internalFileApi() {
+        return GroupedOpenApi.builder()
+                .group("internal-file-api")
+                .pathsToMatch("/api/files/internal/**")
+                .addOperationCustomizer((operation, handlerMethod) -> {
+                    operation.setSecurity(null);
+                    return operation;
+                })
+                .build();
+    }
+}

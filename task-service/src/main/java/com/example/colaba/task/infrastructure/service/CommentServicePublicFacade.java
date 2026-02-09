@@ -20,12 +20,10 @@ public class CommentServicePublicFacade {
         return commentServicePublic.createComment(request, currentUserId);
     }
 
-    @Transactional
     public CommentResponse getCommentById(Long id, Long currentUserId) {
         return commentServicePublic.getCommentById(id, currentUserId);
     }
 
-    @Transactional
     public PagedResult<CommentResponse> getCommentsByTask(Long taskId, PaginationRequest pageable, Long currentUserId) {
         return commentServicePublic.getCommentsByTask(taskId, pageable, currentUserId);
     }
