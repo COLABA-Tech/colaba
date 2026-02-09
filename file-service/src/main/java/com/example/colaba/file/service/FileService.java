@@ -4,7 +4,6 @@ import com.example.colaba.file.entity.FileJpa;
 import com.example.colaba.file.repository.FileRepository;
 import com.example.colaba.shared.common.dto.file.FileDto;
 import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -20,13 +19,16 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class FileService {
-
     private final FileRepository fileRepository;
 
+    public FileService(FileRepository fileRepository) {
+        this.fileRepository = fileRepository;
+    }
+
+
     @Value("${app.upload-dir:/uploads}")
-    private Path uploadDir;
+    public Path uploadDir;
 
     @PostConstruct
     public void init() throws IOException {
@@ -105,4 +107,11 @@ public class FileService {
 
         return toDto(fileEntity);
     }
+    public List<String> getFiles() {
+        return fileRepository.findAll()
+                .stream()
+                .map(FileJpa::getOriginalFilename)
+                .collect(Collectors.toList());
+    }
+
 }
