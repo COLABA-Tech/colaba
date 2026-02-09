@@ -1,7 +1,8 @@
 package com.example.colaba.file.controller;
 
-import com.example.colaba.file.dto.FileDto;
-import com.example.colaba.file.FileService;
+import com.example.colaba.file.service.FileService;
+import com.example.colaba.shared.common.dto.file.FileDto;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -13,41 +14,36 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 @RestController
-@RequestMapping("/internal")
+@RequestMapping("/api/files/internal")
 @RequiredArgsConstructor
+@Tag(name = "Files Internal", description = "Internal Files API")
 public class InternalFileController {
 
     private final FileService fileService;
 
-    // Загрузка файлов (вызывается из task-service)
     @PostMapping("/files")
     public ResponseEntity<List<FileDto>> upload(
             @RequestParam("taskId") Long taskId,
             @RequestParam("uploadedBy") Long uploadedBy,
             @RequestParam("files") List<MultipartFile> files) {
-
         List<FileDto> result = fileService.uploadFiles(taskId, uploadedBy, files);
         return ResponseEntity.ok(result);
     }
 
-    // Список attachments для задачи
     @GetMapping("/files")
     public ResponseEntity<List<FileDto>> getByTaskId(@RequestParam("taskId") Long taskId) {
         List<FileDto> attachments = fileService.getAttachments(taskId);
         return ResponseEntity.ok(attachments);
     }
 
-    // Скачивание файла по его id
-    @GetMapping("/files/{fileId}/content")
-    public ResponseEntity<Resource> download(@PathVariable Long fileId) {
+    @GetMapping("/files/{fileId}/download")
+    public ResponseEntity<Resource> downloadFile(@PathVariable Long fileId) {
+        FileDto metadata = fileService.getFileMetadata(fileId);
         Resource resource = fileService.getFileContent(fileId);
-
-        // Можно добавить оригинальное имя в заголовок
-        // String filename = ... получить из БД, если нужно
-
         return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"file\"")
+                .contentType(MediaType.parseMediaType(metadata.getContentType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + metadata.getOriginalFilename() + "\"")
+                .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(metadata.getSize()))
                 .body(resource);
     }
 }

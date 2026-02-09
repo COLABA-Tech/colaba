@@ -31,7 +31,6 @@ import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -98,7 +97,7 @@ class TaskServiceTest {
         taskResponse = new TaskResponse(
                 testId, testTitle, testDescription, testStatus.name(), testPriority.name(),
                 testProjectId, testAssigneeId,
-                testReporterId, testDueDate, Collections.emptyList()
+                testReporterId, testDueDate
         );
 
         request = new CreateTaskRequest(
@@ -240,7 +239,7 @@ class TaskServiceTest {
         TaskResponse nullPriorityResponse = new TaskResponse(
                 testId, testTitle, testDescription, testStatus.name(), null,
                 testProjectId, testAssigneeId,
-                testReporterId, testDueDate, Collections.emptyList()
+                testReporterId, testDueDate
         );
 
         when(projectServiceClient.projectExists(testProjectId)).thenReturn(true);
@@ -288,7 +287,7 @@ class TaskServiceTest {
         TaskResponse defaultStatusResponse = new TaskResponse(
                 testId, testTitle, testDescription, TaskStatus.getDefault().name(), testPriority.name(),
                 testProjectId, testAssigneeId,
-                testReporterId, testDueDate, Collections.emptyList()
+                testReporterId, testDueDate
         );
 
         when(projectServiceClient.projectExists(testProjectId)).thenReturn(true);
@@ -333,7 +332,7 @@ class TaskServiceTest {
         TaskResponse nullDueDateResponse = new TaskResponse(
                 testId, testTitle, testDescription, testStatus.name(), testPriority.name(),
                 testProjectId, testAssigneeId,
-                testReporterId, null, Collections.emptyList()
+                testReporterId, null
         );
 
         when(projectServiceClient.projectExists(testProjectId)).thenReturn(true);
@@ -378,7 +377,7 @@ class TaskServiceTest {
         TaskResponse nullDescriptionResponse = new TaskResponse(
                 testId, testTitle, null, testStatus.name(), testPriority.name(),
                 testProjectId, testAssigneeId,
-                testReporterId, testDueDate, Collections.emptyList()
+                testReporterId, testDueDate
         );
 
         when(projectServiceClient.projectExists(testProjectId)).thenReturn(true);
@@ -424,7 +423,7 @@ class TaskServiceTest {
         TaskResponse sameUserResponse = new TaskResponse(
                 testId, testTitle, testDescription, testStatus.name(), testPriority.name(),
                 testProjectId, sameUserId,
-                sameUserId, testDueDate, Collections.emptyList()
+                sameUserId, testDueDate
         );
 
         when(projectServiceClient.projectExists(testProjectId)).thenReturn(true);
@@ -595,7 +594,7 @@ class TaskServiceTest {
         TaskResponse updatedResponse = new TaskResponse(
                 testId, "Updated Title", testDescription, TaskStatus.IN_PROGRESS.name(), testPriority.name(),
                 testProjectId, newAssigneeId,
-                testReporterId, testDueDate.plusDays(1), Collections.emptyList()
+                testReporterId, testDueDate.plusDays(1)
         );
 
         when(taskRepository.findById(testId)).thenReturn(Optional.of(savedTask));
@@ -657,7 +656,7 @@ class TaskServiceTest {
         TaskResponse partialResponse = new TaskResponse(
                 testId, "Partial Title", testDescription, testStatus.name(), testPriority.name(),
                 testProjectId, testAssigneeId,
-                testReporterId, testDueDate, Collections.emptyList()
+                testReporterId, testDueDate
         );
 
         when(taskRepository.findById(testId)).thenReturn(Optional.of(savedTask));
@@ -708,7 +707,7 @@ class TaskServiceTest {
         TaskResponse updatedResponse = new TaskResponse(
                 testId, testTitle, testDescription, testStatus.name(), testPriority.name(),
                 testProjectId, newAssigneeId,
-                testReporterId, testDueDate, Collections.emptyList()
+                testReporterId, testDueDate
         );
 
         when(taskRepository.findById(testId)).thenReturn(Optional.of(savedTask));

@@ -1,4 +1,4 @@
-package com.example.dto;
+package com.example.colaba.shared.common.dto.file;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,7 +12,6 @@ import java.time.OffsetDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class FileDto {
-
     private Long id;
     private Long taskId;
     private String originalFilename;

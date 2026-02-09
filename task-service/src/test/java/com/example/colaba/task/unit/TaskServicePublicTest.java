@@ -29,7 +29,6 @@ import org.springframework.security.access.AccessDeniedException;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -86,7 +85,7 @@ class TaskServicePublicTest {
 
         taskResponse = new TaskResponse(
                 testTaskId, "Test Task", "Test Description", TaskStatus.TODO.name(), TaskPriority.LOW.name(),
-                testProjectId, testAssigneeId, currentUserId, LocalDate.now(), Collections.emptyList()
+                testProjectId, testAssigneeId, currentUserId, LocalDate.now()
         );
 
         createRequest = new CreateTaskRequest(

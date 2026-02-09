@@ -20,18 +20,18 @@ class TaskControllerPublic {
     @WithMockUser(username = "1", roles = "USER")
     void createTask_userIsProjectMember_success() throws Exception {
         mockMvc.perform(
-                post("/api/public/tasks")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                            {
-                              "title": "Public task",
-                              "description": "desc",
-                              "projectId": 1,
-                              "assigneeId": 1,
-                              "priority": "MEDIUM"
-                            }
-                        """)
-        )
-        .andExpect(status().isCreated());
+                        post("/api/public/tasks")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                            {
+                                              "title": "Public task",
+                                              "description": "desc",
+                                              "projectId": 1,
+                                              "assigneeId": 1,
+                                              "priority": "MEDIUM"
+                                            }
+                                        """)
+                )
+                .andExpect(status().isCreated());
     }
 }

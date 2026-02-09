@@ -8,7 +8,6 @@ import java.util.UUID;
 
 public interface FileRepository extends JpaRepository<FileJpa, Long> {
 
-
     List<FileJpa> findAllByTaskId(Long taskId);
 
     boolean existsByTaskIdAndUuid(Long taskId, UUID uuid);

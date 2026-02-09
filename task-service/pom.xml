@@ -20,11 +20,6 @@
             <artifactId>shared-webmvc</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.example</groupId>
-            <artifactId>shared-dto</artifactId>
-            <version>${project.version}</version>
-        </dependency>
 
         <!-- Security -->
         <dependency>

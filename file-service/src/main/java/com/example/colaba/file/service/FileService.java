@@ -1,9 +1,9 @@
-package com.example.colaba.file;
-
+package com.example.colaba.file.service;
 
 import com.example.colaba.file.entity.FileJpa;
 import com.example.colaba.file.repository.FileRepository;
-import com.example.dto.FileDto;
+import com.example.colaba.shared.common.dto.file.FileDto;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -60,7 +59,6 @@ public class FileService {
             throw new RuntimeException("Ошибка сохранения файла на диск " + originalFilename, e);
         }
 
-
         FileJpa entity = FileJpa.builder()
                 .taskId(taskId)
                 .uuid(uuid)
@@ -82,14 +80,12 @@ public class FileService {
                 .collect(Collectors.toList());
     }
 
-
     public Resource getFileContent(Long fileId) {
         FileJpa file = fileRepository.findById(fileId)
                 .orElseThrow(() -> new RuntimeException("File not found"));
         Path path = uploadDir.resolve(file.getUuid().toString());
         return new FileSystemResource(path);
     }
-
 
     private FileDto toDto(FileJpa entity) {
         return FileDto.builder()
@@ -102,6 +98,7 @@ public class FileService {
                 .uploadedAt(entity.getCreatedAt())
                 .build();
     }
+
     public FileDto getFileMetadata(Long fileId) {
         FileJpa fileEntity = fileRepository.findById(fileId)
                 .orElseThrow(() -> new RuntimeException("Attachment not found with id " + fileId));

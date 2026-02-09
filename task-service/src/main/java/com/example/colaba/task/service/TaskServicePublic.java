@@ -1,6 +1,8 @@
 package com.example.colaba.task.service;
 
+import com.example.colaba.shared.common.dto.file.FileDto;
 import com.example.colaba.shared.common.dto.tag.TagResponse;
+import com.example.colaba.shared.webmvc.circuit.FileServiceClientWrapper;
 import com.example.colaba.shared.webmvc.client.UserServiceClient;
 import com.example.colaba.shared.webmvc.security.ProjectAccessChecker;
 import com.example.colaba.task.dto.task.CreateTaskRequest;
@@ -9,10 +11,13 @@ import com.example.colaba.task.dto.task.UpdateTaskRequest;
 import com.example.colaba.task.entity.task.TaskJpa;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -22,6 +27,7 @@ public class TaskServicePublic {
     private final ProjectAccessChecker accessChecker;
     private final TaskService taskService;
     private final UserServiceClient userServiceClient;
+    private final FileServiceClientWrapper fileServiceClient;
 
     public Page<TaskResponse> getAllTasks(Pageable pageable, Long currentUserId) {
         boolean isAdmin = userServiceClient.isAdmin(currentUserId);
@@ -75,7 +81,6 @@ public class TaskServicePublic {
             accessChecker.requireAtLeastEditor(task.getProjectId(), currentUserId);
         }
         taskService.deleteTask(id);
-
     }
 
     public Page<TaskResponse> getTasksByAssignee(Long assigneeId, Pageable pageable, Long currentUserId) {
@@ -93,7 +98,6 @@ public class TaskServicePublic {
             accessChecker.requireAnyRole(task.getProjectId(), currentUserId);
         }
         return taskService.getTagsByTask(taskId);
-
     }
 
     @Transactional
@@ -104,7 +108,6 @@ public class TaskServicePublic {
             accessChecker.requireAtLeastEditor(task.getProjectId(), currentUserId);
         }
         taskService.assignTagToTask(taskId, tagId);
-
     }
 
     @Transactional
@@ -115,17 +118,40 @@ public class TaskServicePublic {
             accessChecker.requireAtLeastEditor(task.getProjectId(), currentUserId);
         }
         taskService.removeTagFromTask(taskId, tagId);
-
     }
 
-    public void checkTaskAccess(Long taskId, Long currentUserId) {
+    public List<FileDto> getTaskAttachments(Long taskId, Long currentUserId) {
         TaskJpa task = taskService.getTaskEntityById(taskId);
-
         boolean isAdmin = userServiceClient.isAdmin(currentUserId);
-        if (isAdmin) {
-            return;
+        if (!isAdmin) {
+            accessChecker.requireAnyRole(task.getProjectId(), currentUserId);
         }
+        return fileServiceClient.getFilesByTaskId(taskId);
+    }
 
-        accessChecker.requireAnyRole(task.getProjectId(), currentUserId);
+    public List<FileDto> uploadTaskAttachments(
+            Long taskId,
+            Long currentUserId,
+            List<MultipartFile> files
+    ) {
+        TaskJpa task = taskService.getTaskEntityById(taskId);
+        boolean isAdmin = userServiceClient.isAdmin(currentUserId);
+        if (!isAdmin) {
+            accessChecker.requireAtLeastEditor(task.getProjectId(), currentUserId);
+        }
+        return fileServiceClient.uploadFiles(taskId, currentUserId, files);
+    }
+
+    public ResponseEntity<Resource> downloadAttachment(
+            Long taskId,
+            Long fileId,
+            Long currentUserId
+    ) {
+        TaskJpa task = taskService.getTaskEntityById(taskId);
+        boolean isAdmin = userServiceClient.isAdmin(currentUserId);
+        if (!isAdmin) {
+            accessChecker.requireAnyRole(task.getProjectId(), currentUserId);
+        }
+        return fileServiceClient.downloadFile(fileId);
     }
 }

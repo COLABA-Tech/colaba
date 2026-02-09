@@ -1,25 +1,25 @@
 package com.example.colaba.task.controller;
 
 import com.example.colaba.shared.common.controller.BaseController;
+import com.example.colaba.shared.common.dto.file.FileDto;
 import com.example.colaba.task.dto.task.CreateTaskRequest;
 import com.example.colaba.task.dto.task.TaskResponse;
 import com.example.colaba.task.dto.task.UpdateTaskRequest;
 import com.example.colaba.task.service.TaskServicePublic;
-import com.example.dto.FileDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -29,7 +29,6 @@ import java.util.List;
 @Tag(name = "Tasks Public", description = "API for managing tasks")
 public class TaskController extends BaseController {
     private final TaskServicePublic taskService;
-    private final WebClient fileWebClient;
 
     @GetMapping
     @Operation(summary = "Get all tasks with pagination", description = "Retrieves a paginated list of all tasks from projects where user is a member. Supports standard Spring Pageable parameters (page, size, sort).")
@@ -55,58 +54,8 @@ public class TaskController extends BaseController {
     public ResponseEntity<TaskResponse> getTaskById(
             @PathVariable Long id,
             @AuthenticationPrincipal Long currentUserId) {
-
-        // Получаем задачу без attachments
-        TaskResponse original = taskService.getTaskById(id, currentUserId);
-
-        // Получаем список attachments из file-service
-        List<FileDto> attachments = fileWebClient.get()
-                .uri("/internal/files?taskId={taskId}", id)
-                .retrieve()
-                .bodyToFlux(FileDto.class)
-                .collectList()
-                .block();  // для blocking-контроллера используем .block()
-
-        // Создаём новый объект record с attachments (копируем все поля + добавляем attachments)
-        TaskResponse responseWithAttachments = new TaskResponse(
-                original.id(),
-                original.title(),
-                original.description(),
-                original.status(),
-                original.priority(),
-                original.projectId(),
-                original.assigneeId(),
-                original.reporterId(),
-                original.dueDate(),
-                attachments  // ← вот сюда передаём attachments
-        );
-
-        return ResponseEntity.ok(responseWithAttachments);
-    }
-    @GetMapping("/{taskId}/attachments/{attachmentId}")
-    @Operation(summary = "Download attachment", description = "Downloads a specific attachment file. User must have access to the task.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "File downloaded"),
-            @ApiResponse(responseCode = "404", description = "Attachment or task not found"),
-            @ApiResponse(responseCode = "403", description = "No access")
-    })
-    public ResponseEntity<Resource> downloadAttachment(
-            @PathVariable Long taskId,
-            @PathVariable Long attachmentId,
-            @AuthenticationPrincipal Long currentUserId) {
-
-        // 1. Проверка прав на задачу (должна быть в taskService)
-        taskService.checkTaskAccess(taskId, currentUserId);  // ← добавь такой метод в сервис, если нет
-
-        // 2. Проксируем скачивание из file-service
-        return fileWebClient.get()
-                .uri("/internal/files/{attachmentId}/download", attachmentId)
-                .retrieve()
-                .toEntity(Resource.class)
-                .map(response -> ResponseEntity.status(response.getStatusCode())
-                        .headers(response.getHeaders())
-                        .body(response.getBody()))
-                .block();  // .block() для синхронного контроллера
+        TaskResponse task = taskService.getTaskById(id, currentUserId);
+        return ResponseEntity.ok(task);
     }
 
     @GetMapping("/project/{projectId}")
@@ -198,5 +147,52 @@ public class TaskController extends BaseController {
 
         taskService.deleteTask(id, currentUserId);
         return ResponseEntity.noContent().build();
+    }
+
+
+    @GetMapping("/{taskId}/attachments")
+    @Operation(summary = "Get task attachments", description = "Get list of attachments for a task")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Attachments retrieved"),
+            @ApiResponse(responseCode = "403", description = "No access to task"),
+            @ApiResponse(responseCode = "404", description = "Task not found")
+    })
+    public ResponseEntity<List<FileDto>> getTaskAttachments(
+            @PathVariable Long taskId,
+            @AuthenticationPrincipal Long currentUserId
+    ) {
+        List<FileDto> attachments = taskService.getTaskAttachments(taskId, currentUserId);
+        return ResponseEntity.ok(attachments);
+    }
+
+    @PostMapping("/{taskId}/attachments")
+    @Operation(summary = "Upload attachments to task", description = "Upload one or multiple files as attachments")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Files uploaded successfully"),
+            @ApiResponse(responseCode = "403", description = "No permission to upload"),
+            @ApiResponse(responseCode = "404", description = "Task not found")
+    })
+    public ResponseEntity<List<FileDto>> uploadAttachments(
+            @PathVariable Long taskId,
+            @RequestParam("files") List<MultipartFile> files,
+            @AuthenticationPrincipal Long currentUserId
+    ) {
+        List<FileDto> uploaded = taskService.uploadTaskAttachments(taskId, currentUserId, files);
+        return ResponseEntity.ok(uploaded);
+    }
+
+    @GetMapping("/{taskId}/attachments/{attachmentId}")
+    @Operation(summary = "Download attachment", description = "Download a specific attachment file")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "File downloaded"),
+            @ApiResponse(responseCode = "404", description = "Attachment or task not found"),
+            @ApiResponse(responseCode = "403", description = "No access")
+    })
+    public ResponseEntity<Resource> downloadAttachment(
+            @PathVariable Long taskId,
+            @PathVariable Long attachmentId,
+            @AuthenticationPrincipal Long currentUserId
+    ) {
+        return taskService.downloadAttachment(taskId, attachmentId, currentUserId);
     }
 }
