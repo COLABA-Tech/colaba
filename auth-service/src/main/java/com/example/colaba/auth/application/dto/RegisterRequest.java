@@ -1,4 +1,4 @@
-package com.example.colaba.auth.dto;
+package com.example.colaba.auth.application.dto;
 
 import com.example.colaba.shared.common.domain.entity.UserRole;
 import jakarta.validation.constraints.*;

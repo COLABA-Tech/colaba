@@ -1,4 +1,4 @@
-package com.example.colaba.auth.config;
+package com.example.colaba.auth.infrastructure.config;
 
 import com.example.colaba.shared.common.application.dto.common.ErrorResponseDto;
 import com.example.colaba.shared.common.infrastructure.security.JwtService;

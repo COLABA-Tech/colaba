@@ -1,32 +1,29 @@
 package com.example.colaba.task.application.service;
 
+import com.example.colaba.shared.common.application.dto.common.PagedResult;
+import com.example.colaba.shared.common.application.dto.common.PaginationRequest;
 import com.example.colaba.shared.common.application.dto.tag.TagResponse;
+import com.example.colaba.shared.common.domain.exception.common.AccessDeniedException;
+import com.example.colaba.shared.webmvc.application.ports.UserServicePort;
 import com.example.colaba.shared.webmvc.application.security.ProjectAccessService;
 import com.example.colaba.task.application.dto.task.CreateTaskRequest;
 import com.example.colaba.task.application.dto.task.TaskResponse;
 import com.example.colaba.task.application.dto.task.UpdateTaskRequest;
-import com.example.colaba.task.application.ports.UserServicePort;
 import com.example.colaba.task.domain.entity.Task;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-@Service
 @RequiredArgsConstructor
 public class TaskServicePublic {
     private final ProjectAccessService accessChecker;
     private final TaskService taskService;
     private final UserServicePort userServiceClient;
 
-    public Page<TaskResponse> getAllTasks(Pageable pageable, Long currentUserId) {
+    public PagedResult<TaskResponse> getAllTasks(PaginationRequest PaginationRequest, Long currentUserId) {
         boolean isAdmin = userServiceClient.isAdmin(currentUserId);
         if (isAdmin) {
-            return taskService.getAllTasks(pageable);
+            return taskService.getAllTasks(PaginationRequest);
         }
         throw new AccessDeniedException("Required user role: ADMIN");
     }
@@ -40,15 +37,14 @@ public class TaskServicePublic {
         return taskService.getTaskById(id);
     }
 
-    public Page<TaskResponse> getTasksByProject(Long projectId, Pageable pageable, Long currentUserId) {
+    public PagedResult<TaskResponse> getTasksByProject(Long projectId, PaginationRequest PaginationRequest, Long currentUserId) {
         boolean isAdmin = userServiceClient.isAdmin(currentUserId);
         if (!isAdmin) {
             accessChecker.requireAnyRole(projectId, currentUserId);
         }
-        return taskService.getTasksByProject(projectId, pageable);
+        return taskService.getTasksByProject(projectId, PaginationRequest);
     }
 
-    @Transactional
     public TaskResponse createTask(CreateTaskRequest request, Long currentUserId) {
         boolean isAdmin = userServiceClient.isAdmin(currentUserId);
         if (!isAdmin) {
@@ -57,7 +53,6 @@ public class TaskServicePublic {
         return taskService.createTask(request, currentUserId);
     }
 
-    @Transactional
     public TaskResponse updateTask(Long id, UpdateTaskRequest request, Long currentUserId) {
         Task task = taskService.getTaskEntityById(id);
         boolean isAdmin = userServiceClient.isAdmin(currentUserId);
@@ -67,7 +62,6 @@ public class TaskServicePublic {
         return taskService.updateTask(id, request);
     }
 
-    @Transactional
     public void deleteTask(Long id, Long currentUserId) {
         Task task = taskService.getTaskEntityById(id);
         boolean isAdmin = userServiceClient.isAdmin(currentUserId);
@@ -77,12 +71,12 @@ public class TaskServicePublic {
         taskService.deleteTask(id);
     }
 
-    public Page<TaskResponse> getTasksByAssignee(Long assigneeId, Pageable pageable, Long currentUserId) {
+    public PagedResult<TaskResponse> getTasksByAssignee(Long assigneeId, PaginationRequest PaginationRequest, Long currentUserId) {
         boolean isAdmin = userServiceClient.isAdmin(currentUserId);
         if (!isAdmin && !assigneeId.equals(currentUserId)) {
             throw new AccessDeniedException("You can only view your own assigned tasks");
         }
-        return taskService.getTasksByAssignee(assigneeId, pageable);
+        return taskService.getTasksByAssignee(assigneeId, PaginationRequest);
     }
 
     public List<TagResponse> getTagsByTask(Long taskId, Long currentUserId) {
@@ -94,7 +88,6 @@ public class TaskServicePublic {
         return taskService.getTagsByTask(taskId);
     }
 
-    @Transactional
     public void assignTagToTask(Long taskId, Long tagId, Long currentUserId) {
         Task task = taskService.getTaskEntityById(taskId);
         boolean isAdmin = userServiceClient.isAdmin(currentUserId);
@@ -104,7 +97,6 @@ public class TaskServicePublic {
         taskService.assignTagToTask(taskId, tagId);
     }
 
-    @Transactional
     public void removeTagFromTask(Long taskId, Long tagId, Long currentUserId) {
         Task task = taskService.getTaskEntityById(taskId);
         boolean isAdmin = userServiceClient.isAdmin(currentUserId);

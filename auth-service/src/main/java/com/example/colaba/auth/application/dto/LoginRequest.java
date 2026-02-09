@@ -1,4 +1,4 @@
-package com.example.colaba.auth.dto;
+package com.example.colaba.auth.application.dto;
 
 import jakarta.validation.constraints.NotBlank;
 

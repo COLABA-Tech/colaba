@@ -1,10 +1,12 @@
 package com.example.colaba.task.infrastructure.controller;
 
+import com.example.colaba.shared.common.application.dto.common.PagedResult;
+import com.example.colaba.shared.common.application.dto.common.PaginationRequest;
 import com.example.colaba.shared.common.infrastructure.controller.BaseController;
 import com.example.colaba.task.application.dto.task.CreateTaskRequest;
 import com.example.colaba.task.application.dto.task.TaskResponse;
 import com.example.colaba.task.application.dto.task.UpdateTaskRequest;
-import com.example.colaba.task.application.service.TaskServicePublic;
+import com.example.colaba.task.infrastructure.service.TaskServicePublicFacade;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -23,7 +25,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @Tag(name = "Tasks Public", description = "API for managing tasks")
 public class TaskController extends BaseController {
-    private final TaskServicePublic taskService;
+    private final TaskServicePublicFacade taskService;
 
     @GetMapping
     @Operation(summary = "Get all tasks with pagination", description = "Retrieves a paginated list of all tasks from projects where user is a member. Supports standard Spring Pageable parameters (page, size, sort).")
@@ -35,8 +37,10 @@ public class TaskController extends BaseController {
             Pageable pageable,
             @AuthenticationPrincipal Long currentUserId) {
         pageable = validatePageable(pageable);
-        Page<TaskResponse> tasks = taskService.getAllTasks(pageable, currentUserId);
-        return ResponseEntity.ok(tasks);
+        PaginationRequest request = convertToPaginationRequest(pageable);
+        PagedResult<TaskResponse> result = taskService.getAllTasks(request, currentUserId);
+        Page<TaskResponse> page = convertToPage(result, pageable);
+        return ResponseEntity.ok(page);
     }
 
     @GetMapping("/{id}")
@@ -65,8 +69,10 @@ public class TaskController extends BaseController {
             Pageable pageable,
             @AuthenticationPrincipal Long currentUserId) {
         pageable = validatePageable(pageable);
-        Page<TaskResponse> tasks = taskService.getTasksByProject(projectId, pageable, currentUserId);
-        return ResponseEntity.ok(tasks);
+        PaginationRequest request = convertToPaginationRequest(pageable);
+        PagedResult<TaskResponse> result = taskService.getTasksByProject(projectId, request, currentUserId);
+        Page<TaskResponse> page = convertToPage(result, pageable);
+        return ResponseEntity.ok(page);
     }
 
     @GetMapping("/assignee/{userId}")
@@ -81,8 +87,10 @@ public class TaskController extends BaseController {
             Pageable pageable,
             @AuthenticationPrincipal Long currentUserId) {
         pageable = validatePageable(pageable);
-        Page<TaskResponse> tasks = taskService.getTasksByAssignee(userId, pageable, currentUserId);
-        return ResponseEntity.ok(tasks);
+        PaginationRequest request = convertToPaginationRequest(pageable);
+        PagedResult<TaskResponse> result = taskService.getTasksByAssignee(userId, request, currentUserId);
+        Page<TaskResponse> page = convertToPage(result, pageable);
+        return ResponseEntity.ok(page);
     }
 
     @GetMapping("/me/assigned")
@@ -94,8 +102,10 @@ public class TaskController extends BaseController {
             Pageable pageable,
             @AuthenticationPrincipal Long currentUserId) {
         pageable = validatePageable(pageable);
-        Page<TaskResponse> tasks = taskService.getTasksByAssignee(currentUserId, pageable, currentUserId);
-        return ResponseEntity.ok(tasks);
+        PaginationRequest request = convertToPaginationRequest(pageable);
+        PagedResult<TaskResponse> result = taskService.getTasksByAssignee(currentUserId, request, currentUserId);
+        Page<TaskResponse> page = convertToPage(result, pageable);
+        return ResponseEntity.ok(page);
     }
 
     @PostMapping

@@ -1,10 +1,11 @@
 package com.example.colaba.auth.controller;
 
-import com.example.colaba.auth.dto.AuthResponse;
-import com.example.colaba.auth.dto.LoginRequest;
-import com.example.colaba.auth.dto.RegisterRequest;
-import com.example.colaba.auth.service.AuthService;
+import com.example.colaba.auth.application.dto.AuthResponse;
+import com.example.colaba.auth.application.dto.LoginRequest;
+import com.example.colaba.auth.application.dto.RegisterRequest;
+import com.example.colaba.auth.application.service.AuthService;
 import com.example.colaba.shared.common.application.dto.user.UserResponse;
+import com.example.colaba.shared.common.application.security.JwtTokenService;
 import com.example.colaba.shared.common.domain.entity.UserRole;
 import com.example.colaba.shared.common.infrastructure.security.JwtService;
 import com.example.colaba.shared.webmvc.infrastructure.filter.JwtAuthenticationFilter;
@@ -56,7 +57,7 @@ class AuthControllerTest {
     private AuthService authService;
 
     @MockitoBean
-    private JwtService jwtService;
+    private JwtTokenService jwtService;
 
     private String adminToken;
     private String userToken;

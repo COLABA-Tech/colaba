@@ -1,11 +1,12 @@
 package com.example.colaba.task.infrastructure.controller;
 
+import com.example.colaba.shared.common.application.dto.common.PagedResult;
+import com.example.colaba.shared.common.application.dto.common.PaginationRequest;
 import com.example.colaba.shared.common.infrastructure.controller.BaseController;
 import com.example.colaba.task.application.dto.comment.CommentResponse;
-import com.example.colaba.task.application.dto.comment.CommentScrollResponse;
 import com.example.colaba.task.application.dto.comment.CreateCommentRequest;
 import com.example.colaba.task.application.dto.comment.UpdateCommentRequest;
-import com.example.colaba.task.application.service.CommentServicePublic;
+import com.example.colaba.task.infrastructure.service.CommentServicePublicFacade;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -25,7 +26,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 @Tag(name = "Comments Public", description = "API for managing comments")
 public class CommentController extends BaseController {
 
-    private final CommentServicePublic commentService;
+    private final CommentServicePublicFacade commentService;
 
     @PostMapping
     @Operation(summary = "Create a new comment for a task")
@@ -66,27 +67,13 @@ public class CommentController extends BaseController {
             @PathVariable @Positive Long taskId,
             Pageable pageable,
             @AuthenticationPrincipal Long currentUserId) {
-
         pageable = validatePageable(pageable);
-        Page<CommentResponse> comments = commentService.getCommentsByTask(taskId, pageable, currentUserId);
+        PaginationRequest request = convertToPaginationRequest(pageable);
+        PagedResult<CommentResponse> result = commentService.getCommentsByTask(taskId, request, currentUserId);
+        Page<CommentResponse> page = convertToPage(result, pageable);
         return ResponseEntity.ok()
-                .header("X-Total-Count", String.valueOf(comments.getTotalElements()))
-                .body(comments);
-    }
-
-    @GetMapping("/task/{taskId}/scroll")
-    @Operation(summary = "Get infinite scroll comments by task ID")
-    @ApiResponse(responseCode = "200", description = "Scroll response with hasMore")
-    @ApiResponse(responseCode = "403", description = "User doesn't have access to the task")
-    public ResponseEntity<CommentScrollResponse> getCommentsScrollByTask(
-            @PathVariable @Positive Long taskId,
-            @RequestParam(required = false) String cursor,
-            @RequestParam(defaultValue = "20") int limit,
-            @AuthenticationPrincipal Long currentUserId) {
-
-        if (limit > 50) limit = 50;
-        CommentScrollResponse response = commentService.getCommentsByTaskScroll(taskId, cursor, limit, currentUserId);
-        return ResponseEntity.ok(response);
+                .header("X-Total-Count", String.valueOf(page.getTotalElements()))
+                .body(page);
     }
 
     @PutMapping("/{id}")

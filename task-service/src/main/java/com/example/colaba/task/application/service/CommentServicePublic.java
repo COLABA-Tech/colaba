@@ -1,29 +1,25 @@
 package com.example.colaba.task.application.service;
 
+import com.example.colaba.shared.common.application.dto.common.PagedResult;
+import com.example.colaba.shared.common.application.dto.common.PaginationRequest;
+import com.example.colaba.shared.common.domain.exception.common.AccessDeniedException;
+import com.example.colaba.shared.webmvc.application.ports.UserServicePort;
 import com.example.colaba.shared.webmvc.application.security.ProjectAccessService;
 import com.example.colaba.task.application.dto.comment.CommentResponse;
-import com.example.colaba.task.application.dto.comment.CommentScrollResponse;
 import com.example.colaba.task.application.dto.comment.CreateCommentRequest;
 import com.example.colaba.task.application.dto.comment.UpdateCommentRequest;
-import com.example.colaba.task.application.ports.UserServicePort;
 import com.example.colaba.task.domain.entity.Comment;
 import com.example.colaba.task.domain.entity.Task;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.stereotype.Service;
 
-@Service
 @RequiredArgsConstructor
 public class CommentServicePublic {
     private final CommentService commentService;
     private final TaskService taskService;
+
     private final ProjectAccessService accessChecker;
     private final UserServicePort userServiceClient;
 
-    @Transactional
     public CommentResponse createComment(CreateCommentRequest request, Long currentUserId) {
         Task task = taskService.getTaskEntityById(request.taskId());
         accessChecker.requireAnyRole(task.getProjectId(), currentUserId);
@@ -38,7 +34,7 @@ public class CommentServicePublic {
         throw new AccessDeniedException("Required user role: ADMIN");
     }
 
-    public Page<CommentResponse> getCommentsByTask(Long taskId, Pageable pageable, Long currentUserId) {
+    public PagedResult<CommentResponse> getCommentsByTask(Long taskId, PaginationRequest pageable, Long currentUserId) {
         Task task = taskService.getTaskEntityById(taskId);
         boolean isAdmin = userServiceClient.isAdmin(currentUserId);
         if (!isAdmin) {
@@ -48,16 +44,6 @@ public class CommentServicePublic {
 
     }
 
-    public CommentScrollResponse getCommentsByTaskScroll(Long taskId, String cursor, int limit, Long currentUserId) {
-        Task task = taskService.getTaskEntityById(taskId);
-        boolean isAdmin = userServiceClient.isAdmin(currentUserId);
-        if (!isAdmin) {
-            accessChecker.requireAnyRole(task.getProjectId(), currentUserId);
-        }
-        return commentService.getCommentsByTaskScroll(taskId, cursor, limit);
-    }
-
-    @Transactional
     public CommentResponse updateComment(Long id, UpdateCommentRequest request, Long currentUserId) {
         Comment comment = commentService.getCommentEntityById(id);
         if (!comment.getUserId().equals(currentUserId)) {
@@ -67,7 +53,6 @@ public class CommentServicePublic {
         return commentService.updateComment(id, request);
     }
 
-    @Transactional
     public void deleteComment(Long id, Long currentUserId) {
         Comment comment = commentService.getCommentEntityById(id);
         boolean isAdmin = userServiceClient.isAdmin(currentUserId);

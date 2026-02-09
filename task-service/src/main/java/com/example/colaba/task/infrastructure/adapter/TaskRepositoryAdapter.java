@@ -1,13 +1,17 @@
 package com.example.colaba.task.infrastructure.adapter;
 
+import com.example.colaba.shared.common.application.dto.common.PagedResult;
+import com.example.colaba.shared.common.application.dto.common.PaginationRequest;
 import com.example.colaba.task.application.ports.TaskRepositoryPort;
 import com.example.colaba.task.domain.entity.Task;
 import com.example.colaba.task.infrastructure.persistence.entity.TaskJpa;
-import com.example.colaba.task.infrastructure.persistence.mapper.TaskMapper;
+import com.example.colaba.task.infrastructure.persistence.mapper.TaskMapperJpa;
 import com.example.colaba.task.infrastructure.persistence.repository.TaskRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -19,11 +23,26 @@ import java.util.stream.Collectors;
 public class TaskRepositoryAdapter implements TaskRepositoryPort {
 
     private final TaskRepository jpaRepo;
-    private final TaskMapper mapper;
+    private final TaskMapperJpa mapper;
 
     @Override
-    public Page<Task> findAll(Pageable pageable) {
-        return jpaRepo.findAll(pageable).map(mapper::toDomain);
+    public PagedResult<Task> findAll(PaginationRequest pageable) {
+        Sort sort = Sort.by(
+                "DESC".equalsIgnoreCase(pageable.sortDirection())
+                        ? Sort.Direction.DESC
+                        : Sort.Direction.ASC,
+                pageable.sortBy()
+        );
+        Pageable springPageable = PageRequest.of(pageable.page(), pageable.size(), sort);
+        Page<TaskJpa> springPage = jpaRepo.findAll(springPageable);
+        List<Task> domainList = springPage.map(mapper::toDomain).getContent();
+        return new PagedResult<>(
+                domainList,
+                springPage.getTotalElements(),
+                springPage.getTotalPages(),
+                pageable.page(),
+                pageable.size()
+        );
     }
 
     @Override
@@ -49,13 +68,43 @@ public class TaskRepositoryAdapter implements TaskRepositoryPort {
     }
 
     @Override
-    public Page<Task> findByProjectId(Long projectId, Pageable pageable) {
-        return jpaRepo.findByProjectId(projectId, pageable).map(mapper::toDomain);
+    public PagedResult<Task> findByProjectId(Long projectId, PaginationRequest pageable) {
+        Sort sort = Sort.by(
+                "DESC".equalsIgnoreCase(pageable.sortDirection())
+                        ? Sort.Direction.DESC
+                        : Sort.Direction.ASC,
+                pageable.sortBy()
+        );
+        Pageable springPageable = PageRequest.of(pageable.page(), pageable.size(), sort);
+        Page<TaskJpa> springPage = jpaRepo.findByProjectId(projectId, springPageable);
+        List<Task> domainList = springPage.map(mapper::toDomain).getContent();
+        return new PagedResult<>(
+                domainList,
+                springPage.getTotalElements(),
+                springPage.getTotalPages(),
+                pageable.page(),
+                pageable.size()
+        );
     }
 
     @Override
-    public Page<Task> findByAssigneeId(Long assigneeId, Pageable pageable) {
-        return jpaRepo.findByAssigneeId(assigneeId, pageable).map(mapper::toDomain);
+    public PagedResult<Task> findByAssigneeId(Long assigneeId, PaginationRequest pageable) {
+        Sort sort = Sort.by(
+                "DESC".equalsIgnoreCase(pageable.sortDirection())
+                        ? Sort.Direction.DESC
+                        : Sort.Direction.ASC,
+                pageable.sortBy()
+        );
+        Pageable springPageable = PageRequest.of(pageable.page(), pageable.size(), sort);
+        Page<TaskJpa> springPage = jpaRepo.findByAssigneeId(assigneeId, springPageable);
+        List<Task> domainList = springPage.map(mapper::toDomain).getContent();
+        return new PagedResult<>(
+                domainList,
+                springPage.getTotalElements(),
+                springPage.getTotalPages(),
+                pageable.page(),
+                pageable.size()
+        );
     }
 
     @Override

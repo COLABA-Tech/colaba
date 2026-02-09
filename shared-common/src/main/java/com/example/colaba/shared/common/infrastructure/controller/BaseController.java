@@ -1,8 +1,8 @@
 package com.example.colaba.shared.common.infrastructure.controller;
 
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import com.example.colaba.shared.common.application.dto.common.PagedResult;
+import com.example.colaba.shared.common.application.dto.common.PaginationRequest;
+import org.springframework.data.domain.*;
 
 public abstract class BaseController {
     private static final int DEFAULT_PAGE = 0;
@@ -17,5 +17,26 @@ public abstract class BaseController {
             return PageRequest.of(pageable.getPageNumber(), MAX_SIZE, pageable.getSort());
         }
         return pageable;
+    }
+
+    static protected PaginationRequest convertToPaginationRequest(Pageable pageable) {
+        Sort.Order order = pageable.getSort().isEmpty()
+                ? Sort.Order.by("id")
+                : pageable.getSort().iterator().next();
+
+        return new PaginationRequest(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                order.getProperty(),
+                order.getDirection().name()
+        );
+    }
+
+    static protected <T> Page<T> convertToPage(PagedResult<T> result, Pageable pageable) {
+        return new PageImpl<>(
+                result.content(),
+                pageable,
+                result.totalElements()
+        );
     }
 }
