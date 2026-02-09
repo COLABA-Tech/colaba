@@ -1,9 +1,10 @@
 package com.example.colaba.shared.webmvc.client;
 
 import com.example.colaba.shared.common.dto.file.FileDto;
-import com.example.colaba.shared.webmvc.feign.FeignConfig;
+import com.example.colaba.shared.webmvc.feign.FileServiceFeignConfig;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.core.io.Resource;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,10 +14,13 @@ import java.util.List;
 @FeignClient(
         name = "file-service",
         path = "/api/files/internal",
-        configuration = FeignConfig.class
+        configuration = {FileServiceFeignConfig.class}
 )
 public interface FileServiceClient {
-    @PostMapping("/files")
+    @PostMapping(
+            value = "/files",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
     List<FileDto> uploadFiles(
             @RequestParam("taskId") Long taskId,
             @RequestParam("uploadedBy") Long uploadedBy,

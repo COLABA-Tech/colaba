@@ -3,7 +3,7 @@ package com.example.colaba.task.service;
 import com.example.colaba.shared.common.dto.file.FileDto;
 import com.example.colaba.shared.common.dto.tag.TagResponse;
 import com.example.colaba.shared.webmvc.circuit.FileServiceClientWrapper;
-import com.example.colaba.shared.webmvc.client.UserServiceClient;
+import com.example.colaba.shared.webmvc.circuit.UserServiceClientWrapper;
 import com.example.colaba.shared.webmvc.security.ProjectAccessChecker;
 import com.example.colaba.task.dto.task.CreateTaskRequest;
 import com.example.colaba.task.dto.task.TaskResponse;
@@ -26,7 +26,7 @@ import java.util.List;
 public class TaskServicePublic {
     private final ProjectAccessChecker accessChecker;
     private final TaskService taskService;
-    private final UserServiceClient userServiceClient;
+    private final UserServiceClientWrapper userServiceClient;
     private final FileServiceClientWrapper fileServiceClient;
 
     public Page<TaskResponse> getAllTasks(Pageable pageable, Long currentUserId) {

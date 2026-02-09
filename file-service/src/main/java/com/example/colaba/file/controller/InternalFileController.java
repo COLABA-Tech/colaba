@@ -3,6 +3,7 @@ package com.example.colaba.file.controller;
 import com.example.colaba.file.service.FileService;
 import com.example.colaba.shared.common.dto.file.FileDto;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -40,19 +41,14 @@ public class InternalFileController {
             @RequestParam("taskId") @NotNull Long taskId,
             @RequestParam("uploadedBy") @NotNull Long uploadedBy,
 
-            @io.swagger.v3.oas.annotations.Parameter(
+            @Parameter(
                     description = "Files to upload",
                     required = true
             )
             @RequestPart("files") @NotNull List<MultipartFile> files
     ) {
-        if (files.isEmpty()) {
-            return ResponseEntity.badRequest().build();
-        }
-
-        return ResponseEntity.ok(
-                fileService.uploadFiles(taskId, uploadedBy, files)
-        );
+        List<FileDto> result = fileService.uploadFiles(taskId, uploadedBy, files);
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/files")
@@ -66,7 +62,6 @@ public class InternalFileController {
     })
     public ResponseEntity<List<FileDto>> getByTaskId(
             @RequestParam("taskId") @NotNull Long taskId) {
-
         List<FileDto> attachments = fileService.getAttachments(taskId);
         return ResponseEntity.ok(attachments);
     }
@@ -83,15 +78,9 @@ public class InternalFileController {
     public ResponseEntity<Resource> downloadFile(@PathVariable @NotNull Long fileId) {
         FileDto metadata = fileService.getFileMetadata(fileId);
         Resource resource = fileService.getFileContent(fileId);
-
-        if (resource == null || !resource.exists()) {
-            return ResponseEntity.status(HttpStatus.GONE).build();
-        }
-
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(metadata.getContentType()))
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"" + metadata.getOriginalFilename() + "\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + metadata.getOriginalFilename() + "\"")
                 .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(metadata.getSize()))
                 .body(resource);
     }

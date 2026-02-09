@@ -1,6 +1,5 @@
 package com.example.colaba.shared.webmvc.circuit;
 
-import com.example.colaba.shared.common.dto.project.ProjectResponse;
 import com.example.colaba.shared.common.dto.tag.TagResponse;
 import com.example.colaba.shared.webmvc.client.ProjectServiceClient;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
