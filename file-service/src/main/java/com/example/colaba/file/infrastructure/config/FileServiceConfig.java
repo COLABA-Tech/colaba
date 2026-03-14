@@ -16,6 +16,7 @@ public class FileServiceConfig {
             FileStoragePort fileStorage
     ) {
         return new FileService(
+
                 fileRepository,
                 fileStorage,
                 new FileMapper()
